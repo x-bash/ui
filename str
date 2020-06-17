@@ -67,8 +67,16 @@ str.starts_with(){
     [[ ${1:?Provide string} == ${2:?Provide prefix}* ]]
 }
 
+str.starts_with_regex(){
+    [[ ${1:?Provide string} =~ ^${2:?Provide prefix in regex form} ]]
+}
+
 str.ends_with(){
     [[ ${1?:Provide string} == *${2:?Provide suffix} ]]
+}
+
+str.ends_with_regex(){
+    [[ ${1?:Provide string} =~ ${2:?Provide suffix}$ ]]
 }
 
 str.slice(){    
@@ -289,4 +297,6 @@ R.or(){
 # shellcheck disable=SC2046,SC2006
 IP_0_255=$( R.or `R.wrap "[0-9]"` `R.wrap "[1-9][0-9]"` `R.wrap "1[0-9][0-9]"` `R.wrap "2[0-4][0-9]"` `R.wrap "25[0-5]"` )
 export IP="\\b${IP_0_255}\.${IP_0_255}\.${IP_0_255}\.${IP_0_255}\\b"
+
+# [[:alpha:]] [[:alphanum:]] [[:number:]]
 
