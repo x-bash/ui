@@ -15,7 +15,8 @@ job.offer(){
     cur=$(job.get_active_size)
     # echo "size: $cur"
     if [ "$cur" -lt "${MAX:-3}" ]; then
-        (eval "$@") 1>&1 2>&2 &
+        # (eval "$@") 1>&1 2>&2 &
+        (eval "$@") 1>&1 2>&2
         return 0
     fi
     return 1
