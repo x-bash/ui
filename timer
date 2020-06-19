@@ -41,3 +41,19 @@ timer.new(){
     oo.create_new_function timer "$@"
 }
 
+# testcase: REPEAT=3 timer.measure "sleep 3s"
+#> REPEAT=3 timer.measure "sleep 3s"
+#3 3 3
+timer.measure(){
+    local start i
+    local A=()
+    for i in $(seq ${REPEAT:-1}); do
+        timer.make start
+        eval "$@" 1>/dev/null 2>&1
+        A=("${A[@]}" "$(O=start timer.elapsed)")
+        O=start timer.free
+    done
+
+    echo "${A[@]}"
+}
+
