@@ -8,10 +8,37 @@ rand.int(){
 }
 
 
+# Refer https://serverfault.com/questions/103359/how-to-create-a-uuid-in-bash
+random.uuid(){
+
+    [ -f /proc/sys/kernel/random/uuid ] && { cat /proc/sys/kernel/random/uuid; return 0; }
+    
+    local N B T
+    for (( N=0; N < 16; ++N )); do
+        B=$(( $RANDOM%255 ))
+
+        if (( N == 6 )); then
+            printf '4%x' $(( B%15 ))
+        elif (( N == 8 )); then
+            local C='89ab'
+            printf '%c%x' ${C:$(( $RANDOM%${#C} )):1} $(( B%15 ))
+        else
+            printf '%02x' $B
+        fi
+
+        for T in 3 5 7 9; do
+            (( T == N )) && printf '-' && break
+        done
+    done
+
+    echo
+}
+
 # Refer https://gist.github.com/earthgecko/3089509
 random.string(){
     local LENGTH=${1:-32}
     local CHARSET=${2:-'a-zA-Z0-9'}
+    # LC_CTYPE setting according to https://wxnacy.com/2018/03/07/tr-Illegal-byte-sequence/
     cat /dev/random | LC_CTYPE=C tr -c -d $CHARSET | fold -w $LENGTH | head -n 1
 }
 
@@ -19,7 +46,6 @@ random.alphanum(){ random.string "$@"; }
 random.alpha(){ random.string 'a-zA-Z'; }
 random.lowercase(){ random.string 'a-z'; }
 random.uppercase(){ random.string 'A-Z'; }
-random.uuid(){ random.string "$@"; }
 
 random.ip.address(){
     :
