@@ -3,13 +3,12 @@
 # Refered from /usr/include/sysexits.h
 # https://www.freebsd.org/cgi/man.cgi?query=sysexits&apropos=0&sektion=0&manpath=FreeBSD+4.3-RELEASE&format=html
 
-# successful termination
-EX_OK=0
+EX_OK=0             # successful termination
 EX_USAGE=64         # The command was used incorrectly, e.g., with the wrong number of arguments, a bad flag, a bad syntax in a parameter, or whatever.
-EX_DATAERR=65       #  The input data was incorrect in some way. This should only be used for user's data and not system files.
+EX_DATAERR=65       # The input data was incorrect in some way. This should only be used for user's data and not system files.
 EX_NOINPUT=66       # An input file (not a system file) did not exist or was not readable.  This could also include errors like ``No message'' to a mailer (if it cared to catch it).
 EX_NOUSER=67        # The user specified did not exist. This might be used for mail addresses or remote logins.
-EX_NOHOST=68        #  The host specified did not exist. This is used in mail addresses or network requests.
+EX_NOHOST=68        # The host specified did not exist. This is used in mail addresses or network requests.
 EX_UNAVAILABLE=69   # A service is unavailable. This can occur if a sup­port program or file does not exist.  This can also be used as a catchall message when something you wanted to do doesn't work, but you don't know why.
 EX_SOFTWARE=70      # An internal software error has been detected.  his should be limited to non-operating system related errors as possible.
 EX_OSERR=71         # An operating system error has been detected.  This is intended to be used for such things as ``cannot fork'', ``cannot create pipe'', or the like.  It includes things like getuid returning a user that does not exist in the passwd file.
