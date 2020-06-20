@@ -3,7 +3,7 @@
 # @src std/str
 
 #> str.join "a" 1 2 3
-#1a2a3a
+#1a2a3
 str.join(){
     local sep=$1
     shift 1
@@ -13,14 +13,13 @@ str.join(){
     echo "$bar"
 }
 
-
 doctest.run(){
-    echo "doctest run"
     local LOG=":"
     [ -n "$VERBOSE" ] && LOG="echo "
-    for i in "$@"; do
+    local FILELIST=("$@")
+    shift $#
+    for i in "${FILELIST[@]}"; do
         [ -f "$i" ] || { echo "File DOESNOT exists: $i" >&2 && return 1; }
-        # echo "source $i"
         source "$i"
         local line
         local test_script_string="" test_script_result="" expected_result_string=""
@@ -86,6 +85,3 @@ $line";
 
     done
 }
-
-echo doctest.run "$@"
-doctest.run "$@"
