@@ -1,0 +1,39 @@
+datetime.new(){
+    local VAR=${1:?variable}
+
+    # eval "${VAR}_year=$(date +%Y)"
+    # eval "${VAR}_month=$(date +%m)"
+    # eval "${VAR}_day=$(date +%d)"
+    # eval "${VAR}_hour=$(date +%H)"
+    # eval "${VAR}_minute=$(date +%M)"
+    # eval "${VAR}_second=$(date +%S)"
+    # eval "${VAR}_timestamp_in_second=$(date +%s)"
+
+    eval "${VAR}.year(){ echo $(date +%Y); }"
+    eval "${VAR}.month(){ echo $(date +%m); }"
+    eval "${VAR}.day(){ echo $(date +%d); }"
+    eval "${VAR}.hour(){ echo $(date +%H); }"
+    eval "${VAR}.minute(){ echo $(date +%M); }"
+    eval "${VAR}.second(){ echo $(date +%S); }"
+    eval "${VAR}.timestamp_in_second(){ echo $(date +%s); }"
+
+    local code="
+    unset -f ${VAR}.year
+    unset -f ${VAR}.month
+    unset -f ${VAR}.day
+    unset -f ${VAR}.hour
+    unset -f ${VAR}.minute
+    unset -f ${VAR}.second
+    unset -f ${VAR}.timestamp_in_second
+    unset -f ${VAR}.delete"
+
+    # echo $code
+
+    eval "${VAR}.delete(){ "$code" ; }"
+
+    # @src std/oo
+    # O=${1:?variable} oo.make \
+    #     year=$(date +%Y) month=$(date +%m) day=$(date +%d) \
+    #     hour=$(date +%H) minute=$(date +%M) second=$(date +%S) \
+    #     timestamp_in_second=$(date +%s)
+}
