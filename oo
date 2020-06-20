@@ -24,3 +24,24 @@ oo.create_new_function(){
         shift
     done
 }
+
+oo.make(){
+    local O=${O:?Provode object name}
+    local code="unset -f $O.delete;"
+    for i in "$@"; do
+
+        if [ "$i" == "delete" ] || [ "$i" == "toJSON" ]; then
+            echo "attribute cannot be delete or toJSON"
+            eval "$code"
+            return 1
+        fi
+
+        local k=$(echo $i | cut -d '=' -f 1)
+        local v=$(echo $i | cut -d '=' -f 2)
+        eval "$O.$k(){ echo '$v'; }"
+
+        code="$code unset -f $O.$k;"
+    done
+
+    eval "$O.delete(){ echo \'$v\'; }"
+}
