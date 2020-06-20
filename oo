@@ -45,3 +45,26 @@ oo.make(){
 
     eval "$O.delete(){ echo \'$v\'; }"
 }
+
+# O=abc xd a=3 b=4 a12=123
+
+# xd abc a=3 b=4 a12=123
+
+# xd abc adf=adf
+# xd abc.a
+# xd abc.adf
+
+# X_CMD_COM_JO_abc='<json-string>'
+# xd abc '{
+#     a: 3
+#     b: 4
+#     c: {
+#         age: name
+#     }
+#     t: [1, 2, 3]
+# }'
+
+# xd abc.c.age
+# xd provide basic redis data structure calculation
+# consider it as a single file design. Run in need.
+# It could handle multiple kind of data.
