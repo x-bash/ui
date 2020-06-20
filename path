@@ -19,7 +19,16 @@ path.filename(){
 }
 
 path.abs(){
-    (cd "${1:-.}" && pwd)
+    local p=${1:-.}
+    if [ -f $p ]; then
+        echo "$(cd "$(dirname $p)" && pwd)/$(basename $p)"
+    else
+        (cd "${1:-.}" && pwd)
+    fi
+}
+
+path.script.path(){
+    path.abs "${BASH_SOURCE[0]}"
 }
 
 # TODO
@@ -46,9 +55,9 @@ path.display(){
 }
 
 path.append(){
-    PATH=$PATH:${1:?"Provide new path"}
+    PATH="$PATH:${1:?"Provide new path"}"
 }
 
 path.prepend(){
-    PATH=${1:?"Provide new path"}:$PATH
+    PATH="${1:?"Provide new path"}:$PATH"
 }
