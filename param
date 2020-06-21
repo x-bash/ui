@@ -1,0 +1,108 @@
+# param situation
+
+# refer https://stackoverflow.com/questions/673055/correct-bash-and-shell-script-variable-capitalization
+
+param.__localize_argenv_parameter(){
+    local sw=0
+    for i in $@; do
+        if [ $sw == 1 ]; then
+            echo "local $i=\${$i};";
+            return 0
+        fi
+        if [[ "$i" =~ param.arg(env)? ]] || [[ "$i" =~ param.(env)? ]]; then
+            sw=1
+        fi
+    done
+    return 1
+}
+
+param.__trap_localize_argenv_parameter(){
+    
+    local final_code='eval "$(param.__localize_argenv_parameter $BASH_COMMAND)" 2>/dev/null' 
+
+    local latest_debug_code
+    latest_debug_code=$(trap DEBUG)
+    local latest_debug_set
+    latest_debug_set=$(trap -p DEBUG)
+
+    final_code="
+    $final_code
+    $latest_debug_set"
+    
+    # echo "$final_code"
+    trap "$final_code" DEBUG
+}
+
+param.argenv(){
+    for i in "$@"; do
+        echo $i
+    done
+}
+
+param.arg(){
+    for i in "$@"; do
+        echo $i
+    done
+}
+
+param.env(){
+    for i in "$@"; do
+        echo $i
+    done
+}
+
+param.argenv.require(){
+    for i in "$@"; do
+        echo $i
+    done
+}
+
+param.arg.require(){
+    for i in "$@"; do
+        echo $i
+    done
+}
+
+param.env.require(){
+    for i in "$@"; do
+        echo $i
+    done
+}
+
+
+alias @argenv="param.__trap_localize_argenv_parameter; param.argenv"
+alias @arg="param.__trap_localize_argenv_parameter; param.arg"
+alias @env="param.__trap_localize_argenv_parameter; param.env"
+
+alias @argenv.require="param.__trap_localize_argenv_parameter; param.argenv.require"
+alias @arg.require="param.__trap_localize_argenv_parameter; param.arg.require"
+alias @env.require="param.__trap_localize_argenv_parameter; param.env.require"
+
+work(){
+    eval "$(
+        +argenv org     "Provide organization"
+        +argenv repo    "Provide work"
+        -arg    direction = abc dec a
+        -arg    meter =~ [0-9]{1,3}
+    )"
+
+    +argenv org     "Provide organization"
+    +argenv repo    "Provide work"
+    -arg    direction = abc dec a
+    -arg    meter =~ [0-9]{1,3}
+    
+    # support environment variable
+    # major variable could be in arguments
+
+    org=d-y-i name=worker gt.repo.create
+
+    local org=d-y-i
+    name=worker gt.repo.create
+    
+    # design code
+    # if passing value, we should use environment variable, because it is more accurate
+    # if flag, we should use argument, like --latest
+    gt.repo.create --org=d-y-i --name=worker
+    
+}
+
