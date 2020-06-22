@@ -1,0 +1,15 @@
+type.is_array(){
+    declare -p ${1:?Please provide variable name} 2> /dev/null | grep -q '^declare \-a'
+}
+
+
+type.is_int(){
+    [[ "${1:?Please provide variable name}" =~ [1-9]+([0-9])* ]]
+}
+
+type.is_float(){
+    # TODO
+    [[ "${1:?Please provide variable name}" =~ [0-9]+ ]]
+}
+
+
