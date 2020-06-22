@@ -23,17 +23,25 @@ param.__trap_localize_argenv_parameter(){
     local latest_debug_code
     latest_debug_code=$(trap DEBUG)
     local latest_debug_set
-    latest_debug_set=$(trap -p DEBUG)
+    latest_debug_set="trap ${latest_debug_code:-"\"\""} DEBUG"
+
+    local command_code='eval RUN=1 $BASH_COMMAND'
 
     final_code="
     $final_code
+    $command_code
     $latest_debug_set"
-    
-    # echo "$final_code"
+
     trap "$final_code" DEBUG
 }
 
 param.argenv(){
+
+    #1 : variable name
+    #2 : variable description
+    #3 : = =~
+    #4 : choices
+    #5 : 
     for i in "$@"; do
         echo $i
     done
@@ -46,9 +54,91 @@ param.arg(){
 }
 
 param.env(){
+
+    if [ -z "$RUN" ]; then
+        return 0
+    fi
+
+    local name=${1:?"Please provide argument name, in lower case"}
+    local value=${!name}
+
+    # TODO: if it is a argument, we should do
+
+    local arg_value
+
+    # TODO: see if the ARGS non zero
+
+    local sw=0
+    if [ "$ARGS" != "NONE" ]; then
+        for i in "${ARGS[@]}"; do
+            [ $sw -eq 1 ] && {
+                value="$i"
+                break
+            }
+
+            if [[ "$i" =~ ^--$name= ]; then
+                value="${i#*=}"
+                break
+            fi
+
+            if [[ "$i" =~ ^--$name ]; then
+                sw=1
+            fi
+        done
+    fi
+
+    shift 1
+
+    local description=()
+    local choices=()
+
     for i in "$@"; do
-        echo $i
+        if [ "$i" = "=" ] || [ "$i" = "=~" ] || [ "$i" = "int" ]; then
+            choices=("$@")
+            break
+        fi
+        description=("${description[@]}" "$i")
+        shift 1
     done
+
+    
+    case ${choices[0]} in
+    int)
+        if [[ "$value" =~ [0-9]+ ]]; 
+            return 0
+        else
+            echo "Expect Environment Variable to be an integer: $name"
+            return 1
+        fi ;;
+    =)
+        if [ -z "$value" ]; then
+            if [ -n "$REQUIRE" ]; then
+                echo "Require Environment Variable: $name" >&2
+                return 1
+            else
+                eval $name="${choices[1]}"
+                return 0
+            fi
+        fi
+       
+        for i in "${choices[@]:1}"; do
+            [ "$value" == "$i" ] && return 0
+        done
+        {
+            echo "Value of Environment Variable $name is: ${!name}"
+            echo "Exepcted values: ${choices[@]:1}" 
+        }>&2
+        return 1;;
+    =~)
+        for i in "${choices[@]:1}"; do
+            [[ "$value" =~ ^$i$ ]] && return 0
+        done
+        {
+            echo "Value of Environment Variable $name is: ${!name}"
+            echo "Exepcted patterns: ${choices[@]:1}" 
+        }>&2
+        return 1;;
+    esac
 }
 
 param.argenv.require(){
@@ -69,14 +159,13 @@ param.env.require(){
     done
 }
 
-
-alias @argenv="param.__trap_localize_argenv_parameter; param.argenv"
+alias @argenv="param.__trap_localize_argenv_parameter; ALREADY=0 param.argenv"
 alias @arg="param.__trap_localize_argenv_parameter; param.arg"
 alias @env="param.__trap_localize_argenv_parameter; param.env"
 
-alias @argenv.require="param.__trap_localize_argenv_parameter; param.argenv.require"
-alias @arg.require="param.__trap_localize_argenv_parameter; param.arg.require"
-alias @env.require="param.__trap_localize_argenv_parameter; param.env.require"
+alias @argenv.require="param.__trap_localize_argenv_parameter; ARGS=("$@") param.argenv.require"
+alias @arg.require="param.__trap_localize_argenv_parameter; ARGS=("$@") param.arg.require"
+alias @env.require="param.__trap_localize_argenv_parameter; ARGS="NONE" REQUIRE=1 param.env.require"
 
 work(){
     eval "$(
@@ -86,10 +175,10 @@ work(){
         -arg    meter =~ [0-9]{1,3}
     )"
 
-    +argenv org     "Provide organization"
-    +argenv repo    "Provide work"
-    -arg    direction = abc dec a
-    -arg    meter =~ [0-9]{1,3}
+    @argenv org     "Provide organization"
+    @argenv repo    "Provide work"
+    @arg    direction = abc dec a
+    @arg    meter =~ [0-9]{1,3}
     
     # support environment variable
     # major variable could be in arguments
