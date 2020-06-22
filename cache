@@ -1,9 +1,11 @@
+# shellcheck shell=bash
+
 cache.cmd(){
     local FILEPATH=${FILEPATH:?"Provide cache filepath"}
     local CACHE_EXPIRATION=${CACHE_EXPIRATION:-60}
 
     ( find "$FILEPATH" -mmin -${CACHE_EXPIRATION} | grep -q ^  ) || {
-        echo "FILEPATH does't exists or older than 60 min. Update" >&2
+        echo "FILEPATH does't exists or older than ${CACHE_EXPIRATION} min. Update" >&2
         eval "$@" | tee "$FILEPATH"
     }
 }

@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+
 datetime.new(){
     local VAR=${1:?variable}
 
