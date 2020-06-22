@@ -53,38 +53,50 @@ param.arg(){
     done
 }
 
-param.env(){
+param.__handle(){
 
     if [ -z "$RUN" ]; then
         return 0
     fi
 
     local name=${1:?"Please provide argument name, in lower case"}
-    local value=${!name}
+    local value
 
-    # TODO: if it is a argument, we should do
+    local msg=""
 
-    local arg_value
+    if [ "${CHECK_ENV}" == "yes" ]; then
+        value=${!name}
+        msg="Please passing parameter in environment form '$name=<value>'"
+    fi 
 
     # TODO: see if the ARGS non zero
+    local v
+    # if it is array, means
+    if declare -p CHECK_ARGS 2> /dev/null | grep -q '^declare \-a'; then
+        
+        if [ -z "$msg" ]; then
+            msg="Please passing parameter in argument form '--$name <value>' or '--name=<value>'"
+        else
+            msg="Please passing parameter in argument form '--$name <value>' or '--name=<value>, or in environment form '$name=<value>'."
+        fi
 
-    local sw=0
-    if [ "$ARGS" != "NONE" ]; then
-        for i in "${ARGS[@]}"; do
-            [ $sw -eq 1 ] && {
-                value="$i"
-                break
-            }
-
+        for i in "${!CHECK_ARGS[@]}"; do
+            v=${CHECK_ARGS[$i]}
             if [[ "$i" =~ ^--$name= ]; then
                 value="${i#*=}"
                 break
             fi
 
             if [[ "$i" =~ ^--$name ]; then
-                sw=1
+                value=${CHECK_ARGS[ ((++i)) ]}
+                break
             fi
         done
+    fi
+
+    if [ "$REQUIRE" == "yes" ]; then
+        echo "$msg" >&2
+        return 1
     fi
 
     shift 1
@@ -112,13 +124,8 @@ param.env(){
         fi ;;
     =)
         if [ -z "$value" ]; then
-            if [ -n "$REQUIRE" ]; then
-                echo "Require Environment Variable: $name" >&2
-                return 1
-            else
-                eval $name="${choices[1]}"
-                return 0
-            fi
+            eval $name="${choices[1]}"
+            return 0
         fi
        
         for i in "${choices[@]:1}"; do
@@ -159,13 +166,13 @@ param.env.require(){
     done
 }
 
-alias @argenv="param.__trap_localize_argenv_parameter; ALREADY=0 param.argenv"
-alias @arg="param.__trap_localize_argenv_parameter; param.arg"
-alias @env="param.__trap_localize_argenv_parameter; param.env"
+alias @argenv=          "param.__trap_localize_argenv_parameter; ALREADY=0 CHECK_ARGS=("$@")    CHECK_ENV=yes REQUIRE=no  param.__handle"
+alias @arg=             "param.__trap_localize_argenv_parameter; ALREADY=0 CHECK_ARGS=("$@")    CHECK_ENV=no  REQUIRE=no  param.__handle"
+alias @env=             "param.__trap_localize_argenv_parameter; ALREADY=0 CHECK_ARGS=no        CHECK_ENV=yes REQUIRE=no  param.__handle"
 
-alias @argenv.require="param.__trap_localize_argenv_parameter; ARGS=("$@") param.argenv.require"
-alias @arg.require="param.__trap_localize_argenv_parameter; ARGS=("$@") param.arg.require"
-alias @env.require="param.__trap_localize_argenv_parameter; ARGS="NONE" REQUIRE=1 param.env.require"
+alias @argenv.require=  "param.__trap_localize_argenv_parameter; ALREADY=0 CHECK_ARGS=("$@")    CHECK_ENV=yes REQUIRE=yes param.__handle"
+alias @arg.require=     "param.__trap_localize_argenv_parameter; ALREADY=0 CHECK_ARGS=("$@")    CHECK_ENV=no  REQUIRE=yes param.__handle"
+alias @env.require=     "param.__trap_localize_argenv_parameter; ALREADY=0 CHECK_ARGS=no        CHECK_ENV=yes REQUIRE=yes param.__handle"
 
 work(){
     eval "$(
