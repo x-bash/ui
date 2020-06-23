@@ -60,4 +60,6 @@ net.http.get() {
 }
 
 # It is pity that we cannot use https. Thus we don't depends on curl anymore.
+# There seemed to be solution.
+# https://testssl.sh/
 
