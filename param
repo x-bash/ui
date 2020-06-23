@@ -145,25 +145,3 @@ param.__handle(){
 alias @argenv=" param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=("$@") CHECK_ENV=yes param.__handle"
 alias @arg="    param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=("$@") CHECK_ENV=no  param.__handle"
 alias @env="    param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=no     CHECK_ENV=yes param.__handle"
-
-work(){
-    @argenv org     "Provide organization"
-    @argenv repo    "Provide work"
-    @arg    direction=abc "" == abc dec a
-    @arg    meter=cde   ""   =~ [0-9]{1,3}
-    
-    # support environment variable
-    # major variable could be in arguments
-
-    # org=edwinjhlee name=worker gt.repo.create
-
-    # local org=edwinjhlee
-    # name=worker gt.repo.create
-    
-    # # design code
-    # # if passing value, we should use environment variable, because it is more accurate
-    # # if flag, we should use argument, like --latest
-    # gt.repo.create --org=edwinjhlee --name=worker
-    
-}
-
