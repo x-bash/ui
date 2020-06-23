@@ -22,3 +22,42 @@ net.public_ip(){
     # Provide more choices
     curl https://ipecho.net/plain 2>/dev/null
 }
+
+net.ping() {
+    :
+}
+
+net.traceroute() {
+    :
+}
+
+# https://consolechars.wordpress.com/2017/03/27/devtcp-forgotten-linux-delicacy/
+
+net.http() {
+    exec 15<>/dev/tcp/x-bash.github.com/80
+    echo -e "GET /boot HTTP/1.1\n\n" >&15
+    cat <&15
+}
+
+# . dev-net; net.http.get http://x-bash.github.io/boot
+
+net.http.get() {
+    IFS=/ read proto z host query <<<"$1"
+    exec 15<>/dev/tcp/$host/80
+ 
+    {
+        echo GET /$query HTTP/1.1
+        echo connection: close
+        echo host: $host
+        echo
+    } >&15
+
+    cat <&15 | tr -d '\r' | sed '1,/^$/d'
+
+    exec 15>&-
+    exec 15<&-
+
+}
+
+# It is pity that we cannot use https. Thus we don't depends on curl anymore.
+
