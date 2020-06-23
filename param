@@ -1,10 +1,11 @@
+# shellcheck shell=bash
 # param situation
 
 # refer https://stackoverflow.com/questions/673055/correct-bash-and-shell-script-variable-capitalization
 
 param.__localize_argenv_parameter(){
     local sw=0
-    for i in $@; do
+    for i in "$@"; do
         if [ $sw == 1 ]; then
             echo "local $i=\${$i};";
             return 0
@@ -102,6 +103,7 @@ param.__handle(){
             break
         fi
         description=("${description[@]}" "$i")
+        # TODO: description+=("$i")
         shift 1
     done
 
@@ -126,7 +128,7 @@ param.__handle(){
         done
         {
             echo "Value of $name is: '${!name}'"
-            echo "Exepcted values: ${choices[@]:1}" 
+            echo "Exepcted values: ${choices[*]:1}" 
         }>&2
         return 1;;
     =~)
@@ -135,7 +137,7 @@ param.__handle(){
         done
         {
             echo "Value of $name is: '${!name}'"
-            echo "Exepcted patterns: ${choices[@]:1}" 
+            echo "Exepcted patterns: ${choices[*]:1}" 
         }>&2
         return 1;;
     esac
