@@ -13,6 +13,7 @@ oo.create_new_function(){
         for func in $(typeset -f | grep '[A-Za-z_-]\+ ()' | cut -d ' ' -f 1 | grep "^$prototype.*" | grep -v -E "(make)|(new)" | cut -d ' ' -f 1); do
             method=$(echo "$func" | cut -d '.' -f 2)
             method_list=("${method_list[@]}" "$obj.$method")
+            #TODO method_list+=("$obj.$method")
             eval "$obj.$method(){ O=$obj $func \"\$@\"; }"
         done
 
