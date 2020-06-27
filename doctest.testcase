@@ -22,6 +22,8 @@ TEST
 1a2a3
 > echo hi
 hi
+> echo world >/dev/null
 > echo world
-world1
+world
+> echo world >/dev/null
 TESTA
