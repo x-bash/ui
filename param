@@ -17,8 +17,22 @@ param.__localize_argenv_parameter(){
     return 1
 }
 
+# TODO: Consider replace the original implementation
+param.__localize_argenv_parameter_2(){
+    local prev=$1
+    for cur in "${@:2}"; do
+        if [[ "$prev" =~ param.arg(env)? ]] || [[ "$prev" =~ param.(env)? ]]; then
+            echo "local $cur=\${$cur};";
+            return 0
+        fi
+        prev="$cur"
+    done
+    return 1
+}
+
 param.__trap_localize_argenv_parameter(){
-    
+
+    # shellcheck disable=SC2016
     local final_code='eval "$(param.__localize_argenv_parameter $BASH_COMMAND)" 2>/dev/null' 
 
     local latest_debug_code
@@ -26,6 +40,7 @@ param.__trap_localize_argenv_parameter(){
     local latest_debug_set
     latest_debug_set="trap ${latest_debug_code:-"\"\""} DEBUG"
 
+    # shellcheck disable=SC2016
     local command_code='eval "${BASH_COMMAND/no/yes}" || return 1 2>/dev/null'
 
     final_code="
@@ -116,7 +131,8 @@ param.__handle(){
             return 1
         fi ;;
     string\[*\])
-        local NUM=$([[ "${choices[0]}" =~ string\[([0-9]+)\] ]] && echo ${BASH_REMATCH[1]})
+        local NUM
+        NUM="$([[ "${choices[0]}" =~ string\[([0-9]+)\] ]] && echo "${BASH_REMATCH[1]}")"
         if [[ "${#value}" -ne "${NUM:--1}" ]]; then
             echo "Expect length of string is ${NUM:--1}, but get ${#value}"
             return 1
@@ -143,7 +159,7 @@ param.__handle(){
     esac
 }
 
-
+# TODO: seemed odd.
 alias @argenv=" param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=("$@") CHECK_ENV=yes param.__handle"
 alias @arg="    param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=("$@") CHECK_ENV=no  param.__handle"
 alias @env="    param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=no     CHECK_ENV=yes param.__handle"
