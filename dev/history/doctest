@@ -1,5 +1,109 @@
 # shellcheck shell=bash
 
+# @src std/str
+
+#> str.join "a" 1 2 3
+#1a2a3
+str.join(){
+    local sep=$1
+    shift 1
+    local bar
+    bar=$(printf "${sep}%s" "$@")
+    bar=${bar:${#sep}}
+    echo "$bar"
+}
+
+doctest.run(){
+    local LOG=":"
+    [ -n "$VERBOSE" ] && LOG="echo "
+    local FILELIST=("$@")
+    shift $#
+    for i in "${FILELIST[@]}"; do
+        [ -f "$i" ] || { echo "File DOESNOT exists: $i" >&2 && return 1; }
+        source "$i"
+        local line
+        local test_script_string="" test_script_result="" expected_result_string=""
+        
+        local status=0 # 0 ignore; 1 test_script; 2 test_result
+        # TODO: figure out why we need double '\n'
+        (cat "$i"; echo -e "\n\n") | while read -r line; do
+            if [[ "$line" =~ ^\#\> ]]; then
+                line=${line:3}
+                case "$status" in
+                    0)  test_script_string="$line"; 
+                        status=1;
+                        continue ;;
+                    1) 
+                        test_script_string="$test_script_string
+$line"; 
+                        continue ;;
+                    2)  status=1
+                        # run the code
+                    ;;
+                esac
+                
+            elif [[ "$line" =~ ^\# ]] ; then
+                line=${line:1}
+                case "$status" in
+                    1)  expected_result_string="$line"; 
+                        status=2; 
+                        continue ;;
+                    2) 
+                        expected_result_string="$expected_result_string
+$line";
+                        status=2;
+                        continue ;;
+                esac
+            fi
+
+            $LOG "$line" >&2
+            if [ "$test_script_string" != "" ]; then
+                $LOG "current line is: $line" >&2
+                $LOG "test_script_string is: $test_script_string" >&2
+                $LOG "expected_result_string is: $expected_result_string" >&2
+
+                test_script_result="$(eval "$test_script_string")"
+
+                $LOG "test_script_result is: $test_script_result" >&2
+                if [ $? -ne 0 ]; then
+                    echo "NOT OK: Exit code is not 0"
+                    return 1
+                else
+                    if [ "$expected_result_string" = "$test_script_result" ]; then
+                        echo "OK"
+                    else
+                        echo "NOT OK"
+                        return 1
+                    fi
+                fi
+                test_script_string=""
+                expected_result_string=""
+            fi
+
+            [ $status -eq 1 ] && test_script_string="$line"
+        done  
+
+    done
+}
+
+
+<<TEST
+> str.join "a" 1 2 3
+1a2a3
+> echo hi
+hi
+> echo world
+world
+TEST
+str.join(){
+    local sep=$1
+    shift 1
+    local bar
+    bar=$(printf "${sep}%s" "$@")
+    bar=${bar:${#sep}}
+    echo "$bar"
+}
+
 doctest.runCode(){
     local test_script_fifo=${test_script_fifo:?Provide test script fifo}
     local out_fifo=${out_fifo:?Provide out fifo}
