@@ -1,5 +1,7 @@
 @src std/param
 
+org=d-y-i repo=work work --direction dee --meter
+
 work(){
     @argenv org     "Provide organization"
     @argenv repo    "Provide work"
@@ -20,3 +22,7 @@ work(){
     # gt.repo.create --org=edwinjhlee --name=worker
     
 }
+
+work --org=dyi --repo aircraft
+
+org=dyi repo=aircraft work
