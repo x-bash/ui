@@ -1,0 +1,16 @@
+source ./param
+
+git-work(){
+    echo "${CHECK_ARGS[@]}"
+    @argenv user "Provide Organization/User/Enterprise name"
+    @argenv repo "Provide repo"
+    @argenv access "Access Priviledge" == "private" "public" "inner-source"
+    
+    echo "Info: $user $repo $access"
+}
+
+git-work --user="el" --repo="page" --access="private"
+# git-work --user="el" --repo="page" --access="public"
+
+# user=el repo=page access=private git-work --user="el" --repo="page" --access="private"
+# user=el repo=page access=public git-work --user="el" --repo="page" --access="public"

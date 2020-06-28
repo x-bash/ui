@@ -78,7 +78,7 @@ param.__handle(){
     # TODO: see if the ARGS non zero
     local v
     # if it is array, means
-    if declare -p CHECK_ARGS 2> /dev/null | grep -q '^declare \-a'; then
+    if [ "$__CHECK_ARGS_FLAG" == "yes" ]; then
         
         if [ -z "$msg" ]; then
             msg="Please passing parameter in argument form '--$name <value>' or '--name=<value>'"
@@ -86,15 +86,19 @@ param.__handle(){
             msg="Please passing parameter in argument form '--$name <value>' or '--name=<value>, or in environment form '$name=<value>'."
         fi
 
-        for i in "${!CHECK_ARGS[@]}"; do
-            v=${CHECK_ARGS[$i]}
-            if [[ "$i" =~ ^--$name= ]]; then
-                value="${i#*=}"
+        # for i in "${!__CHECK_ARGS[@]}"; do
+        local i=0
+        # delibrate
+        # shellcheck disable=SC2068
+        for v in ${__CHECK_ARGS[@]}; do
+            (( i++ ))
+            if [[ "$v" =~ ^--$name= ]]; then
+                value="${v#*=}"
                 break
             fi
 
-            if [[ "$i" =~ ^--$name ]]; then
-                value=${CHECK_ARGS[ ((++i)) ]}
+            if [[ "$v" =~ ^--$name ]]; then
+                value=${__CHECK_ARGS[ (( i )) ]}
                 break
             fi
         done
@@ -107,6 +111,10 @@ param.__handle(){
             return 1
         fi
     fi
+
+    eval "$name=$value"
+
+    # TODO: validate the function
 
     local description=()
     local choices=()
@@ -160,6 +168,22 @@ param.__handle(){
 }
 
 # TODO: seemed odd.
-alias @argenv=" param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=("$@") CHECK_ENV=yes param.__handle"
-alias @arg="    param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=("$@") CHECK_ENV=no  param.__handle"
-alias @env="    param.__trap_localize_argenv_parameter; RUN=no CHECK_ARGS=no     CHECK_ENV=yes param.__handle"
+alias @argenv=' param.__trap_localize_argenv_parameter; RUN=no __CHECK_ARGS_FLAG=yes __CHECK_ARGS="$@"  CHECK_ENV=yes param.__handle'
+alias @arg='    param.__trap_localize_argenv_parameter; RUN=no __CHECK_ARGS_FLAG=yes __CHECK_ARGS="$@"  CHECK_ENV=no  param.__handle'
+alias @env='    param.__trap_localize_argenv_parameter; RUN=no __CHECK_ARG_FLAGS=no                     CHECK_ENV=yes param.__handle'
+
+shopt -s expand_aliases
+
+# git-work(){
+#     @argenv user "Provide Organization/User/Enterprise name"
+#     @argenv repo "Provide repo"
+#     @argenv access "Access Priviledge" == "private" "public" "inner-source"
+    
+#     echo "$user $repo $access"
+# }
+
+# git-work --user "el" --repo "page" --access="private"
+# git-work --user "el" --repo "page" --access="public"
+
+# alias hi="echo "
+# hi hi
