@@ -1,0 +1,26 @@
+
+@param{
+    @env work
+    @arg work
+    @env abc
+}
+
+@param '
+    @env org "Provide organziation"
+    @env repo "Repo name" 
+    @argenv access "Access Priviledge" == public private inner-source
+'
+
+@param.showHelp()
+
+
+# This the right way ～
+
+@env org "Provide organziation"
+@env repo "Repo name" 
+@argenv access "Access Priviledge" == public private inner-source
+
+@param.showHelpIfNeed
+
+@param.showHelp
+
