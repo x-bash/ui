@@ -6,6 +6,7 @@
 # Using Object
 # Provide Github Object, to help automate the github
 
+@src std/dict
 @src std/oo
 
 http.new(){
@@ -56,17 +57,18 @@ http.cd(){
 # X=put D='{} http.request
 http.request(){
     local method=${X:-GET}
-    local headers=${HEADER:-${H:?Provide header environemnts}}
     local url=${URL:?Provide url environment}
 
-    curl -H "${headers[*]}" -x "$method" "$url"
+    curl -H "$(http.header)" -x "$method" "$url"
 }
 
 # put header
 # remove header
 # list header
 http.header(){
-    :
+    echo "$(http.header.dump)
+$HEADER
+"
 }
 
 http.get(){
