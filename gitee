@@ -1,0 +1,141 @@
+# shellcheck shell=bash
+
+@src std/http
+
+
+
+gt.client.make(){
+    local O="${1:?Provide client name}"
+    http.make 'https://gitee.com/api' "$O"
+    http.header.add 'Content-Type' 'application/json;charset=UTF-8'
+}
+
+gt.current-repo(){
+    if [ -z "$1" ]; then
+        echo "$repo"
+        return 0
+    fi
+    repo=${1:-provide repo name}
+}
+
+gt.current-owner(){
+    if [ -z "$1" ]; then
+        echo "${owner}"
+        return 0
+    fi
+    owner=${1:-provide owner name}
+}
+
+gt.request(){
+    (
+        http.cd "$1"
+        shift
+        if [ -z "$GITEE_TOKEN" ]; then
+            http.get "$URL" "adf=asdf" -- "access_token=" "asdf=asdf"
+        else
+            http.get
+        fi
+    )
+}
+
+gt.get(){ X=get gt.request "$@"; }
+gt.post(){ X=post gt.request "$@"; }
+gt.put(){ X=put gt.request "$@"; }
+gt.delete(){ x=delete gt.request "$@"; }
+
+# gt.delete(){
+#     (
+#         http.cd "$1"
+#         shift
+#         if [ -n "$GITEE_TOKEN" ]; then
+#             D="$(echo "${D:-\{\}}" | jq ".access_token |= $GITEE_TOKEN")"
+#         fi
+#         D="$D" http.delete
+#     )
+# }
+
+###########
+
+gt.org.create(){
+    gt.post "/v5/users/organization" name="$NAME" org="$NAME"
+}
+
+gt.get.header(){
+    local url="$GT_URL${1:?Suburl}?access_token=$GT_TOKEN${2}"
+    echo "Visiting $url" >&2
+    curl -X GET -I --header 'Content-Type: application/json;charset=UTF-8' "$url" 2>/dev/null
+}
+
+gt.repo.enterprise.list(){
+    local i=0 max_page=100000
+    while (( i < max_page; i++ )); do
+        gt.get "/v5/enterprises/$ENTERPRISE/repos" type=all page=$i per_page=100 |
+            jq -r ".[] | .full_name"
+        max_page=$(gt.resp.header "max_age")
+    done
+}
+
+# TODO
+gt.repo.organization.list(){
+    local i=0 max_page=100000
+    while (( i < max_page; i++ )); do
+        gt.get "/v5/organizations/$ORGANIZATION/repos" type=all page=$i per_page=100 |
+            jq -r ".[] | .full_name"
+        max_page=$(gt.resp.header "max_age")
+    done
+}
+
+# arguments NAME
+gt.repo.user.create(){
+    gt.post "/v5/user/repos" -- has_issues=true has_wiki=true private=true
+}
+
+# ORGANIZATION NAME
+gt.repo.organization.create(){
+    gt.post "/v5/orgs/${ORGANIZATION}/repos" -- \
+        name="$NAME" has_issues=true has_wiki=true public=0
+}
+
+# ENTERPRISE NAME
+gt.repo.enterprise.create(){
+    gt.post "/v5/enterprises/${ENTERPRISE}/repos" -- name=$NAME has_issues=true has_wiki=true private=0
+}
+
+gt.repo.collaborators(){
+    : Provide function, add from enterprise list
+    : Provide function, remove from existing member list
+}
+
+
+# gt.repo.member.add pull:edwinjhlee,work,adf push:work,adf admin:edwinjhlee
+gt.repo.collaborators.add(){
+    if [ "$1" == "-h" ]; then
+        echo "Example: owner=d-y-innovations repo=demo-repo username=user1 permission=pull gt.repo.member.add"
+        echo "Example: repo=d-y-innovations/demo-repo gt.repo.member.add pull:user1,user2 push:user3,user4 admin:user5"
+        echo "Example: repo=d-y-innovations/demo-repo gt.repo.member.add pull:user1,user2 push:user3,user2 admin:user5"
+    fi
+
+    @env owner "Repo Owner"
+    @env repo "Repo name"
+    @env username "Username Owner"
+    @env permission=pull "Repo permission" = push push admin
+
+    gt.put "/v5/repos/$owner/$repo/collaborators/$username" \
+        -- "permission=$permission"
+
+    # gt.put "/v5/repos/${owner?:Provide owner}/${repo?:Provide Repo}/collaborators/${username:?Provider Collaborator}" \
+    #     -- "permission=$permission"
+}
+
+
+gt.repo.collaborators.remove(){
+    @env owner "Repo Owner"
+    @env repo "Repo name"
+    # @env username "Username Owner"
+    local username
+    for username in "$@"; do
+        gt.delete "/v5/repos/$owner/$repo/collaborators/$username"
+    done
+    # gt.delete "/v5/repos/${owner?:Provide owner}/${repo?:Provide Repo}/collaborators/${username:?Provider Collaborator}"
+}
+
