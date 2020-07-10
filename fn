@@ -1,0 +1,20 @@
+# shellcheck shell=bash
+
+# I=% fn.map "echo % hi" 1 2 3
+# I= fn.map "echo hi" 1 2 3
+fn.map(){
+    cmd="$1"
+    shift
+
+    if [ -n "$I" ]; then
+        for i in "$@"; do
+            eval "${cmd/$"$I"/$i}";
+        done
+        return 0
+    fi
+
+    for i in "$@"; do
+        eval "$cmd $i";
+    done
+}
+
