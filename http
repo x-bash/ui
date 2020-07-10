@@ -108,21 +108,35 @@ http.qs.dump(){
     done
 }
 
-http.body-json.add(){
-    [ -z "$O" ] && return 1
-    dict.put "bj.${1:?header key}" "${2:?value}"
-}
-
-http.body-json.remove(){
-    [ -z "$O" ] && return 1
-    dict.remove "bj.${1:?header key}"
-}
-
-http.body-json.dump(){
-    [ -z "$O" ] && return 1
-    DICT_PRINT_SEP=': ' dict.print | while read -r l; do
-        [[ "$l" =~ ^bj\.* ]] && echo "${l:3}"
+http.eq_str_by_name(){
+    for i in "$@"; do
+        echo "$i=${!i}"
     done
+}
+
+http.body.add(){
+    [ -z "$O" ] && return 1
+    dict.put "body.${1:?header key}" "${2:?value}"
+}
+
+http.body.add_by_name(){
+    for i in "$@"; do
+        http.body.add "$i" "${!i}"
+    done
+}
+
+http.body.remove(){
+    [ -z "$O" ] && return 1
+    dict.remove "body.${1:?header key}"
+}
+
+http.body.dump(){
+    [ -z "$O" ] && return 1
+    DICT_PRINT_SEP=': ' dict.print
+    # DICT_PRINT_SEP=': ' dict.print | while read -r l; do
+    #     # [[ "$l" =~ ^body\.* ]] && echo "${l:5}"
+    #     echo "1: $l"
+    # done
 }
 
 
