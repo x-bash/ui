@@ -41,15 +41,25 @@ str.repr(){
     echo "\"${1//\"/\\\"}\""
 }
 
+str._args(){
+    for i in "$@"; do echo "$i"; done 
+}
+
+str.args(){
+    eval str._args "$@"
+}
+
+# TODO: avoid IFS influence on this function
 p.__parse(){
+    
+    local i IFS= STR="${!#}"
+    set -- "${@:1:$(($#-1))}"
 
-    local ARG_NUM=$(( ${#@} ))
-    local ARG_NUM_1=$(( ${#@} - 1 ))
-    local ARGS=("${@:1:$ARG_NUM_1}")
+    # local ARG_NUM_1=$(( $# - 1 ))
+    # local ARGS
 
-    local STR="${@:$ARG_NUM}"
-
-    local i
+    # local i IFS=
+    # ARGS=( "${@:1:ARG_NUM_1}" )
 
     local varlist=()
     local typelist=()
@@ -59,16 +69,17 @@ p.__parse(){
     local oplist=()
     local choicelist=()
 
-    while read line; do
+    while read -r line; do
         # line="$(str.trim "$line")"
         [ "$line" == "" ] && continue
-
-        echo "--- $line"
      
         local operator="str"
 
-        local all_arg_arr
-        read -a all_arg_arr <<< "$line"
+        local all_arg_arr=() IFS=
+        # all_arg_arr=( "$(str.arg "$line")" )
+        IFS=$'\n' # different from '\n'
+        # shellcheck disable=SC2207 # this rule is wrong
+        all_arg_arr=( $(echo "$line" | xargs -n 1) )
 
         varname=${all_arg_arr[0]}
 
@@ -84,22 +95,31 @@ p.__parse(){
             deflist+=("")
         fi
 
-        local IFS=$'\n'
+        IFS=$'\n'
 
-        case ${all_arg_arr[1]} in
+        case "${all_arg_arr[1]}" in
         = | =~ | str | float | int) 
-            operator=${all_arg_arr[1]}
-            choicelist=("${all_arg_arr[*]:2}");;
+            oplist+=( "${all_arg_arr[1]}" )
+            choicelist+=( "${all_arg_arr[*]}" )
+            ;;
         *)
-            description=${all_arg_arr[1]}
-            operator=${all_arg_arr[2]}
-            choicelist=("${all_arg_arr[*]:3}");;
+            description="${all_arg_arr[1]}"
+            oplist+=( "${all_arg_arr[2]}" )
+            choicelist+=( "${all_arg_arr[*]}" )
+            ;;
         esac
 
         deslist+=("$description")
         typelist+=("argenv")
-        oplist+=("$operator")
     done <<< "$STR"
+
+    # echo "--------"
+    # echo "var list: ${varlist[@]}"
+    # echo "val list: ${vallist[@]}"
+    # echo "deslist: ${#deslist[@]}"
+    # echo "dflist: ${deflist[@]}"
+    # echo "op list: ${oplist[@]}"
+    # echo "--------"
 
     # echo setup environment value >&2
     
@@ -111,7 +131,6 @@ p.__parse(){
     done
     
     # echo setup parameter value >&2
-    set -- "${ARGS[@]}"
     while [ ! "$#" -eq 0 ]; do
         local parameter_name=$1
         shift
@@ -121,7 +140,6 @@ p.__parse(){
             for i in "${!varlist[@]}"; do
                 [[ ! "${typelist[i]}" = arg* ]] && continue
                 local _varname=${varlist[i]}
-                # echo  "$parameter_name" == "$_varname"
                 if [ "$parameter_name" == "$_varname" ]; then
                     vallist[$i]=$1
                     shift
@@ -137,13 +155,6 @@ p.__parse(){
         fi
     done
     
-    # echo "--------"
-    # echo "${varlist[@]}"
-    # echo "${vallist[@]}"
-    # echo "${#deslist[@]}"
-    # echo "${deflist[@]}"
-    # echo "${oplist[@]}"
-    # echo "--------"
 
     # setup default value
     for i in $(seq "${#varlist[@]}"); do
@@ -161,13 +172,12 @@ p.__parse(){
         local val="${vallist[i]}"
 
         local op="${oplist[$i]}"
-        local choice=("${choicelist[i]}")
+        local choice=( ${choicelist[i]} )
 
         case "$op" in
         =~)
             local match=0
             for c in "${choice[@]}"; do
-                echo "$val" =~ $c
                 if [[ "$val" =~ $c ]]; then
                     match=1
                     break
@@ -195,7 +205,7 @@ p.__parse(){
                 return 0
             fi ;;
         str | int)
-            if [[ "$op" = "int" && ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]] ]]; then
+            if [[ "$op" = "int" && ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
                 echo "echo Value of $name is integer >&2"
                 echo 'return 1 2>&1'
                 return 1
@@ -213,7 +223,7 @@ p.__parse(){
                 echo 'return 1 2>&1'
                 return 0
             fi ;;
-        *) [ "$op" == "" ] || echo ": TODO: $op" 2>&1
+        *) [ "$op" == "" ] || echo ": TODO: $op" >&2
         ;;
         esac
 
@@ -227,6 +237,6 @@ p.__parse(){
 p.__parse --repo hi --org "dyi" '
     org "Provide organization" =~ [abc]+ [[:alnum:]]+
     repo "Repository name"
-    access=public = public private inner-source
+    test=public\ asdf =~ [[[:alnum:]] ]+
+    access="public" = public " private ad " \ ccc\ ddd inner-source
 '
-
