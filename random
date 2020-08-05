@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+
 rand.int(){
     local ST=${1:?start number}
     local EN=${2:?end number}
@@ -57,4 +59,25 @@ random.email.address(){
 
 random.valid.user.name(){
     :
+}
+
+
+# rand
+
+# TODO: padding zero in the beginning
+rand.int(){
+    local ST=${1:?start number}
+    local EN=${2:?end number}
+
+    local SIZE=${3:-0}
+
+    printf "%0${SIZE}d" $(( ( RANDOM % (EN-ST) )  + ST ))
+}
+
+rand.float(){
+    noop
+}
+
+rand.str(){
+    noop
 }

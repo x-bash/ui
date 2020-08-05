@@ -1,0 +1,12 @@
+# shellcheck shell=bash
+
+# Using X, or using curl to include method
+
+# WCSS #80
+tty.title(){
+    if [ $# -eq 0 ]; then
+        echo "Usage: $0 <title to display>" >&2
+    else
+        echo -e "\033]0;$*\007"
+    fi
+}

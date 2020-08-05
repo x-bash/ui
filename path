@@ -61,3 +61,40 @@ path.append(){
 path.prepend(){
     PATH="${1:?"Provide new path"}:$PATH"
 }
+
+# fp
+
+# In linux, `readlink -f <filepath>`. Not works in BSD system
+# https://superuser.com/questions/330199/how-get-full-path-to-target-of-link
+# TODO: using subprocess to optimize
+path.readlink(){
+    local TGT=${1:?"Provide name"}
+    local ORI A RES
+    ORI=$(pwd)
+    A=$(readlink "$TGT")
+    cd "$(dirname "$TGT")" && cd "$(dirname "$A")" || return 1
+    RES=$(pwd)
+    cd "$ORI" && echo "$RES/$(basename "$A")"
+}
+
+# Protected folders
+path.rmrf(){
+    @src std/str
+    for i in "$@"; do
+        local tgt
+        tgt="$(str.trim "$i")"
+        [ "$tgt" == "" ] && continue
+
+        # TODO: add other patterns
+        if [ "$tgt" == "/" ]; then
+            yesno "WARNING: Sure of removing '$tgt': " || continue
+        fi
+
+        rm -rf "$i"
+    done
+}
+
+local access=$(@param access =~ private public)
+
+@param access =~ private public
+@param work

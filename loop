@@ -1,0 +1,21 @@
+# shellcheck shell=bash
+
+
+# Cookbook 1.15
+# like watch command
+# interval=3 loop.until.success cat ~/process_result
+loop.until.success(){ while :; do "$@" && return; sleep "${INTERVAL:-3}"; done }
+
+
+
+# loop 3 cat ~/process_result
+<<DOC
+time=3 loop echo hi
+DOC
+loop(){
+    local i
+    for i in $(seq "${time:-100}"); do
+        eval "$*"
+        sleep "${INTERVAL:-3}"
+    done
+}

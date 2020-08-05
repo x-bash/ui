@@ -1,19 +1,68 @@
 # shellcheck shell=bash
-assert(){
-    if [ $# -ne 0 ]; then
-        eval "$*"
-    else
-        code=$(cat)
-        eval "$code"
-    fi
+# assert(){
+#     if [ $# -ne 0 ]; then
+#         eval "$*"
+#     else
+#         code=$(cat)
+#         eval "$code"
+#     fi
 
-    # shellcheck disable=SC2181
-    if [ "$?" -eq 0 ]; then
-        return 0
-    else
-        echo "$MSG"
-        return 1
-    fi
+#     # shellcheck disable=SC2181
+#     if [ "$?" -eq 0 ]; then
+#         return 0
+#     else
+#         echo "$MSG"
+#         return 1
+#     fi
+# }
+
+# assert "$org" =~ [\d]{2} [\d]{4}
+# assert "$repo" = gitee
+
+# @assert org =~ [\d]{2} [\d]{4}
+# @assert repo = gitee github gitlab
+
+@assert(){
+    local value=${!1}
+    shift
+    assert "$value" "$@"
+}
+
+# design principle:
+# when to use name evaluation?
+# 
+
+assert(){
+    local value="$1"
+    local op="$2"
+    shift 2
+    case "$op" in
+    =) assert.within "$value" "$@";;
+    =~) assert.within_regex "$value" "$@";;
+    *) return 1;;
+    esac
+}
+
+assert.within(){
+    local value="$1"
+    shift
+    for i in "$@"; do
+        if [ "$value" = "$i" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+assert.within_regex(){
+    local value="$1"
+    shift
+    for i in "$@"; do
+        if [[ "$value" =~ $i ]]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 assert.eq(){
@@ -56,12 +105,10 @@ assert.grep(){
 
 assert.float(){
     [[ "$1" =~ ^[\ \t]+[0-9]+(.[0-9]+)?[\ \t]+$ ]]
-    return $?
 }
 
 assert.int(){
     [[ "$1" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]
-    return $?
 }
 
 testFun(){

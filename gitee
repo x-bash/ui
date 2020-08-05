@@ -58,6 +58,14 @@ gt.delete(){ x=delete gt.request "$@"; }
 #     )
 # }
 
+gt.json(){
+    json.generate "$@"
+}
+
+gt.json+token() {
+    gt.json access_token "$GITEE_TOKEN" "$@"
+}
+
 ###########
 
 gt.eq_str_by_name(){
@@ -143,7 +151,7 @@ gt.organization.repo.create(){
     @env name "repo name"
     @env has_issues=true "" == true false
     @env has_wiki=true "" == true false
-    @env permission=pull "Repo permission" = push push admin
+    @env permission=pull "Repo permission" = pull push admin
     @env access=private == public private
 
     local public
@@ -183,7 +191,10 @@ gt.enterprise.repo.create(){
 
     for name in "$@"; do
         (
-            http.body.add_by_name name has_issues has_wiki private
+            # http.body.add_by_name name has_issues has_wiki private
+            # BODY="$(gt.json name has_issue has_wiki private)"
+
+            # Default is to post body in json
             gt.post "/v5/enterprises/$enterprise/repos"
         )
     done

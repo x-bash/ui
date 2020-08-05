@@ -113,3 +113,25 @@ dict.load(){
         list.push "$s"
     done <"$1"
 }
+
+dict.toJSON(){
+    printf "{\n"
+    local first=0
+
+    local k v
+    local sep=${DICT_PRINT_SEP:-" = "}
+    for i in $(list.print); do
+
+        if [ "$first" -eq 0 ]; then
+            first=1
+        else
+            printf ',\n'
+        fi
+
+        k=$(echo -n "$i" | cut -d ':' -f 1)
+        v=$(echo -n "$i" | cut -d ':' -f 2)
+
+        printf '  "%s": "%s"' "$(str.unbase64 "$k")" "$(str.unbase64 "$v")"
+    done
+    printf "\n}"
+}

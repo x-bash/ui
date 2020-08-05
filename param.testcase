@@ -18,3 +18,11 @@ git-work --user="el" --repo="page" --access="private"
 # user=el repo=page access=public git-work --user="el" --repo="page" --access="public"
 
 git-work -h
+
+gitee.repo.create edwinjhlee/job
+
+repo=edwinjhlee/job gitee.repo.invite el amslime
+
+gitee.repo.new edwinjhlee/job work
+job.invite el amslime
+
