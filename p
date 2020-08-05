@@ -14,6 +14,7 @@
 '
 A
 
+# shellcheck disable=SC2142
 alias @p='p.__trap_to_parse "$@"; :'
 
 p.__trap_to_parse(){
@@ -22,9 +23,11 @@ p.__trap_to_parse(){
     latest_debug_code=$(trap DEBUG)
     local latest_debug_set="trap ${latest_debug_code:-"\"\""} DEBUG"
 
-    local code="eval \"\$(p.__parse $* \${COMMAND:1})\""
+    # local code="echo \"\$(p.__parse $* \${BASH_COMMAND})\""
+    local code='eval "$(p.__parse "$@" "${BASH_COMMAND:3:$(( ${#BASH_COMMAND} - 4)) }")"'
+    # local code='eval echo "$(p.__parse "$@" "${BASH_COMMAND:3:${#BASH_COMMAND - 3}}")"'
     
-    echo "$code"
+    # echo "test: $code"
     
     final_code="
         $code
@@ -49,10 +52,20 @@ str.args(){
     eval str._args "$@"
 }
 
+str.trim(){
+    local var="$*"
+    # remove leading whitespace characters
+    var="${var#"${var%%[![:space:]]*}"}"
+    # remove trailing whitespace characters
+    var="${var%"${var##*[![:space:]]}"}"
+    echo -n "$var"
+}
+
 # TODO: avoid IFS influence on this function
 p.__parse(){
-    
+
     local i IFS= STR="${!#}"
+    # echo "$STR" >&2
     set -- "${@:1:$(($#-1))}"
 
     # local ARG_NUM_1=$(( $# - 1 ))
@@ -70,8 +83,11 @@ p.__parse(){
     local choicelist=()
 
     while read -r line; do
-        # line="$(str.trim "$line")"
-        [ "$line" == "" ] && continue
+        line="$(str.trim "$line")"
+        [ "$line" = "" ] && continue
+
+        # echo "$line" >&2
+        # echo "!!!!!!!!!!!!!!!" >&2
      
         local operator="str"
 
@@ -123,11 +139,10 @@ p.__parse(){
 
     # echo setup environment value >&2
     
-    for i in $(seq ${#varlist[@]}); do
-        if [[ "${typelist[$i]}" == "*env" ]]; then
-            local name=${varlist[$i]}
-            vallist[$i]=${!$name}
-        fi
+    for (( i=0; i < ${#varlist[@]}; ++i )); do
+        [[ ! "${typelist[i]}" = *env ]] && continue
+        local name=${varlist[i]}
+        vallist[i]=${!name}
     done
     
     # echo setup parameter value >&2
@@ -141,7 +156,7 @@ p.__parse(){
                 [[ ! "${typelist[i]}" = arg* ]] && continue
                 local _varname=${varlist[i]}
                 if [ "$parameter_name" == "$_varname" ]; then
-                    vallist[$i]=$1
+                    vallist[i]=$1
                     shift
                     sw=1
                     break
@@ -185,7 +200,7 @@ p.__parse(){
             done
 
             if [ $match -eq 0 ]; then
-                echo "echo Value of $name is not one of the regex set >&2"
+                echo "echo Value of $name: $val is not one of the regex set >&2"
                 # echo "echo '$val' expected to be ${choice[@]} >&2"
                 echo 'return 1 2>&1'
                 return 0;
@@ -228,15 +243,44 @@ p.__parse(){
         esac
 
         # TODO: notice the '' inside the string
-        echo "local $name=$(str.repr "$val")"
+        # echo "$val: $val" >&2
+        echo "local $name"
+        echo "$name=$(str.repr "$val")"
+        # echo "local $name=$(str.repr "$val")"
+        # echo "--------"
     done
 
 }
 
 # p.__parse --repo hi --org "dy\" innoa" '
-p.__parse --repo hi --org "dyi" '
-    org "Provide organization" =~ [abc]+ [[:alnum:]]+
-    repo "Repository name"
-    test=public\ asdf =~ [[[:alnum:]] ]+
-    access="public" = public " private ad " \ ccc\ ddd inner-source
-'
+# p.__parse --repo hi --org "dyi" '
+#     org "Provide organization" =~ [abc]+ [[:alnum:]]+
+#     repo "Repository name"
+#     test=public\ asdf =~ [[[:alnum:]] ]+
+#     access="public" = public " private ad " \ ccc\ ddd inner-source
+# '
+
+work(){
+    @p '
+        org =~ [[:alnum:]]+
+        repo =~ [[:alnum:]]+
+        access=public = public private inner-source
+    '
+
+    echo "org: $org"
+    echo "repo: $repo"
+    echo "access: $access"
+}
+
+# repo [[[:alnum:]]-_]+
+
+work --org lteam --repo hi
+org=lteam work --repo hi
+org=lteam repo=hi work --access private
+
+# ORG=lteam REPO=hi work
+
+# p.__parse --org "Feng-Longyin" '
+#         org =~ [[:alnum:] ]+
+#         repo [[[:alnum:]]-_]+
+#     '
