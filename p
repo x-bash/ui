@@ -14,6 +14,33 @@
 '
 A
 
+alias @p='p.__trap_to_parse "$@"; :'
+
+p.__trap_to_parse(){
+
+    local latest_debug_code
+    latest_debug_code=$(trap DEBUG)
+    local latest_debug_set="trap ${latest_debug_code:-"\"\""} DEBUG"
+
+    local code="eval \"\$(p.__parse $* \${COMMAND:1})\""
+    
+    echo "$code"
+    
+    final_code="
+        $code
+        $latest_debug_set
+    "
+
+    trap "$final_code" DEBUG
+    
+}
+
+str.repr(){
+    # echo "\"$(echo "$1" | sed s/\"/\\\\\"/g)\""
+    # echo "\"${1//\"/\\\\\"}\""
+    echo "\"${1//\"/\\\"}\""
+}
+
 p.__parse(){
 
     local ARG_NUM=$(( ${#@} ))
@@ -22,7 +49,11 @@ p.__parse(){
 
     local STR="${@:$ARG_NUM}"
 
+    local i
+
     local varlist=()
+    local typelist=()
+    local vallist=()
     local deslist=()
     local deflist=()
     local oplist=()
@@ -30,90 +61,170 @@ p.__parse(){
 
     while read line; do
         # line="$(str.trim "$line")"
-
-        if [ "$line" == "" ]; then
-            continue
-        fi
+        [ "$line" == "" ] && continue
 
         echo "--- $line"
-
-        local sw=0
+     
         local operator="str"
-        local declaration_block=()
-        local choice_block=()
-        while read i; do
-            if [ $sw -eq 0 ]; then
-                declaration_block+=($i)
-            else
-                choice_block+=($i)
-                continue
-            fi
 
-            case "$i" in
-            = | =~ | str | float | int) 
-                sw=1
-                operator=$i
-                ;;
-            esac
+        local all_arg_arr
+        read -a all_arg_arr <<< "$line"
 
-        done <<< "$(echo "$line" | xargs -n 1)"
+        varname=${all_arg_arr[0]}
 
-        # echo "${declaration_block[@]}"
-
-        local varname="${declaration_block[0]}" description=""
-        if [ "${#declaration_block[@]}" -eq 3 ]; then
-            description=${declaration_block[1]}
-        fi
-
-        deslist+=("$description")
-        
         if [[ $varname == *=* ]]; then
             local default="${varname#*=}"
             varname="${varname%%=*}"
-            varlist+=($varname)
-            deflist+=($default)
+            varlist+=("$varname")
+            vallist+=("$default")
+            deflist+=("$default")
         else
-            varlist+=($varname)
+            varlist+=("$varname")
+            vallist+=("")
             deflist+=("")
         fi
 
-        oplist+=("$operator")
         local IFS=$'\n'
-        choicelist+=( "${choice_block[*]}" )
+
+        case ${all_arg_arr[1]} in
+        = | =~ | str | float | int) 
+            operator=${all_arg_arr[1]}
+            choicelist=("${all_arg_arr[*]:2}");;
+        *)
+            description=${all_arg_arr[1]}
+            operator=${all_arg_arr[2]}
+            choicelist=("${all_arg_arr[*]:3}");;
+        esac
+
+        deslist+=("$description")
+        typelist+=("argenv")
+        oplist+=("$operator")
     done <<< "$STR"
 
-    if [ "$_X_BASH_PARAM_TYPE" = "arg" ]; then
-        for param in "${ARGS[@]}"; do
-            if 
-        done
-
-        for i in "$(seq ${#varlist[@]})"; do
-            echo "local $i=\${$i:-${deflist[$i]}}"
-        done
-    fi
-
-    if [ "$_X_BASH_PARAM_TYPE" = "env" ]; then
-        for i in "$(seq ${#varlist[@]})"; do
-            echo "local $i=\${$i:-${deflist[$i]}}"
-        done
-    fi
-
-
-
-
+    # echo setup environment value >&2
     
+    for i in $(seq ${#varlist[@]}); do
+        if [[ "${typelist[$i]}" == "*env" ]]; then
+            local name=${varlist[$i]}
+            vallist[$i]=${!$name}
+        fi
+    done
+    
+    # echo setup parameter value >&2
+    set -- "${ARGS[@]}"
+    while [ ! "$#" -eq 0 ]; do
+        local parameter_name=$1
+        shift
+        if [[ "$parameter_name" == --* ]]; then
+            parameter_name=${parameter_name:2}
+            local sw=0
+            for i in "${!varlist[@]}"; do
+                [[ ! "${typelist[i]}" = arg* ]] && continue
+                local _varname=${varlist[i]}
+                # echo  "$parameter_name" == "$_varname"
+                if [ "$parameter_name" == "$_varname" ]; then
+                    vallist[$i]=$1
+                    shift
+                    sw=1
+                    break
+                fi
+            done
+            if [ $sw -eq 0 ]; then
+                echo "Unsupported parameter: --$parameter_name" >&2
+                echo "return 1 >&2"
+                return 0
+            fi
+        fi
+    done
+    
+    # echo "--------"
+    # echo "${varlist[@]}"
+    # echo "${vallist[@]}"
+    # echo "${#deslist[@]}"
+    # echo "${deflist[@]}"
+    # echo "${oplist[@]}"
+    # echo "--------"
 
-
+    # setup default value
+    for i in $(seq "${#varlist[@]}"); do
+        local name="${varlist[$i]}"
+        local val="${vallist[$i]}"
+        if [ "$val" == "" ]; then
+            vallist[$i]=${deflist[$i]}
+        fi
     done
 
-    echo "${varlist[@]}"
-    echo "${#deslist[@]}"
-    echo "${deflist[@]}"
-    echo "${oplist[@]}"
+    # using local value
+    for i in $(seq "${#varlist[@]}"); do
+        (( i=i-1 ))
+        local name="${varlist[i]}"
+        local val="${vallist[i]}"
+
+        local op="${oplist[$i]}"
+        local choice=("${choicelist[i]}")
+
+        case "$op" in
+        =~)
+            local match=0
+            for c in "${choice[@]}"; do
+                echo "$val" =~ $c
+                if [[ "$val" =~ $c ]]; then
+                    match=1
+                    break
+                fi
+            done
+
+            if [ $match -eq 0 ]; then
+                echo "echo Value of $name is not one of the regex set >&2"
+                # echo "echo '$val' expected to be ${choice[@]} >&2"
+                echo 'return 1 2>&1'
+                return 0;
+            fi;;
+        =)
+            local match=0
+            for c in "${choice[@]}"; do
+                if [ "$c" == "$val" ]; then
+                    match=1
+                    break
+                fi
+            done
+
+            if [ $match -eq 0 ]; then
+                echo "echo Value of $name is not one of the candidate set >&2"
+                echo 'return 1 2>&1'
+                return 0
+            fi ;;
+        str | int)
+            if [[ "$op" = "int" && ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]] ]]; then
+                echo "echo Value of $name is integer >&2"
+                echo 'return 1 2>&1'
+                return 1
+            fi
+            local match=0
+            for c in "${choice[@]}"; do
+                if [ "$c" = "$val" ]; then
+                    match=1
+                    break
+                fi
+            done
+
+            if [ $match -eq 0 ]; then
+                echo "echo Value of $name is not one of the $op set >&2"
+                echo 'return 1 2>&1'
+                return 0
+            fi ;;
+        *) [ "$op" == "" ] || echo ": TODO: $op" 2>&1
+        ;;
+        esac
+
+        # TODO: notice the '' inside the string
+        echo "local $name=$(str.repr "$val")"
+    done
 
 }
 
-p.__parse '
+# p.__parse --repo hi --org "dy\" innoa" '
+p.__parse --repo hi --org "dyi" '
     org "Provide organization" =~ [abc]+ [[:alnum:]]+
     repo "Repository name"
     access=public = public private inner-source
