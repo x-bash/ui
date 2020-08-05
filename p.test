@@ -1,0 +1,34 @@
+. p
+
+# p.__parse --repo hi --org "dy\" innoa" '
+# p.__parse --repo hi --org "dyi" '
+#     org "Provide organization" =~ [abc]+ [[:alnum:]]+
+#     repo "Repository name"
+#     test=public\ asdf =~ [[[:alnum:]] ]+
+#     access="public" = public " private ad " \ ccc\ ddd inner-source
+# '
+
+work(){
+    @p '
+        org =~ [[:alnum:]]+
+        repo =~ [[:alnum:]]+
+        access=public = public private inner-source
+    '
+
+    echo "org: $org"
+    echo "repo: $repo"
+    echo "access: $access"
+}
+
+# repo [[[:alnum:]]-_]+
+
+work --org lteam --repo hi
+org=lteam work --repo hi
+org=lteam repo=hi work --access private
+
+# ORG=lteam REPO=hi work
+
+# p.__parse --org "Feng-Longyin" '
+#         org =~ [[:alnum:] ]+
+#         repo [[[:alnum:]]-_]+
+#     '
