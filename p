@@ -14,8 +14,14 @@
 '
 A
 
+p._:(){
+    # return $?
+    echo "code!!!!!:" $?
+    return 1
+}
+
 # shellcheck disable=SC2142
-alias @p='p.__trap_to_parse "$@"; :'
+alias @p='p.__trap_to_parse "$@"; p._:'
 
 p.__trap_to_parse(){
 
@@ -24,14 +30,14 @@ p.__trap_to_parse(){
     local latest_debug_set="trap ${latest_debug_code:-"\"\""} DEBUG"
 
     # local code="echo \"\$(p.__parse $* \${BASH_COMMAND})\""
-    local code='eval "$(p.__parse "$@" "${BASH_COMMAND:3:$(( ${#BASH_COMMAND} - 4)) }")"'
-    # local code='eval echo "$(p.__parse "$@" "${BASH_COMMAND:3:${#BASH_COMMAND - 3}}")"'
+    # local code='eval "$(p.__parse "$@" "${BASH_COMMAND:3:$(( ${#BASH_COMMAND} - 4)) }")"'
+    local code='eval "$(p.__parse "$@" "${BASH_COMMAND:6:$(( ${#BASH_COMMAND} - 7)) }")"'
     
     # echo "test: $code"
     
     final_code="
-        $code
         $latest_debug_set
+        $code
     "
 
     trap "$final_code" DEBUG
@@ -163,8 +169,8 @@ p.__parse(){
                 fi
             done
             if [ $sw -eq 0 ]; then
-                echo "Unsupported parameter: --$parameter_name" >&2
-                echo "return 1 >&2"
+                echo "ERROR: Unsupported parameter: --$parameter_name" >&2
+                echo "return 1 2>/dev/null"
                 return 0
             fi
         fi
@@ -200,9 +206,9 @@ p.__parse(){
             done
 
             if [ $match -eq 0 ]; then
-                echo "echo Value of $name: $val is not one of the regex set >&2"
+                echo "echo ERROR: Value of $name: $val is not one of the regex set >&2"
                 # echo "echo '$val' expected to be ${choice[@]} >&2"
-                echo 'return 1 2>&1'
+                echo 'return 1 2>/dev/null'
                 return 0;
             fi;;
         =)
@@ -215,14 +221,14 @@ p.__parse(){
             done
 
             if [ $match -eq 0 ]; then
-                echo "echo Value of $name is not one of the candidate set >&2"
-                echo 'return 1 2>&1'
+                echo "echo ERROR: Value of $name is not one of the candidate set >&2"
+                echo 'return 2 2>/dev/null'
                 return 0
             fi ;;
         str | int)
             if [[ "$op" = "int" && ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
-                echo "echo Value of $name is integer >&2"
-                echo 'return 1 2>&1'
+                echo "echo ERROR: Value of $name is integer >&2"
+                echo 'return 1 2>/dev/null'
                 return 1
             fi
             local match=0
@@ -234,8 +240,8 @@ p.__parse(){
             done
 
             if [ $match -eq 0 ]; then
-                echo "echo Value of $name is not one of the $op set >&2"
-                echo 'return 1 2>&1'
+                echo "echo ERROR: Value of $name is not one of the $op set >&2"
+                echo 'return 1 2>/dev/null'
                 return 0
             fi ;;
         *) [ "$op" == "" ] || echo ": TODO: $op" >&2

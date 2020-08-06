@@ -9,22 +9,27 @@
 # '
 
 work(){
+    echo "----------start"
     @p '
         org =~ [[:alnum:]]+
         repo =~ [[:alnum:]]+
         access=public = public private inner-source
     '
 
+    echo "----------mid"
+
     echo "org: $org"
     echo "repo: $repo"
     echo "access: $access"
+    echo "----------end"
 }
 
 # repo [[[:alnum:]]-_]+
 
 work --org lteam --repo hi
 org=lteam work --repo hi
-org=lteam repo=hi work --access private
+org=lteam repo=hi work --access private1
+echo code is : $?
 
 # ORG=lteam REPO=hi work
 
