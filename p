@@ -148,7 +148,7 @@ p.__parse(){
             done
 
             if [ $match -eq 0 ]; then
-                echo "echo ERROR: Value of $name: $val is not one of the regex set >&2"
+                echo "echo ERROR:  $name='$val' NOT match any regex defined >&2"
                 # echo "echo '$val' expected to be ${choice[@]} >&2"
                 echo 'return 1 2>/dev/null'
                 return 0;
@@ -163,13 +163,13 @@ p.__parse(){
             done
 
             if [ $match -eq 0 ]; then
-                echo "echo ERROR: Value of $name is not one of the candidate set >&2"
+                echo "echo ERROR: $name='$val' Not one of the candidate set >&2"
                 echo 'return 2 2>/dev/null'
                 return 0
             fi ;;
         str | int)
             if [[ "$op" = "int" && ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
-                echo "echo ERROR: Value of $name is integer >&2"
+                echo "echo ERROR: $name='$val' An integer expected. >&2"
                 echo 'return 1 2>/dev/null'
                 return 1
             fi
@@ -182,7 +182,7 @@ p.__parse(){
             done
 
             if [ $match -eq 0 ]; then
-                echo "echo ERROR: Value of $name is not one of the $op set >&2"
+                echo "echo ERROR: $name='$val' Not inside the $op set >&2"
                 echo 'return 1 2>/dev/null'
                 return 0
             fi ;;

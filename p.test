@@ -9,14 +9,11 @@
 # '
 
 work(){
-    echo "----------start"
     @p '
         org =~ [[:alnum:]]+
         repo =~ [[:alnum:]]+
         access=public = public private inner-source
     '
-
-    echo "----------mid"
 
     echo "org: $org"
     echo "repo: $repo"
