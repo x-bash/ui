@@ -93,8 +93,3 @@ path.rmrf(){
         rm -rf "$i"
     done
 }
-
-local access=$(@param access =~ private public)
-
-@param access =~ private public
-@param work
