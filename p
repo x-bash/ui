@@ -1,61 +1,9 @@
 #shellcheck shell=bash
 
-# param.__parse '
-#     argenv[org] "Provide organization"
-#     arg[repo] "repo name" =~ [:alpha:][[:alnum:]-_]+
-#     arg[access] = public private inner-source
-# '
-
-<<A
-@p '
-    org "Provide organization" =~ [abc]+ [[:alnum:]]+
-    repo "Repository name"
-    access=public = public private inner-source
-'
-A
-
-p._:(){
-    # return $?
-    echo "code!!!!!:" $?
-    return 1
-}
-
-# shellcheck disable=SC2142
-alias @p='p.__trap_to_parse "$@"; p._:'
-
-p.__trap_to_parse(){
-
-    local latest_debug_code
-    latest_debug_code=$(trap DEBUG)
-    local latest_debug_set="trap ${latest_debug_code:-"\"\""} DEBUG"
-
-    # local code="echo \"\$(p.__parse $* \${BASH_COMMAND})\""
-    # local code='eval "$(p.__parse "$@" "${BASH_COMMAND:3:$(( ${#BASH_COMMAND} - 4)) }")"'
-    local code='eval "$(p.__parse "$@" "${BASH_COMMAND:6:$(( ${#BASH_COMMAND} - 7)) }")"'
-    
-    # echo "test: $code"
-    
-    final_code="
-        $latest_debug_set
-        $code
-    "
-
-    trap "$final_code" DEBUG
-    
-}
-
 str.repr(){
     # echo "\"$(echo "$1" | sed s/\"/\\\\\"/g)\""
     # echo "\"${1//\"/\\\\\"}\""
     echo "\"${1//\"/\\\"}\""
-}
-
-str._args(){
-    for i in "$@"; do echo "$i"; done 
-}
-
-str.args(){
-    eval str._args "$@"
 }
 
 str.trim(){
@@ -67,18 +15,12 @@ str.trim(){
     echo -n "$var"
 }
 
+alias @p='if ! eval "$(p.__parse "$@")"; then return $?; fi <<<'
+
 # TODO: avoid IFS influence on this function
 p.__parse(){
 
-    local i IFS= STR="${!#}"
-    # echo "$STR" >&2
-    set -- "${@:1:$(($#-1))}"
-
-    # local ARG_NUM_1=$(( $# - 1 ))
-    # local ARGS
-
-    # local i IFS=
-    # ARGS=( "${@:1:ARG_NUM_1}" )
+    local i IFS=
 
     local varlist=()
     local typelist=()
@@ -133,7 +75,7 @@ p.__parse(){
 
         deslist+=("$description")
         typelist+=("argenv")
-    done <<< "$STR"
+    done <<< "$(cat -)"
 
     # echo "--------"
     # echo "var list: ${varlist[@]}"
