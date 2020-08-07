@@ -28,6 +28,38 @@ http.header.add(){
     dict.put "header.${1:?header key}" "${2:?value}"
 }
 
+http.header.content-type.is(){
+    :
+}
+
+http.header.content-type.is.json(){
+    http.header.content-type.is "application/json"
+}
+
+http.header.content-type.is.yml(){
+    http.header.content-type.is "application/yml"
+}
+
+http.header.content-type.is.text(){
+    http.header.content-type.is "application/text"
+}
+
+http.header.agent.is(){
+    :
+}
+
+http.header.agent.is.chrome(){
+    :
+}
+
+http.header.agent.is.ie(){
+    :
+}
+
+http.header.agent.is.firefox(){
+    :
+}
+
 http.header.remove(){
     [ -z "$O" ] && return 1
     dict.remove "header.${1:?header key}"
