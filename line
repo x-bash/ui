@@ -1,0 +1,42 @@
+#! /usr/bin/env bash
+
+line.map(){
+    local line
+    while read -rd $'\n' line; do
+        eval "$@"
+    done
+}
+
+# using regex to filter
+line.rmap(){
+    local line
+    local code="${2: echo \"\$line\"}"
+    while read -rd $'\n' line; do
+        if echo "$line" | grep "$1"; then
+            eval "$code"
+        fi
+    done
+}
+
+# using glob to filter
+line.gmap(){
+    local line
+    local code="${2: echo \"\$line\"}"
+    while read -rd $'\n' line; do
+        if echo "$line" | grep "$1"; then
+            eval "$code"
+        fi
+    done
+}
+
+# using eval to filter
+line.fmap(){
+    local line
+    local code="${2: echo \"\$line\"}"
+    while read -rd $'\n' line; do
+        if eval "$1"; then
+            eval "$code"
+        fi
+    done
+}
+
