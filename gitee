@@ -5,27 +5,40 @@
 @src std/http
 
 # Without Context, gt and http share same name
+
+# Introducing context
 gt.client.make(){
     local O="${1:?Provide client name}"
-    http.make 'https://gitee.com/api' "$O"
-    http.header.add 'Content-Type' 'application/json;charset=UTF-8'
+    http.make "$O" 'https://gitee.com/api'
+    http.header.content-type.eq.json+utf8
+    # http.header.add 'Content-Type' 'application/json;charset=UTF-8'
 }
 
-gt.current-repo(){
-    if [ -z "$1" ]; then
-        echo "$repo"
-        return 0
-    fi
-    repo=${1:-provide repo name}
+gt.set_token(){
+    local GITEE_TOKEN=${1:?"Please provide gitee token"}
+    http.body.add access_token "$GITEE_TOKEN"
+    http.qs.add access_token "$GITEE_TOKEN"
 }
 
-gt.current-owner(){
-    if [ -z "$1" ]; then
-        echo "${owner}"
-        return 0
-    fi
-    owner=${1:-provide owner name}
+gt.owner.set(){
+    local owner="$1"
+
+    # TODO: If type not given, we should query the api to find out its type
+    local type="$2"
+    
+    @p '
+        type = user enterprise organization
+    '
+    gt.current-owner "$owner"
+    gt.current-owner-type "$type"
 }
+
+# Providing owner/owner-type
+gt.current-repo(){ http.dict.getput "current-repo" "$1"; }
+
+gt.current-owner(){ http.dict.getput "current-owner" "$1"; }
+# user, organization, user
+gt.current-owner-type(){ http.dict.getput "current-owner-type"; }
 
 gt.request(){
     if [ -n "$GITEE_TOKEN" ]; then
@@ -44,7 +57,7 @@ gt.get(){
 
 gt.post(){ X=post gt.request "$@"; }
 gt.put(){ X=put gt.request "$@"; }
-gt.delete(){ x=delete gt.request "$@"; }
+gt.delete(){ X=delete gt.request "$@"; }
 
 # gt.delete(){
 #     (
@@ -74,6 +87,7 @@ gt.eq_str_by_name(){
     done
 }
 
+# It is very rare
 gt.org.create(){
     @env org "organization name"
     gt.post "/v5/users/organization" name="$org" org="$org"
@@ -85,53 +99,86 @@ gt.get.header(){
     curl -X GET -I --header 'Content-Type: application/json;charset=UTF-8' "$url" 2>/dev/null
 }
 
-gt.repo.list(){
-    if [ -z "$org" ]; then
-        gt.organization.repo.list "$@"
-    elif [ -z "$enterprise" ]; then
-        gt.enterprise.repo.list "$@"
-    else
-        gt.user.repo.list "$@"
+gt.repo.list(){ 
+    local i=0 max_page=100000
+    while (( i < max_page; i++ )); do
+        gt.get "/v5/$(gt.current-owner-type)/$(gt.current-owner)/repos" type=all page=$i per_page=100 |
+            jq -r ".[] | .full_name"
+        max_page=$(gt.resp.header "max_age")
+    done
+}
+
+gt.repo.clone(){
+    gt.repo.clone.ssh && return 0
+    gt.repo.clone.https && return 0
+    return $?
+}
+
+gt._owner(){
+    repo=${owner:-$(http.dict.getput "current-repo")}
+    if [[ "$repo" = */* ]]; then
+        owner=${repo%%/*}
+        repo=${repo##*/}
+    fi
+
+    echo "${owner}"
+}
+
+gt._repo(){
+    repo=${owner:-$(http.dict.getput "current-repo")}
+    if [[ "$repo" = */* ]]; then
+        owner=${repo%%/*}
+        repo=${repo##*/}
+    fi 
+}
+
+gt._parse_owner_repo(){
+    repo=${owner:-$(http.dict.getput "current-repo")}
+    if [[ "$repo" = */* ]]; then
+        owner=${repo%%/*}
+        repo=${repo##*/}
     fi
 }
 
-gt.enterprise.repo.list(){
-    @env enterprise "enterprise name"
-    local i=0 max_page=100000
-    while (( i < max_page; i++ )); do
-        gt.get "/v5/enterprises/$enterprise/repos" type=all page=$i per_page=100 |
-            jq -r ".[] | .full_name"
-        max_page=$(gt.resp.header "max_age")
-    done
+gt.repo.clone.ssh(){
+    @p '
+        owner "Provide owner"
+        repo "provide repo"
+    '
+    
+    gt._parse_owner_repo
+    git clone "git@github.com:$owner/$repo.git"
 }
 
-# TODO
-gt.organization.repo.list(){
-    @env org "organization name"
-    local i=0 max_page=100000
-    while (( i < max_page; i++ )); do
-        gt.get "/v5/organizations/$org/repos" type=all page=$i per_page=100 |
-            jq -r ".[] | .full_name"
-        max_page=$(gt.resp.header "max_age")
-    done
+gt.repo.clone.https(){
+    # parse owner/user
+    gt._parse_owner_repo
+    "git clone https://github.com/$owner/$repo.git"
 }
 
+gt.repo.fork(){
+    : auto fork
+}
+
+
+<<A
+How to use:
+gt.current-owner lteam18
+gt.repo.create "new" "abc" "cde"
+A
 gt.repo.create(){
-    if [ -z "$org" ]; then
-        gt.organization.repo.create "$@"
-    elif [ -z "$enterprise" ]; then
-        gt.enterprise.repo.create "$@"
-    else
-        gt.user.repo.create "$@"
-    fi
+    for i in "$@"; do
+        "gt.$(gt.current-owner-type).repo.create" "$i"
+    done
 }
 
 # arguments NAME
 gt.user.repo.create(){
-    @env name "repo name"
-    @env has_issues=true "" == true false
-    @env has_wiki=true "" == true false
-    @env access=private == public private innerSource
+    @p '
+        has_issues=true     = true false
+        has_wiki=true       = true false
+        access=private      = public private innerSource
+    '
 
     local private
     case "$access" in
@@ -147,17 +194,18 @@ gt.user.repo.create(){
 
 # ORGANIZATION NAME
 gt.organization.repo.create(){
-    @env org "organization name"
-    @env name "repo name"
-    @env has_issues=true "" == true false
-    @env has_wiki=true "" == true false
-    @env permission=pull "Repo permission" = pull push admin
-    @env access=private == public private
+    @p '
+        has_issues=true     = true false
+        has_wiki=true       = true false
+        access=private      = public private innerSource
+    '
 
     local public
+    # TODO: bug?
     case "$access" in
         public)  public=0;;
         private) public=1;;
+        innerSource) public=2;;
     esac
 
     (
@@ -168,11 +216,11 @@ gt.organization.repo.create(){
 
 # ENTERPRISE NAME
 gt.enterprise.repo.create(){
-    @env enterprise "enterprise name"
-    @env name "repo name"
-    @env has_issues=true "" == true false
-    @env has_wiki=true "" == true false
-    @env access=private == public private innerSource
+    @p '
+        has_issues=true     = true false
+        has_wiki=true       = true false
+        access=private      = public private innerSource
+    '
 
     local private
     case "$access" in
@@ -200,9 +248,17 @@ gt.enterprise.repo.create(){
     done
 }
 
+
 gt.repo.collaborators(){
     : Provide function, add from enterprise list
     : Provide function, remove from existing member list
+}
+
+gt.repo.collaborators.list(){
+    :
+    # TODO: page?
+    # gt.multiget "/v5/repos/$owner/$repo/collaborators" -- ""
+    # gt.get "/v5/repos/$owner/$repo/collaborators"
 }
 
 # gt.repo.member.add pull:edwinjhlee,work,adf push:work,adf admin:edwinjhlee
@@ -213,10 +269,10 @@ gt.repo.collaborators.add(){
         echo "Example: repo=d-y-innovations/demo-repo gt.repo.member.add pull:user1,user2 push:user3,user2 admin:user5"
     fi
 
-    @env owner "Repo Owner"
-    @env repo "Repo name"
-    @env username "Username Owner"
-    @env permission=pull "Repo permission" = push push admin
+    @p '
+        username "Username Owner"
+        permission=pull "Repo permission" = push push admin
+    '
 
     (
         http.body.add "permission=$permission"
@@ -225,14 +281,94 @@ gt.repo.collaborators.add(){
 }
 
 
+# repo=lteam/vscode gt.repo.collaborators.remove chanchan hsn
+# vscode.collaborators.remove chanchan hsn
+<<A
+gt.current-repo lteam/vscode
+gt.repo.collaborators.remove chanchan hsn
+A
 gt.repo.collaborators.remove(){
-    @env owner "Repo Owner"
-    @env repo "Repo name"
-    # @env username "Username Owner"
+    @p '
+        owner "Repo Owner"
+        repo "Repo name"
+    '
+    owner=$(gt.current-owner)
+    repo=$(gt.current-repo)
+
     local username
     for username in "$@"; do
         gt.delete "/v5/repos/$owner/$repo/collaborators/$username"
     done
     # gt.delete "/v5/repos/${owner?:Provide owner}/${repo?:Provide Repo}/collaborators/${username:?Provider Collaborator}"
 }
+
+
+gt.repo.release.create(){
+    :
+}
+
+gt.repo.release.get_or_create(){
+    :
+}
+
+gt.repo.release.add(){
+    :
+}
+
+gt.repo.release.remove(){
+    :
+}
+
+gt.repo.release.attachment(){
+    : Provide manager
+}
+
+gt.repo.release.attachment.list(){
+    :
+}
+
+# Provide multiple files
+gt.repo.release.attachment.upload(){
+    :
+}
+
+# Delete the file in attachment list
+gt.repo.release.attachment.remove(){
+    :
+}
+
+
+gt.pr(){
+    :
+}
+
+gt.pr.create(){
+    :
+}
+
+gt.pr.list(){
+    :
+}
+
+gt.pr.open(){
+    :
+}
+
+gt.pr.status(){
+    :
+}
+
+gt.pr.view(){
+    :
+}
+
+gt.pr.checkout(){
+    :
+}
+
+gt.pr.list-comment(){
+    : list all of the comment in the terminal
+}
+
+
 
