@@ -7,7 +7,7 @@
 # Provide Github Object, to help automate the github
 
 @src std/dict
-@src std/oo
+# @src std/oo # std/dict -> std/list -> std/oo
 
 . dict
 . oo
@@ -18,126 +18,152 @@ http.new(){
 
 http.make(){
     dict.make "${1:?Provide name}"
-    O="$1" dict.put "url" "${2:?Provide url}"
+
+    local O="$1"
+
+    dict.put "url" "${2:?Provide url}"
     # O="$1" dict.put "header" "${3:?Provide default header}"
     # eval "export ${1:?Provide name}_header=()"
+
+    # dict.make "$(http._name.qs)"
+    # dict.make "$(http._name.body)"
+    # dict.make "$(http._name.header)"
 }
 
-http.header.add(){
-    [ -z "$O" ] && return 1
-    dict.put "header.${1:?header key}" "${2:?value}"
-}
+# http._name.qs(){
+#     echo "${O:?Provide name}_x-bash_http_qs"
+# }
 
-http.header.content-type.is(){
-    :
-}
+# http._name.body(){
+#     echo "${O:?Provide name}_x-bash_http_body"
+# }
 
-http.header.content-type.is.json(){
-    http.header.content-type.is "application/json"
-}
+# http._name.header(){
+#     echo "${O:?Provide name}_x-bash_http_header"
+# }
 
-http.header.content-type.is.yml(){
-    http.header.content-type.is "application/yml"
-}
-
-http.header.content-type.is.text(){
-    http.header.content-type.is "application/text"
-}
-
-http.header.agent.is(){
-    :
-}
-
-http.header.agent.is.chrome(){
-    :
-}
-
-http.header.agent.is.ie(){
-    :
-}
-
-http.header.agent.is.firefox(){
-    :
-}
-
-http.header.remove(){
-    [ -z "$O" ] && return 1
-    dict.remove "header.${1:?header key}"
-}
-
+http.header.add(){ dict.put "header.${1:?header key}" "${2:?value}"; }
+http.header.add_by_name(){ for i in "$@"; do http.header.add "$i" "${!i}"; done; }
+http.header.remove(){ dict.remove "header.${1:?header key}"; }
 http.header.dump(){
     [ -z "$O" ] && return 1
-    DICT_PRINT_SEP=': ' dict.print | while read -r l; do
+    # DICT_PRINT_SEP=': ' dict.print 
+    DICT_PRINT_SEP=': ' dict.print | while read -d $'\n' -r l; do
         [[ "$l" =~ ^header\.* ]] && echo "${l:7}"
     done
 }
 
-http._dict_get(){
-    [ -z "$O" ] && return 1
-    dict.get "${1:?Provide key}"
+http.header.dump.curl(){
+    local IFS=$'\n'
+    local A=()
+    for i in $(http.header.dump); do
+        A+=("-H \"$i\"")
+    done
+    IFS=$' '
+    echo "${A[*]}"
 }
 
-
-http.request(){
-    [ -z "$O" ] && return 1
-    local URL=${URL:-$(http._dict_get "url")}
-    local X=${X:-$(http._dict_get "method")}
-    local HEADERS=${X:-$(http._dict_get "header")}
-    local D=${D:-$(http._dict_get "data")}
-    local QS=${QS:-""}
-
-    if [ -z "$QS" ]; then
-        curl -H "${HEADERS[*]}" -x "$X" "$URL/$1"
-    else
-        curl -H "${HEADERS[*]}" -x "$X" "$URL/$1?$QS"
-    fi
-}
-
-http.cd(){
-    [ -z "$O" ] && return 1
-    local URL=${URL:-$(http._dict_get "url")}
-    dict.put "url" "$URL/${1:?Provide url}"
-}
-
-# TODO: how to cd back
-
-http.path(){
-    local URL=${URL:-$(http._dict_get "url")}
-    echo "$URL"
-}
-
-# X=put D='{} http.request
-# http.request(){
-#     local method=${X:-GET}
-#     local url=${URL:?Provide url environment}
-
-#     curl -H "$(http.header)" -x "$method" "$url"
-# }
-
-# put header
-# remove header
-# list header
 http.header(){
     echo "$(http.header.dump)
 $HEADER
 "
 }
 
-http.qs.add(){
-    [ -z "$O" ] && return 1
-    dict.put "qs.${1:?header key}" "${2:?value}"
+http.header.content-type.eq(){
+    http.header.add "Content-Type" "${1:?Content-Type candidates like application/json}"
 }
 
-http.qs.remove(){
-    [ -z "$O" ] && return 1
-    dict.remove "qs.${1:?header key}"
+http.header.content-type.eq.json+utf8(){ http.header.content-type.eq "application/json;charset=utf-8"; }
+http.header.content-type.eq.json(){ http.header.content-type.eq "application/json"; }
+http.header.content-type.eq.yml(){  http.header.content-type.eq "application/yml"; }
+http.header.content-type.eq.text(){ http.header.content-type.eq "application/text"; }
+
+http.header.referer.eq(){
+    http.header.add "Referer" "${1:?Referer}"
 }
 
+http.header.agent.eq(){
+    http.header.add "User-Agent" "${1:?User agent}"
+}
+
+http.dict.getput(){
+    local O="${O:?Provide Object name}"
+    case $# in
+        1) http.dict.get "$1";;
+        2) http.dict.put "$1" "$2";;
+        *) echo "More than 2 variable provided" >&1; return 2;
+    esac
+}
+
+http.dict.get(){
+    local O="${O:?Provide Object name}"
+    dict.get "${1:?Provide key}"
+}
+
+http.dict.put(){
+    local O="${O:?Provide Object name}"
+    dict.put "${1:?Provide key}" "${1:?Provide value}" 
+}
+
+http.request(){
+    [ -z "$O" ] && return 1
+    local X=${X:-get)} D=${2:-"$D"} ARGS=() path
+    path="$(http.path "$1")"
+
+    if [ -z "$D" ]; then
+        D="$(http.body.dump.json "")"
+    fi
+
+    local tmp
+    tmp=$(mktemp)
+    echo "$D" > "$tmp"
+
+    if [ "$X" = get ] || [ "$X" = delete ] || [ "$X" = head ]; then
+        echo curl -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"
+    else
+        eval curl -v -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path"
+    fi
+    rm "$tmp"
+}
+
+http.cd(){
+    [ -z "$O" ] && return 1
+    local URL=${URL:-$(http.dict.get "url")}
+    dict.put "url" "$URL/${1:?Provide url}"
+}
+
+# TODO: how to cd back
+
+http.path(){
+    local url
+    url="$(http.dict.get "url")"
+    if [ -z "$url" ]; then
+        echo "$1"
+    else
+        echo "$url/$1"
+    fi
+}
+
+http.qs.add(){ dict.put "qs.${1:?header key}" "${2:?value}"; }
+http.qs.add_by_name(){ for i in "$@"; do http.qs.add "$i" "${!i}"; done; }
+http.qs.remove(){ dict.remove "qs.${1:?header key}"; }
 http.qs.dump(){
     [ -z "$O" ] && return 1
-    DICT_PRINT_SEP=': ' dict.print | while read -r l; do
+    DICT_PRINT_SEP='=' dict.print | while read -r l; do
         [[ "$l" =~ ^qs\.* ]] && echo "${l:3}"
     done
+}
+
+http.qs.dump.curl(){
+    [ -z "$O" ] && return 1
+    local A=()
+
+    while read -rd $'\n' l; do
+        [[ "$l" =~ ^qs\.* ]] && A+=("--data-urlencode \"${l:3}\"")
+    done <<<"$( DICT_PRINT_SEP='=' dict.print )"
+
+    local IFS=$' '
+    echo "-G ${A[*]}"
 }
 
 http.eq_str_by_name(){
@@ -146,46 +172,29 @@ http.eq_str_by_name(){
     done
 }
 
-http.body.add(){
+http.body.add(){ dict.put "body.${1:?header key}" "${2:?value}"; }
+http.body.add_by_name(){ for i in "$@"; do http.body.add "$i" "${!i}"; done; }
+http.body.remove(){ dict.remove "body.${1:?header key}"; }
+http.body.dump.json(){
     [ -z "$O" ] && return 1
-    dict.put "body.${1:?header key}" "${2:?value}"
-}
-
-http.body.add_by_name(){
-    for i in "$@"; do
-        http.body.add "$i" "${!i}"
-    done
-}
-
-http.body.remove(){
-    [ -z "$O" ] && return 1
-    dict.remove "body.${1:?header key}"
-}
-
-http.body.dump(){
-    [ -z "$O" ] && return 1
-    DICT_PRINT_SEP=': ' dict.print
     # DICT_PRINT_SEP=': ' dict.print | while read -r l; do
-    #     # [[ "$l" =~ ^body\.* ]] && echo "${l:5}"
+    #     [[ "$l" =~ ^body\.* ]] && echo "${l:5}"
     #     echo "1: $l"
-    # done
+    # done | dict.__toJSON
+
+    local l1 l2
+    DICT_PRINT_SEP=$'\n' dict.print "body.*" | while :; do
+        read -rd $'\n' l1 || break
+        read -rd $'\n' l2 || break
+        echo "${l1:5}"
+        echo "$l2"
+    done | dict.__toJSON "$@"
 }
 
+# crud
+http.post(){ X="post" http.request "$@"; }
+http.get(){ X="get" http.request "$@"; }
+http.put(){ X="put" http.request "$@"; }
+http.delete(){ X="delete" http.request "$@"; }
 
-http.get(){
-    X="get" http.request "$@"
-}
-
-http.post(){
-    X="post" http.request "$@"
-}
-
-http.put(){
-    X="put" http.request "$@"
-}
-
-http.delete(){
-    X="delete" http.request "$@"
-}
-
-
+http.head(){ X="head" http.request "$@"; }
