@@ -191,10 +191,43 @@ http.body.dump.json(){
     done | dict.__toJSON "$@"
 }
 
+
+http.request.json_body(){
+    local url=$1
+    shift
+    (
+        for i in "$@"; do
+            if [[ "$i" =~ *=* ]]; then
+                http.body.add "${i%=*}" "${i##*=}"
+            else
+                http.body.add "$i" "${!i}"
+            fi
+        done
+        
+        http.request "$url"
+    )
+}
+
 # crud
-http.post(){ X="post" http.request "$@"; }
-http.get(){ X="get" http.request "$@"; }
-http.put(){ X="put" http.request "$@"; }
+http.post.json(){ X=post http.request.json_body "$@"; }
+http.post(){ X=post http.request "$@"; }
+
+http.get(){
+    local url=$1
+    shift
+    (
+        for i in "$@"; do
+            if [[ "$i" =~ *=* ]]; then
+                http.qs.add "${i%=*}" "${i##*=}"
+            else
+                http.qs.add "$i" "${!i}"
+            fi
+        done
+        
+        X="get" http.request "$url"
+    )
+}
+http.put(){ X=put http.request_with_body "$@"; }
 http.delete(){ X="delete" http.request "$@"; }
 
 http.head(){ X="head" http.request "$@"; }
