@@ -209,8 +209,12 @@ http.request.json_body(){
 }
 
 # crud
-http.post.json(){ X=post http.request.json_body "$@"; }
 http.post(){ X=post http.request "$@"; }
+http.post.json(){ X=post http.request.json_body "$@"; }
+# TODO
+http.post.form(){ X=post http.request.json_body "$@"; }
+http.post.text(){ X=post http.request.json_body "$@"; }
+http.post.bin(){ X=post http.request.json_body "$@"; }
 
 http.get(){
     local url=$1
@@ -228,8 +232,13 @@ http.get(){
     )
 }
 
-http.put.json(){ X=put http.request.json_body "$@"; }
 http.put(){ X=put http.request "$@"; }
+http.put.json(){ X=put http.request.json_body "$@"; }
+# TODO
+http.put.form(){ X=put http.request.json_body "$@"; }
+http.put.text(){ X=put http.request.json_body "$@"; }
+http.put.bin(){ X=put http.request.json_body "$@"; }
+
 http.delete(){ X=delete http.request "$@"; }
 
 http.head(){ X="head" http.request "$@"; }
