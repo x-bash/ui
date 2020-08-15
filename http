@@ -227,7 +227,9 @@ http.get(){
         X="get" http.request "$url"
     )
 }
-http.put(){ X=put http.request_with_body "$@"; }
+
+http.put.json(){ X=put http.request.json_body "$@"; }
+http.put(){ X=put http.request "$@"; }
 http.delete(){ X="delete" http.request "$@"; }
 
 http.head(){ X="head" http.request "$@"; }

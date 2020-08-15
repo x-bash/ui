@@ -2,7 +2,7 @@
 
 <<A
 macos: https://help.dreamhost.com/hc/en-us/articles/214981288-Flushing-your-DNS-cache-in-Mac-OS-X-and-Linux
-Consider using the cache
+Consider change the dns server. Without changing, the dns cache would not flush.
 A
 
 dns.reset(){
