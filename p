@@ -15,7 +15,8 @@ str.trim(){
     echo -n "$var"
 }
 
-alias @p='if ! eval "$(p.__parse "$@")"; then return $?; fi <<<'
+# shellcheck disable=SC2142
+alias @p='local _rest_argv=(); if ! eval "$(p.__parse "$@")"; then return $?; fi <<<'
 
 # TODO: avoid IFS influence on this function
 p.__parse(){
@@ -93,11 +94,13 @@ p.__parse(){
         vallist[i]=${!name}
     done
     
+    local rest_argv_str="local _rest_argv=( "
+
     # echo setup parameter value >&2
     while [ ! "$#" -eq 0 ]; do
         local parameter_name=$1
-        shift
         if [[ "$parameter_name" == --* ]]; then
+            shift
             parameter_name=${parameter_name:2}
             local sw=0
             for i in "${!varlist[@]}"; do
@@ -115,9 +118,13 @@ p.__parse(){
                 echo "return 1 2>/dev/null"
                 return 0
             fi
+        else
+            rest_argv_str+="$(str.repr "$parameter_name") "
+            shift
         fi
     done
-    
+
+    echo "$rest_argv_str  )"
 
     # setup default value
     for i in $(seq "${#varlist[@]}"); do

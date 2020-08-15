@@ -14,10 +14,16 @@ gt.client.make(){
     # http.header.add 'Content-Type' 'application/json;charset=UTF-8'
 }
 
-gt.set_token(){
+gt.token.set(){
     local GITEE_TOKEN=${1:?"Please provide gitee token"}
+    http.dict.set "access_token" "$GITEE_TOKEN"
+
     http.body.add access_token "$GITEE_TOKEN"
     http.qs.add access_token "$GITEE_TOKEN"
+}
+
+gt.token.get(){
+    http.dict.get "access_token" 
 }
 
 gt.owner.set(){
@@ -40,36 +46,10 @@ gt.current-owner(){ http.dict.getput "current-owner" "$1"; }
 # user, organization, user
 gt.current-owner-type(){ http.dict.getput "current-owner-type"; }
 
-gt.request(){
-    if [ -n "$GITEE_TOKEN" ]; then
-        http.body.add access_token "$GITEE_TOKEN"
-    fi
-    http.request "$@"
-}
-
-gt.get(){ 
-    if [ -z "$GITEE_TOKEN" ]; then
-        http.get "$@" "access_token=$GITEE_TOKEN"
-    else
-        http.get
-    fi
-}
-
-gt.post(){ X=post gt.request "$@"; }
-gt.put(){ X=put gt.request "$@"; }
-gt.delete(){ X=delete gt.request "$@"; }
-
-# gt.delete(){
-#     (
-#         http.cd "$1"
-#         shift
-#         if [ -n "$GITEE_TOKEN" ]; then
-#             D="$(echo "${D:-\{\}}" | jq ".access_token |= $GITEE_TOKEN")"
-#             D="$(jq -n ".access_token|=$GITEE_TOKEN")"
-#         fi
-#         D="$D" http.delete
-#     )
-# }
+gt.get(){ http.get "$@";  }
+gt.post(){ http.post "$@"; }
+gt.put(){ http.put "$@"; }
+gt.delete(){ http.delete "$@"; }
 
 gt.json(){
     json.generate "$@"

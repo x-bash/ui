@@ -1,0 +1,18 @@
+# shellcheck shell=bash
+
+<<A
+macos: https://help.dreamhost.com/hc/en-us/articles/214981288-Flushing-your-DNS-cache-in-Mac-OS-X-and-Linux
+Consider using the cache
+A
+
+dns.reset(){
+    :
+}
+
+dns.list(){
+    :
+}
+
+dns.config(){
+    :
+}

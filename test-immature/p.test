@@ -18,13 +18,15 @@ work(){
     echo "org: $org"
     echo "repo: $repo"
     echo "access: $access"
+
+    echo "rest: " "${_rest_argv[*]}"
     echo "----------end"
 }
 
 # repo [[[:alnum:]]-_]+
 
-work --org lteam --repo hi
-org=lteam work --repo hi
+work --org lteam --repo hi other other other
+org=lteam work --repo hi work 1 2 3
 org=lteam repo=hi work --access private1
 echo code is : $?
 

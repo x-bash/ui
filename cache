@@ -1,11 +1,69 @@
 # shellcheck shell=bash
 
-cache.cmd(){
-    local FILEPATH=${FILEPATH:?"Provide cache filepath"}
-    local CACHE_EXPIRATION=${CACHE_EXPIRATION:-60}
 
-    ( find "$FILEPATH" -mmin -${CACHE_EXPIRATION} | grep -q ^  ) || {
+# TODO: using CACHE_CMD_FOLDER="". Calculate the md5 value of command, using the value as file name.
+
+# should we introduce the other library? Yes, we should.
+# We should introduce the @p library, also, we should introduce md5 code.
+
+# expiration=1 filepath="/tmp/a.txt" cache.cmd "cmd-path"
+# cache.cmd --filepath "" --expiration=60m "cmd-path"
+
+# @src std/str
+. str
+
+# expiration=1 cache.cmd curl www.github.com/v4/api
+# cache.cmd "curl www.github.com/v4/api" > a.txt
+cache.cmd(){
+    # local CACHE_EXPIRATION_IN_MIN=${CACHE_EXPIRATION_IN_MIN:-${cache_expiration_in_min:-60}}
+    local FILEPATH="${CACHE_FILE:-${cache_file:-""}}"
+    if [ -z "$FILEPATH" ]; then
+        echo "Expect environment cache_file or CACHE_FILE" >&2
+        return 1
+
+        FILEPATH="$(cache.cmd.get.filepath "$@")"
+    fi
+
+    # ( find "$FILEPATH" -mmin "-${CACHE_EXPIRATION}" | grep -q ^  ) || {
+    ( find "$FILEPATH" -mmin "-${CACHE_EXPIRATION}" | grep -q ^  ) || {
         echo "FILEPATH does't exists or older than ${CACHE_EXPIRATION} min. Update" >&2
         eval "$@" | tee "$FILEPATH"
     }
+}
+
+
+cache.cmd.setup.auto.teardown(){
+    :
+}
+
+cache.cmd.get.filepath(){
+    # TODO: checking the folder
+    local IFS=$' '
+    local cmd="$*"
+
+    local md5value
+    md5value="$(str.md5 "$cmd")"
+
+    X_CMD_X_BASH_CACHE_CMD_FOLDER
+}
+
+# consider temp using the local disk?
+cache.cmd.setup(){
+    X_CMD_X_BASH_CACHE_CMD_FOLDER="$(mktemp)"
+    export X_CMD_X_BASH_CACHE_CMD_FOLDER
+    export X_CMD_X_BASH_CACHE_CMD_FOLDER_INDEX=0
+    mkdir -p "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
+}
+
+cache.cmd.teardown(){
+    case "$X_CMD_X_BASH_CACHE_CMD_FOLDER" in
+        /);;
+        /bin*);;
+        /home*);;
+        # Do more work to protect. Checking the temp folder
+        *) rm -rf "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
+    esac
+
+    unset X_CMD_X_BASH_CACHE_CMD_FOLDER
+    unset X_CMD_X_BASH_CACHE_CMD_FOLDER_INDEX
 }

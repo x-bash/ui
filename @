@@ -50,17 +50,21 @@ shopt -s expand_aliases
     trap "$final_code" return
 }
 
+# rename to @defer.return
 # shellcheck disable=SC2142
 alias @trap.return='
 if local _X_CMD_RETURN_STACK 2>/dev/null; then
-    declare -F _eval_stack 1>/dev/null || _eval_stack(){
-        for i in "${_X_CMD_RETURN_STACK[@]}"; do
-            eval "$i"
-        done
-    }
 
-    declare -F _add_stack 1>/dev/null || _add_stack(){
-        _X_CMD_RETURN_STACK=(  "$1" "${_X_CMD_RETURN_STACK[@]}"  )
+    declare -F _eval_stack 1>/dev/null || {
+        _eval_stack(){
+            for i in "${_X_CMD_RETURN_STACK[@]}"; do
+                eval "$i"
+            done
+        }
+
+        _add_stack(){
+            _X_CMD_RETURN_STACK=(  "$1" "${_X_CMD_RETURN_STACK[@]}"  )
+        }
     }
 
     [ -z "$_X_CMD_RETURN_STACK" ] && {
@@ -77,16 +81,20 @@ fi
 
 _add_stack'
 
+# TODO: @defer.exit
+
 # shellcheck disable=SC2142
 alias @defer='
-declare -F _eval_stack 1>/dev/null || _eval_stack(){
-    for i in "${_X_CMD_RETURN_STACK[@]}"; do
-        eval "$i"
-    done
-}
+declare -F _eval_stack 1>/dev/null || {
+    _eval_stack(){
+        for i in "${_X_CMD_RETURN_STACK[@]}"; do
+            eval "$i"
+        done
+    }
 
-declare -F _add_stack 1>/dev/null || _add_stack(){
-    _X_CMD_RETURN_STACK=(  "$1" "${_X_CMD_RETURN_STACK[@]}"  )
+    _add_stack(){
+        _X_CMD_RETURN_STACK=(  "$1" "${_X_CMD_RETURN_STACK[@]}"  )
+    }
 }
 
 local _X_CMD_RETURN_STACK 2>/dev/null
