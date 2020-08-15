@@ -173,21 +173,21 @@ http.body.dump.json(){
 
 http.request(){
     [ -z "$O" ] && return 1
-    local X=${X:-get)} D=${2:-"$D"} ARGS=() path
+    local X=${X:-get)} data=${2:-"$D"} path
     path="$(http.path "$1")"
 
-    if [ -z "$D" ]; then
-        D="$(http.body.dump.json "")"
+    if [ -z "$data" ]; then
+        data="$(http.body.dump.json "")"
     fi
 
     local tmp
     tmp=$(mktemp)
-    echo "$D" > "$tmp"
+    echo "$data" > "$tmp"
 
     if [ "$X" = get ] || [ "$X" = delete ] || [ "$X" = head ]; then
         echo curl -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"
     else
-        eval curl -v -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path"
+        eval curl -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path"
     fi
     rm "$tmp"
 }
@@ -197,14 +197,14 @@ http.request.json_body(){
     shift
     (
         for i in "$@"; do
-            if [[ "$i" =~ *=* ]]; then
+            if [[ "$i" = *=* ]]; then
                 http.body.add "${i%=*}" "${i##*=}"
             else
                 http.body.add "$i" "${!i}"
             fi
         done
         
-        http.request "$url"
+        http.request "$url" "$(http.body.dump.json "")"
     )
 }
 
@@ -217,7 +217,7 @@ http.get(){
     shift
     (
         for i in "$@"; do
-            if [[ "$i" =~ *=* ]]; then
+            if [[ "$i" = *=* ]]; then
                 http.qs.add "${i%=*}" "${i##*=}"
             else
                 http.qs.add "$i" "${!i}"
