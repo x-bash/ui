@@ -105,27 +105,6 @@ http.dict.put(){
     dict.put "${1:?Provide key}" "${1:?Provide value}" 
 }
 
-http.request(){
-    [ -z "$O" ] && return 1
-    local X=${X:-get)} D=${2:-"$D"} ARGS=() path
-    path="$(http.path "$1")"
-
-    if [ -z "$D" ]; then
-        D="$(http.body.dump.json "")"
-    fi
-
-    local tmp
-    tmp=$(mktemp)
-    echo "$D" > "$tmp"
-
-    if [ "$X" = get ] || [ "$X" = delete ] || [ "$X" = head ]; then
-        echo curl -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"
-    else
-        eval curl -v -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path"
-    fi
-    rm "$tmp"
-}
-
 http.cd(){
     [ -z "$O" ] && return 1
     local URL=${URL:-$(http.dict.get "url")}
@@ -192,6 +171,27 @@ http.body.dump.json(){
 }
 
 
+http.request(){
+    [ -z "$O" ] && return 1
+    local X=${X:-get)} D=${2:-"$D"} ARGS=() path
+    path="$(http.path "$1")"
+
+    if [ -z "$D" ]; then
+        D="$(http.body.dump.json "")"
+    fi
+
+    local tmp
+    tmp=$(mktemp)
+    echo "$D" > "$tmp"
+
+    if [ "$X" = get ] || [ "$X" = delete ] || [ "$X" = head ]; then
+        echo curl -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"
+    else
+        eval curl -v -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path"
+    fi
+    rm "$tmp"
+}
+
 http.request.json_body(){
     local url=$1
     shift
@@ -230,6 +230,6 @@ http.get(){
 
 http.put.json(){ X=put http.request.json_body "$@"; }
 http.put(){ X=put http.request "$@"; }
-http.delete(){ X="delete" http.request "$@"; }
+http.delete(){ X=delete http.request "$@"; }
 
 http.head(){ X="head" http.request "$@"; }
