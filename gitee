@@ -52,13 +52,11 @@ gt.get.multi(){
 
 
     local i=1 total_page=100000
-    # for (( i=1; i <= total_page; i++ )); do
-    while [ $i -le $total_page ]; do
+    for (( i=1; i <= total_page; i++ )); do
         echo gt.get "$@" page=$i per_page=100 >&2
         gt.get "$@" page=$i per_page=100
         total_page="$(gt.resp.header "total_page")"
         echo "total_page:$total_page" >&2
-        (( i++ ))
     done
 }
 
@@ -163,7 +161,7 @@ gt.parse_env_owner_type(){
     fi
 
     if [ -z "${owner_type}" ]; then
-        owner_type="$(gt.owner.query_type "$owner")"
+        owner_type="$(gt.owner_type.query "$owner")"
     fi
 }
 
@@ -211,7 +209,7 @@ gt.current-owner.set(){
 
     if [ "$type" == "none" ]; then
         # get type
-        type="$(gt.owner.query_type "$owner")"
+        type="$(gt.owner_type.query "$owner")"
     fi
 
     gt.dict.getput "current-owner" "$owner"
@@ -240,10 +238,10 @@ gt.org.create(){
 }
 
 # TODO: better solution?
-gt.owner.query_type(){
+gt.owner_type.query(){
     local owner="${1:?Provide owner name}"
     
-    gt.organization.info "$owner" 1>/dev/null 2>&1 && echo "org" && return 0
+    gt.org.info "$owner" 1>/dev/null 2>&1 && echo "org" && return 0
     gt.enterprise.info "$owner" 1>/dev/null 2>&1 && echo "enterprise" && return 0
     gt.user.info "$owner" 1>/dev/null 2>&1 && echo "user" && return 0
 }
@@ -256,7 +254,7 @@ gt.enterprise.info(){
     gt.get "/v5/enterprises/${1:?Provide enterprise}"
 }
 
-gt.organization.info(){
+gt.org.info(){
     gt.get "/v5/orgs/${1:?Provide organization}"
 }
 
@@ -377,7 +375,7 @@ gt.user.repo.create(){
 # shellcheck disable=SC2154,SC2034
 
 # https://gitee.com/api/v5/swagger#/postV5OrgsOrgRepos
-gt.organization.repo.create(){
+gt.org.repo.create(){
 
     # TODO: I don't know what does path means for an organization repo
     @p '
@@ -434,6 +432,7 @@ gt.repo.collaborators(){
     : Provide function, remove from existing member list
 }
 
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoCollaborators
 gt.repo.collaborators.list(){
     :
     # TODO: page?
@@ -442,6 +441,8 @@ gt.repo.collaborators.list(){
 }
 
 # gt.repo.member.add pull:edwinjhlee,work,adf push:work,adf admin:edwinjhlee
+
+# https://gitee.com/api/v5/swagger#/putV5ReposOwnerRepoCollaboratorsUsername
 gt.repo.collaborators.add(){
     if [ "$1" == "-h" ]; then
         echo "Example: owner=d-y-innovations repo=demo-repo username=user1 permission=pull gt.repo.member.add"
@@ -450,11 +451,17 @@ gt.repo.collaborators.add(){
     fi
 
     @p '
-        username "Username Owner"
+        owner "repo owner"
+        repo "repo name"
         permission=pull "Repo permission" = push push admin
     '
 
-    gt.put.json "/v5/repos/$owner/$repo/collaborators/$username" permission
+    gt.parse_owner_repo
+
+    local username
+    for username in "$@"; do
+        gt.put.json "/v5/repos/$owner/$repo/collaborators/$username" permission
+    done
 }
 
 
@@ -464,6 +471,8 @@ gt.repo.collaborators.add(){
 gt.current-repo lteam/vscode
 gt.repo.collaborators.remove chanchan hsn
 A
+
+# https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepoCollaboratorsUsername
 gt.repo.collaborators.remove(){
     @p '
         owner "Repo Owner"
