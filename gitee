@@ -2,12 +2,17 @@
 
 # TODO: Add --dry-run
 
-@src std/http
+# @src std/http
+. dict
+. str
+. list
+. http
+. p
 
 # Without Context, gt and http share same name
 
 # Introducing context
-gt.client.make(){
+gt.make(){
     local O="_x_cmd_x_bash_gitee_${1:?Provide client name by O environment}"
 
     http.make "$O" 'https://gitee.com/api'
@@ -15,132 +20,40 @@ gt.client.make(){
     # http.header.add 'Content-Type' 'application/json;charset=UTF-8'
 }
 
-gt.token.set(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
-
-    local GITEE_TOKEN=${1:?"Please provide gitee token"}
-    http.dict.set "access_token" "$GITEE_TOKEN"
-
-    http.body.add access_token "$GITEE_TOKEN"
-    http.qs.add access_token "$GITEE_TOKEN"
-
-    # TODO: get user information, set current owner is user
+gt.new(){
+    oo.create_new_function gt "$@"
 }
 
-gt.token.get(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
-    http.dict.get "access_token" 
-}
-
-gt.owner.set(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
-
-    local owner="$1"
-
-    # TODO: If type not given, we should query the api to find out its type
-    local type="$2"
-    gt.current-owner "$owner"
-    gt.current-owner-type "$type"
-}
-
-# gt._owner(){
-#     repo=${owner:-$(http.dict.getput "current-repo")}
-#     if [[ "$repo" = */* ]]; then
-#         owner=${repo%%/*}
-#         repo=${repo##*/}
-#     fi
-
-#     echo "${owner}"
-# }
-
-# gt._repo(){
-#     repo=${owner:-$(http.dict.getput "current-repo")}
-#     if [[ "$repo" = */* ]]; then
-#         owner=${repo%%/*}
-#         repo=${repo##*/}
-#     fi 
-# }
-
-gt._parse_owner_repo(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
-
-    @p '
-        repo "Provide repo name"
-    '
-    if [[ "$repo" = */* ]]; then
-        owner=${repo%%/*}
-        repo=${repo##*/}
-    fi
-}
-
-gt.get_env_owner_repo_type(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
-
-    gt._parse_owner_repo
-    owner=${}
-    if [ "$owner" = "" ]; then
-        owner=$(gt.current-owner)
-        repo=$(gt.current-repo)
-    fi
-}
-
-# Providing owner/owner-type
-
-# shellcheck disable=SC2120
-gt.current-repo(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
-
-    local repo="$1" owner=""
-
-    gt._parse_owner_repo
-    http.dict.getput "current-repo" "$1";
-    [ -n "$owner" ] && gt.current-owner
-}
-
-gt.current-owner(){ 
-
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
-
-
-    @p '
-        owner "Provide owner name"
-        type=none "Provide type name" = user enterprise organization none
-    '
-
-    if [ "$type" == "none" ]; then
-        # get type
-        type=user
-    fi
-
-    http.dict.getput "current-owner" "$owner"; 
-    http.dict.getput "current-owner-type" "$type"
+gt.resp.header(){
+    O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.resp.header
 }
 
 gt.get(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.get "$@";  }
 gt.get.multi(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+    # local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
 
-    local first=() second="" flag=0
-    for i in "$@"; do
-        if [ "$i" == "--" ]; then
-            flag=1
-            continue
-        fi
+    # local first=() second="" flag=0
+    # for i in "$@"; do
+    #     if [ "$i" == "--" ]; then
+    #         flag=1
+    #         continue
+    #     fi
 
-        if [ "$flag" -eq 0 ]; then
-            first+=("$i")
-        else
-            second+=("$i")
-        fi
-    done
+    #     if [ "$flag" -eq 0 ]; then
+    #         first+=("$i")
+    #     else
+    #         second+=("$i")
+    #     fi
+    # done
 
-    if [ "${#second[@]}" -eq 0 ]; then
-        second=(cat)
-    fi 
+    # if [ "${#second[@]}" -eq 0 ]; then
+    #     second=("cat")
+    # fi 
+
 
     local i=0 max_page=100000
-    while (( :; i < max_page; i++ )); do
-        gt.get "${first[@]}" page=$i per_page=100 | eval "${second[@]}"
+    for (( i=0; i < max_page; i++ )); do
+        gt.get "$@" page=$i per_page=100
         max_page=$(gt.resp.header "max_age")
     done
 }
@@ -153,6 +66,19 @@ gt.put.json(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}
 
 gt.delete(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.delete "$@"; }
 
+gt.dict.getput(){
+    O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.dict.getput "$@";
+}
+
+gt.dict.get(){
+    O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.dict.get "$@";
+}
+
+gt.dict.put(){
+    O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.dict.put "$@";
+}
+
+
 # gt.json(){
 #     json.generate "$@"
 # }
@@ -162,6 +88,140 @@ gt.delete(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" 
 # }
 
 ###########
+
+
+
+gt.token.set(){
+    local O="${O:?Provide client name by O environment}"
+    local GITEE_TOKEN=${1:?"Please provide gitee token"}
+
+    gt.dict.put "access_token" "$GITEE_TOKEN"
+
+    O="_x_cmd_x_bash_gitee_$O"
+    http.body.add access_token "$GITEE_TOKEN"
+    http.qs.add access_token "$GITEE_TOKEN"
+
+    # TODO: get user information, set current owner is user
+}
+
+gt.token.get(){
+    gt.dict.get "access_token"
+}
+
+# gt.owner.set(){
+#     local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
+#     local owner="$1"
+
+#     # TODO: If type not given, we should query the api to find out its type
+#     local type="$2"
+#     gt.current-owner "$owner"
+#     gt.current-owner_type "$type"
+# }
+
+# gt._owner(){
+#     repo=${owner:-$(gt.dict.getput "current-repo")}
+#     if [[ "$repo" = */* ]]; then
+#         owner=${repo%%/*}
+#         repo=${repo##*/}
+#     fi
+
+#     echo "${owner}"
+# }
+
+# gt._repo(){
+#     repo=${owner:-$(gt.dict.getput "current-repo")}
+#     if [[ "$repo" = */* ]]; then
+#         owner=${repo%%/*}
+#         repo=${repo##*/}
+#     fi 
+# }
+
+gt.parse_owner_repo(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
+    @p '
+        repo "Provide repo name"
+    '
+    if [[ "$repo" = */* ]]; then
+        owner=${repo%%/*}
+        repo=${repo##*/}
+    fi
+}
+
+gt.parse_env_owner_type(){
+    local O=${O:?Provide client name by O environment}
+
+    if [ -z "$owner" ]; then
+        owner=$(gt.dict.getput "current-owner")
+        owner_type="$(gt.dict.getput "current-owner_type")"
+        return 0
+    fi
+
+    if [ -z "${owner_type}" ]; then
+        owner_type="$(gt.owner.query_type "$owner")"
+    fi
+}
+
+gt.parse_env_owner_repo_type(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
+    gt.parse_owner_repo
+    if [ -z "$owner" ]; then
+        owner=$(gt.dict.getput "current-owner")
+        owner_type="$(gt.dict.getput "current-owner_type")"
+        repo=$(gt.dict.getput "current-repo")
+    fi
+}
+
+# Providing owner/owner_type
+
+# shellcheck disable=SC2120
+gt.current-repo.set(){
+    local O="${O:?Provide client name by O environment}"
+
+    local repo="$1" owner=""
+
+    gt.parse_owner_repo
+    O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" gt.dict.getput "current-repo" "$1";
+
+    [ -n "$owner" ] && {
+        echo "changing owner: $owner" >&2
+        gt.current-owner.set
+    }
+}
+
+gt.current-repo.get(){
+    gt.dict.get "current-repo"
+    gt.current-owner.get
+    gt.current-owner_type.get
+}
+
+gt.current-owner.set(){ 
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
+    @p '
+        owner "Provide owner name"
+        type=none "Provide type name" = user enterprise organization none
+    '
+
+    if [ "$type" == "none" ]; then
+        # get type
+        type="$(gt.owner.query_type "$owner")"
+    fi
+
+    gt.dict.getput "current-owner" "$owner"
+    gt.dict.getput "current-owner_type" "$type"
+}
+
+gt.current-owner.get(){
+    gt.dict.get "current-owner"
+}
+
+gt.current-owner_type.get(){
+    gt.dict.get "current-owner_type"
+}
+
 
 gt.eq_str_by_name(){
     for i in "$@"; do
@@ -175,6 +235,27 @@ gt.org.create(){
     gt.post "/v5/users/organization" name="$org" org="$org"
 }
 
+# TODO: better solution?
+gt.owner.query_type(){
+    local owner="${1:?Provide owner name}"
+    
+    gt.organization.info "$owner" 1>/dev/null 2>&1 && echo "organization" && return 0
+    gt.enterprise.info "$owner" 1>/dev/null 2>&1 && echo "enterprise" && return 0
+    gt.user.info "$owner" 1>/dev/null 2>&1 && echo "user" && return 0
+}
+
+gt.user.info(){
+    gt.get "/v5/user"
+}
+
+gt.enterprise.info(){
+    gt.get "/v5/enterprises/${1:?Provide enterprise}"
+}
+
+gt.organization.info(){
+    gt.get "/v5/orgs/${1:?Provide organization}"
+}
+
 # gt.get.header(){
 #     local url="$GT_URL${1:?Suburl}?access_token=$GT_TOKEN${2}"
 #     echo "Visiting $url" >&2
@@ -182,11 +263,19 @@ gt.org.create(){
 # }
 
 gt.repo.list(){
-    gt.get.multi "/v5/$(gt.current-owner-type)/$(gt.current-owner)/repos" type=all -- jq -r ".[] | .full_name"
+    @p '
+        owner="" "Provide owner"
+        owner_type="" "Provide type"
+    '
+
+    gt.parse_env_owner_type
+    echo "$owner_type"
+    echo "$owner"
+    gt.get.multi "/v5/${owner_type}/$owner/repos" type=all # | jq -r ".[] | .full_name"
 
     # local i=0 max_page=100000
     # while (( i < max_page; i++ )); do
-    #     gt.get "/v5/$(gt.current-owner-type)/$(gt.current-owner)/repos" type=all page=$i per_page=100 |
+    #     gt.get "/v5/$(gt.current-owner_type)/$(gt.current-owner)/repos" type=all page=$i per_page=100 |
     #         jq -r ".[] | .full_name"
     #     max_page=$(gt.resp.header "max_age")
     # done
@@ -200,24 +289,23 @@ gt.repo.clone(){
 
 gt.repo.clone.ssh(){
     @p '
-        owner "Provide owner"
+        owner="none" "Provide owner"
         repo "provide repo"
     '
     
-    gt._parse_owner_repo
+    gt.parse_owner_repo
     git clone "git@github.com:$owner/$repo.git"
 }
 
 gt.repo.clone.https(){
     # parse owner/user
-    gt._parse_owner_repo
+    gt.parse_owner_repo
     git clone "https://github.com/$owner/$repo.git"
 }
 
 gt.repo.fork(){
     : auto fork
 }
-
 
 <<A
 How to use:
@@ -226,7 +314,7 @@ gt.repo.create "new" "abc" "cde"
 A
 gt.repo.create(){
     for i in "$@"; do
-        "gt.$(gt.current-owner-type).repo.create" "$i"
+        "gt.$(gt.current-owner_type).repo.create" "$i"
     done
 }
 

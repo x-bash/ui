@@ -102,7 +102,7 @@ http.dict.get(){
 
 http.dict.put(){
     local O="${O:?Provide Object name}"
-    dict.put "${1:?Provide key}" "${1:?Provide value}" 
+    dict.put "${1:?Provide key}" "${2:?Provide value}" 
 }
 
 http.cd(){
@@ -119,7 +119,8 @@ http.path(){
     if [ -z "$url" ]; then
         echo "$1"
     else
-        echo "$url/$1"
+        # TODO: it is ugly... Isn't it?
+        echo "$url$1"
     fi
 }
 
@@ -170,9 +171,13 @@ http.body.dump.json(){
     done | dict.__toJSON "$@"
 }
 
+http.resp.header(){
+    cat "${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}"
+}
 
 http.request(){
-    [ -z "$O" ] && return 1
+    local O="${O:?Please provide O}"
+
     local X=${X:-get)} data=${2:-"$D"} path
     path="$(http.path "$1")"
 
@@ -184,12 +189,16 @@ http.request(){
     tmp=$(mktemp)
     echo "$data" > "$tmp"
 
-    if [ "$X" = get ] || [ "$X" = delete ] || [ "$X" = head ]; then
-        echo curl -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"
+    local code
+    if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
+        echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"
+        code=$?
     else
-        eval curl -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path"
+        echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path"
+        code=$?
     fi
     rm "$tmp"
+    return $code
 }
 
 http.request.json_body(){
@@ -209,12 +218,12 @@ http.request.json_body(){
 }
 
 # crud
-http.post(){ X=post http.request "$@"; }
-http.post.json(){ X=post http.request.json_body "$@"; }
+http.post(){ X=POST http.request "$@"; }
+http.post.json(){ X=POST http.request.json_body "$@"; }
 # TODO
-http.post.form(){ X=post http.request.json_body "$@"; }
-http.post.text(){ X=post http.request.json_body "$@"; }
-http.post.bin(){ X=post http.request.json_body "$@"; }
+http.post.form(){ X=POST http.request.json_body "$@"; }
+http.post.text(){ X=POST http.request.json_body "$@"; }
+http.post.bin(){ X=POST http.request.json_body "$@"; }
 
 http.get(){
     local url=$1
@@ -228,17 +237,17 @@ http.get(){
             fi
         done
         
-        X="get" http.request "$url"
+        X=GET http.request "$url"
     )
 }
 
-http.put(){ X=put http.request "$@"; }
-http.put.json(){ X=put http.request.json_body "$@"; }
+http.put(){ X=PUT http.request "$@"; }
+http.put.json(){ X=PUT http.request.json_body "$@"; }
 # TODO
-http.put.form(){ X=put http.request.json_body "$@"; }
-http.put.text(){ X=put http.request.json_body "$@"; }
-http.put.bin(){ X=put http.request.json_body "$@"; }
+http.put.form(){ X=PUT http.request.json_body "$@"; }
+http.put.text(){ X=PUT http.request.json_body "$@"; }
+http.put.bin(){ X=PUT http.request.json_body "$@"; }
 
-http.delete(){ X=delete http.request "$@"; }
+http.delete(){ X=DELETE http.request "$@"; }
 
-http.head(){ X="head" http.request "$@"; }
+http.head(){ X=HEAD http.request "$@"; }
