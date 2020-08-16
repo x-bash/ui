@@ -25,7 +25,7 @@ gt.new(){
 }
 
 gt.resp.header(){
-    O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.resp.header
+    O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.resp.header "$@"
 }
 
 gt.get(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.get "$@";  }
@@ -51,10 +51,14 @@ gt.get.multi(){
     # fi 
 
 
-    local i=0 max_page=100000
-    for (( i=0; i < max_page; i++ )); do
+    local i=1 total_page=100000
+    # for (( i=1; i <= total_page; i++ )); do
+    while [ $i -le $total_page ]; do
+        echo gt.get "$@" page=$i per_page=100 >&2
         gt.get "$@" page=$i per_page=100
-        max_page=$(gt.resp.header "max_age")
+        total_page="$(gt.resp.header "total_page")"
+        echo "total_page:$total_page" >&2
+        (( i++ ))
     done
 }
 
@@ -239,7 +243,7 @@ gt.org.create(){
 gt.owner.query_type(){
     local owner="${1:?Provide owner name}"
     
-    gt.organization.info "$owner" 1>/dev/null 2>&1 && echo "organization" && return 0
+    gt.organization.info "$owner" 1>/dev/null 2>&1 && echo "org" && return 0
     gt.enterprise.info "$owner" 1>/dev/null 2>&1 && echo "enterprise" && return 0
     gt.user.info "$owner" 1>/dev/null 2>&1 && echo "user" && return 0
 }
@@ -269,16 +273,49 @@ gt.repo.list(){
     '
 
     gt.parse_env_owner_type
-    echo "$owner_type"
-    echo "$owner"
-    gt.get.multi "/v5/${owner_type}/$owner/repos" type=all # | jq -r ".[] | .full_name"
+    "gt.${owner_type}.repo.list" "$@"
+    # gt.get.multi "/v5/${owner_type}s/$owner/repos" type=all | jq -r ".[] | .full_name"
+}
 
-    # local i=0 max_page=100000
-    # while (( i < max_page; i++ )); do
-    #     gt.get "/v5/$(gt.current-owner_type)/$(gt.current-owner)/repos" type=all page=$i per_page=100 |
-    #         jq -r ".[] | .full_name"
-    #     max_page=$(gt.resp.header "max_age")
-    # done
+# https://gitee.com/api/v5/swagger#/getV5EnterprisesEnterpriseRepos
+gt.enterprise.repo.list(){
+    @p '
+        owner "Provide enterprise"
+        type=all "repo type" = all public internal private
+        direct=true "" = true false
+    '
+
+    gt.parse_env_owner_type
+    gt.get.multi "/v5/enterprises/$owner/repos" type=all | jq -r ".[] | .full_name"
+}
+
+# https://gitee.com/api/v5/swagger#/getV5OrgsOrgRepos
+gt.org.repo.list(){
+    @p '
+        owner "Provide enterprise"
+        type=all "repo type" = all public private
+    '
+
+    gt.parse_env_owner_type
+    gt.get.multi "/v5/orgs/$owner/repos" type=all | jq -r ".[] | .full_name"
+}
+
+# https://gitee.com/api/v5/swagger#/getV5UserRepos
+gt.user.repo.list(){
+    # TODO: afiiliation could be combination
+    # TODO: add split,
+    @p '
+        owner "Provide enterprise"
+        visibility=all "" = public private all
+        affiliation=owner "" =~ ^(owner|collaborator|organization_member|enterprise_member|admin)(,(owner|collaborator|organization_member|enterprise_member|admin))+$
+        sort=created "" = created updated pushed full_name
+        direction="" = asc desc ""
+    '
+
+    gt.parse_env_owner_type
+    gt.get.multi "/v5/orgs/$owner/repos" owner visibility affiliation sort direction\
+        | jq -r ".[] | .full_name"
+
 }
 
 gt.repo.clone(){

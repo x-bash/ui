@@ -172,7 +172,10 @@ http.body.dump.json(){
 }
 
 http.resp.header(){
-    cat "${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}"
+    local filter=${1:?provide filter} A
+    A="$(grep "$filter:" "${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}")"
+    A="${A##$filter: }"
+    echo -n "${A%"${A##*[![:space:]]}"}"
 }
 
 http.request(){
@@ -191,10 +194,11 @@ http.request(){
 
     local code
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"
+        # echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"  
+        eval curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 2>/dev/null
         code=$?
     else
-        echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path"
+        eval curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 2>/dev/null
         code=$?
     fi
     rm "$tmp"
