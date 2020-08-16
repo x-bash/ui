@@ -8,56 +8,158 @@
 
 # Introducing context
 gt.client.make(){
-    local O="${1:?Provide client name}"
+    local O="_x_cmd_x_bash_gitee_${1:?Provide client name by O environment}"
+
     http.make "$O" 'https://gitee.com/api'
     http.header.content-type.eq.json+utf8
     # http.header.add 'Content-Type' 'application/json;charset=UTF-8'
 }
 
 gt.token.set(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
     local GITEE_TOKEN=${1:?"Please provide gitee token"}
     http.dict.set "access_token" "$GITEE_TOKEN"
 
     http.body.add access_token "$GITEE_TOKEN"
     http.qs.add access_token "$GITEE_TOKEN"
+
+    # TODO: get user information, set current owner is user
 }
 
 gt.token.get(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
     http.dict.get "access_token" 
 }
 
 gt.owner.set(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
     local owner="$1"
 
     # TODO: If type not given, we should query the api to find out its type
     local type="$2"
-    
-    @p '
-        type = user enterprise organization
-    '
     gt.current-owner "$owner"
     gt.current-owner-type "$type"
 }
 
+# gt._owner(){
+#     repo=${owner:-$(http.dict.getput "current-repo")}
+#     if [[ "$repo" = */* ]]; then
+#         owner=${repo%%/*}
+#         repo=${repo##*/}
+#     fi
+
+#     echo "${owner}"
+# }
+
+# gt._repo(){
+#     repo=${owner:-$(http.dict.getput "current-repo")}
+#     if [[ "$repo" = */* ]]; then
+#         owner=${repo%%/*}
+#         repo=${repo##*/}
+#     fi 
+# }
+
+gt._parse_owner_repo(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
+    @p '
+        repo "Provide repo name"
+    '
+    if [[ "$repo" = */* ]]; then
+        owner=${repo%%/*}
+        repo=${repo##*/}
+    fi
+}
+
+gt.get_env_owner_repo_type(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
+    gt._parse_owner_repo
+    owner=${}
+    if [ "$owner" = "" ]; then
+        owner=$(gt.current-owner)
+        repo=$(gt.current-repo)
+    fi
+}
+
 # Providing owner/owner-type
-gt.current-repo(){ http.dict.getput "current-repo" "$1"; }
 
-gt.current-owner(){ http.dict.getput "current-owner" "$1"; }
-# user, organization, user
-gt.current-owner-type(){ http.dict.getput "current-owner-type"; }
+# shellcheck disable=SC2120
+gt.current-repo(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
 
-gt.get(){ http.get "$@";  }
-gt.post(){ http.post "$@"; }
-gt.put(){ http.put "$@"; }
-gt.delete(){ http.delete "$@"; }
+    local repo="$1" owner=""
 
-gt.json(){
-    json.generate "$@"
+    gt._parse_owner_repo
+    http.dict.getput "current-repo" "$1";
+    [ -n "$owner" ] && gt.current-owner
 }
 
-gt.json+token() {
-    gt.json access_token "$GITEE_TOKEN" "$@"
+gt.current-owner(){ 
+
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
+
+    @p '
+        owner "Provide owner name"
+        type=none "Provide type name" = user enterprise organization none
+    '
+
+    if [ "$type" == "none" ]; then
+        # get type
+        type=user
+    fi
+
+    http.dict.getput "current-owner" "$owner"; 
+    http.dict.getput "current-owner-type" "$type"
 }
+
+gt.get(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.get "$@";  }
+gt.get.multi(){
+    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+
+    local first=() second="" flag=0
+    for i in "$@"; do
+        if [ "$i" == "--" ]; then
+            flag=1
+            continue
+        fi
+
+        if [ "$flag" -eq 0 ]; then
+            first+=("$i")
+        else
+            second+=("$i")
+        fi
+    done
+
+    if [ "${#second[@]}" -eq 0 ]; then
+        second=(cat)
+    fi 
+
+    local i=0 max_page=100000
+    while (( :; i < max_page; i++ )); do
+        gt.get "${first[@]}" page=$i per_page=100 | eval "${second[@]}"
+        max_page=$(gt.resp.header "max_age")
+    done
+}
+
+gt.post(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.post "$@"; }
+gt.post.json(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.post.json "$@"; }
+
+gt.put(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.put "$@"; }
+gt.put.json(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.put.json "$@"; }
+
+gt.delete(){ O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}" http.delete "$@"; }
+
+# gt.json(){
+#     json.generate "$@"
+# }
+
+# gt.json+token() {
+#     gt.json access_token "$GITEE_TOKEN" "$@"
+# }
 
 ###########
 
@@ -73,51 +175,27 @@ gt.org.create(){
     gt.post "/v5/users/organization" name="$org" org="$org"
 }
 
-gt.get.header(){
-    local url="$GT_URL${1:?Suburl}?access_token=$GT_TOKEN${2}"
-    echo "Visiting $url" >&2
-    curl -X GET -I --header 'Content-Type: application/json;charset=UTF-8' "$url" 2>/dev/null
-}
+# gt.get.header(){
+#     local url="$GT_URL${1:?Suburl}?access_token=$GT_TOKEN${2}"
+#     echo "Visiting $url" >&2
+#     curl -X GET -I --header 'Content-Type: application/json;charset=UTF-8' "$url" 2>/dev/null
+# }
 
-gt.repo.list(){ 
-    local i=0 max_page=100000
-    while (( i < max_page; i++ )); do
-        gt.get "/v5/$(gt.current-owner-type)/$(gt.current-owner)/repos" type=all page=$i per_page=100 |
-            jq -r ".[] | .full_name"
-        max_page=$(gt.resp.header "max_age")
-    done
+gt.repo.list(){
+    gt.get.multi "/v5/$(gt.current-owner-type)/$(gt.current-owner)/repos" type=all -- jq -r ".[] | .full_name"
+
+    # local i=0 max_page=100000
+    # while (( i < max_page; i++ )); do
+    #     gt.get "/v5/$(gt.current-owner-type)/$(gt.current-owner)/repos" type=all page=$i per_page=100 |
+    #         jq -r ".[] | .full_name"
+    #     max_page=$(gt.resp.header "max_age")
+    # done
 }
 
 gt.repo.clone(){
     gt.repo.clone.ssh && return 0
     gt.repo.clone.https && return 0
     return $?
-}
-
-gt._owner(){
-    repo=${owner:-$(http.dict.getput "current-repo")}
-    if [[ "$repo" = */* ]]; then
-        owner=${repo%%/*}
-        repo=${repo##*/}
-    fi
-
-    echo "${owner}"
-}
-
-gt._repo(){
-    repo=${owner:-$(http.dict.getput "current-repo")}
-    if [[ "$repo" = */* ]]; then
-        owner=${repo%%/*}
-        repo=${repo##*/}
-    fi 
-}
-
-gt._parse_owner_repo(){
-    repo=${owner:-$(http.dict.getput "current-repo")}
-    if [[ "$repo" = */* ]]; then
-        owner=${repo%%/*}
-        repo=${repo##*/}
-    fi
 }
 
 gt.repo.clone.ssh(){
@@ -133,7 +211,7 @@ gt.repo.clone.ssh(){
 gt.repo.clone.https(){
     # parse owner/user
     gt._parse_owner_repo
-    "git clone https://github.com/$owner/$repo.git"
+    git clone "https://github.com/$owner/$repo.git"
 }
 
 gt.repo.fork(){
@@ -166,13 +244,12 @@ gt.user.repo.create(){
         private) private=true;;
     esac
 
-    (
-        http.body.add_by_name name has_issues has_wiki private
-        gt.post "/v5/user/repos"
-    )
+    gt.post.json "/v5/user/repos" name has_issues has_wiki private
+    
 }
 
 # ORGANIZATION NAME
+# shellcheck disable=SC2154,SC2034
 gt.organization.repo.create(){
     @p '
         has_issues=true     = true false
@@ -188,13 +265,12 @@ gt.organization.repo.create(){
         innerSource) public=2;;
     esac
 
-    (
-        http.body.add_by_name name has_issues has_wiki public
-        gt.post "/v5/orgs/$org/repos"
-    )
+    gt.post.json "/v5/orgs/$org/repos" name has_issues has_wiki public
 }
 
 # ENTERPRISE NAME
+
+# shellcheck disable=SC2154
 gt.enterprise.repo.create(){
     @p '
         has_issues=true     = true false
@@ -203,29 +279,15 @@ gt.enterprise.repo.create(){
     '
 
     local private
+    # shellcheck disable=SC2034
     case "$access" in
         public)  private=0;;
         private) private=1;;
         innerSource) private=2;;
     esac
 
-    if [ "$#" -eq 0 ]; then
-        (
-            http.body.add_by_name name has_issues has_wiki private
-            gt.post "/v5/enterprises/$enterprise/repos"
-        )
-        return 0
-    fi
-
-    for name in "$@"; do
-        (
-            # http.body.add_by_name name has_issues has_wiki private
-            # BODY="$(gt.json name has_issue has_wiki private)"
-
-            # Default is to post body in json
-            gt.post "/v5/enterprises/$enterprise/repos"
-        )
-    done
+    gt.post.json "/v5/enterprises/$enterprise/repos" name has_issues has_wiki private
+    return 0
 }
 
 
@@ -254,10 +316,7 @@ gt.repo.collaborators.add(){
         permission=pull "Repo permission" = push push admin
     '
 
-    (
-        http.body.add "permission=$permission"
-        gt.put "/v5/repos/$owner/$repo/collaborators/$username"
-    )
+    gt.put.json "/v5/repos/$owner/$repo/collaborators/$username" permission
 }
 
 
