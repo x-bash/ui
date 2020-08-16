@@ -379,7 +379,6 @@ gt.org.repo.create(){
 
     # TODO: I don't know what does path means for an organization repo
     @p '
-        name "provide repo name"
         path "provide path"
         description "repo description"
         homepage "repo home page"
@@ -399,19 +398,24 @@ gt.org.repo.create(){
         innerSource) public=2;;
     esac
 
-    gt.post.json "/v5/orgs/$org/repos" \
-        name path description homepage has_issues has_wiki public\
-        can_comment auto_init gitignore_template license_template
+    local name
+    for name in "$@"; do
+        gt.post.json "/v5/orgs/$org/repos" \
+            name path description homepage has_issues has_wiki public\
+            can_comment auto_init gitignore_template license_template
+    done
 }
 
 # ENTERPRISE NAME
 
+# https://gitee.com/api/v5/swagger#/postV5EnterprisesEnterpriseRepos
 # shellcheck disable=SC2154
 gt.enterprise.repo.create(){
     @p '
         has_issues=true     = true false
         has_wiki=true       = true false
         access=private      = public private innerSource
+        outsourced=false    = true false
     '
 
     local private
@@ -422,18 +426,21 @@ gt.enterprise.repo.create(){
         innerSource) private=2;;
     esac
 
-    gt.post.json "/v5/enterprises/$enterprise/repos" name has_issues has_wiki private
+    local name
+    for name in "$@"; do
+        gt.post.json "/v5/enterprises/$enterprise/repos" name has_issues has_wiki private
+    done
     return 0
 }
 
 
-gt.repo.collaborators(){
+gt.repo.member(){
     : Provide function, add from enterprise list
     : Provide function, remove from existing member list
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoCollaborators
-gt.repo.collaborators.list(){
+gt.repo.member.list(){
     :
     # TODO: page?
     # gt.multiget "/v5/repos/$owner/$repo/collaborators" -- ""
@@ -443,7 +450,7 @@ gt.repo.collaborators.list(){
 # gt.repo.member.add pull:edwinjhlee,work,adf push:work,adf admin:edwinjhlee
 
 # https://gitee.com/api/v5/swagger#/putV5ReposOwnerRepoCollaboratorsUsername
-gt.repo.collaborators.add(){
+gt.repo.member.add(){
     if [ "$1" == "-h" ]; then
         echo "Example: owner=d-y-innovations repo=demo-repo username=user1 permission=pull gt.repo.member.add"
         echo "Example: repo=d-y-innovations/demo-repo gt.repo.member.add pull:user1,user2 push:user3,user4 admin:user5"
@@ -469,11 +476,11 @@ gt.repo.collaborators.add(){
 # vscode.collaborators.remove chanchan hsn
 <<A
 gt.current-repo lteam/vscode
-gt.repo.collaborators.remove chanchan hsn
+gt.repo.member.remove chanchan hsn
 A
 
 # https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepoCollaboratorsUsername
-gt.repo.collaborators.remove(){
+gt.repo.member.remove(){
     @p '
         owner "Repo Owner"
         repo "Repo name"
@@ -488,8 +495,18 @@ gt.repo.collaborators.remove(){
     # gt.delete "/v5/repos/${owner?:Provide owner}/${repo?:Provide Repo}/collaborators/${username:?Provider Collaborator}"
 }
 
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoReleases
+gt.repo.release.list(){
+    :
+}
 
+# https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoReleases
 gt.repo.release.create(){
+    :
+}
+
+# https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoReleasesId
+gt.repo.release.update(){
     :
 }
 
@@ -497,11 +514,8 @@ gt.repo.release.get_or_create(){
     :
 }
 
-gt.repo.release.add(){
-    :
-}
-
-gt.repo.release.remove(){
+# https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepoReleasesId
+gt.repo.release.delete(){
     :
 }
 
@@ -528,31 +542,54 @@ gt.pr(){
     :
 }
 
+# https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPulls
 gt.pr.create(){
     :
 }
 
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPulls
 gt.pr.list(){
     :
 }
 
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumber
 gt.pr.open(){
     :
 }
 
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumber
 gt.pr.status(){
     :
 }
 
+# https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoPullsNumberAssignees
+gt.pr.review-status.reset(){
+    :
+}
+
+# https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoPullsNumberTesters
+gt.pr.test-status.reset(){
+    :
+}
+
+# open navigator, using the viewer
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumber
 gt.pr.view(){
     :
 }
 
+# git clone to local disk to compare
 gt.pr.checkout(){
     :
 }
 
-gt.pr.list-comment(){
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumberIssues
+gt.pr.issue.list(){
+    :
+}
+
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumberComments
+gt.pr.comment.list(){
     : list all of the comment in the terminal
 }
 
