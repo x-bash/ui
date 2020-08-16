@@ -375,22 +375,35 @@ gt.user.repo.create(){
 
 # ORGANIZATION NAME
 # shellcheck disable=SC2154,SC2034
+
+# https://gitee.com/api/v5/swagger#/postV5OrgsOrgRepos
 gt.organization.repo.create(){
+
+    # TODO: I don't know what does path means for an organization repo
     @p '
+        name "provide repo name"
+        path "provide path"
+        description "repo description"
+        homepage "repo home page"
         has_issues=true     = true false
         has_wiki=true       = true false
+        can_comment=true    = true false
         access=private      = public private innerSource
+        auto_init=false     = true false
+        gitignore_template
+        license_template
     '
 
     local public
-    # TODO: bug?
     case "$access" in
-        public)  public=0;;
-        private) public=1;;
+        private)  public=0;;
+        public) public=1;;
         innerSource) public=2;;
     esac
 
-    gt.post.json "/v5/orgs/$org/repos" name has_issues has_wiki public
+    gt.post.json "/v5/orgs/$org/repos" \
+        name path description homepage has_issues has_wiki public\
+        can_comment auto_init gitignore_template license_template
 }
 
 # ENTERPRISE NAME
