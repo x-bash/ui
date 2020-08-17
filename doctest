@@ -74,7 +74,9 @@ $cl"
             continue
         fi
 
-        [[ "$line" =~ ^\<\<([[:alnum:]]+)$ ]] && {
+        # Must start with doctest
+        # [[ "$line" =~ ^\<\<([[:alnum:]]+)$ ]] && {
+        [[ "$line" =~ ^\<\<((doctest|DOCTEST)[A-Za-z0-9-]*)$ ]] && {
             start="${BASH_REMATCH[1]}"
             block=()
         }
