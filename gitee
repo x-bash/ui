@@ -3,13 +3,37 @@
 # TODO: Add --dry-run
 
 # @src std/http
-. dict
-. str
-. list
-. http
+
 . p
+. dict
+. http
+. list
+. str
+. oo
 
 # Without Context, gt and http share same name
+
+open_browser(){
+    local BROWSER=${BROWSER:-$BROWSER}
+    local website=${1:?Provide websites}
+    if [ -n "$BROWSER" ]; then
+        $BROWSER "$website"
+    elif uname -a | grep -q Darwin; then
+        open -a "/Applications/Safari.app" "$website"
+    elif command -v xdg-open > /dev/null; then
+        xdg-open "$website"
+    elif command -v gnome-open > /dev/null; then
+        gnome-open "$website"
+    else
+        echo "Could not detect the web browser to use."
+        return 1
+    fi
+}
+
+
+# TODO: create a repo named gitee-cli
+# TODO: create a repo named gitlab-cli
+# TODO: create a repo named github-cli
 
 # Introducing context
 gt.make(){
@@ -91,8 +115,6 @@ gt.dict.put(){
 
 ###########
 
-
-
 gt.token.set(){
     local O="${O:?Provide client name by O environment}"
     local GITEE_TOKEN=${1:?"Please provide gitee token"}
@@ -140,17 +162,23 @@ gt.token.get(){
 # }
 
 gt.parse_owner_repo(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+    local O="${O:?Provide client name by O environment}"
 
-    @p '
-        repo "Provide repo name"
-    '
+    if [ -z "$repo" ]; then
+        repo="$(gt.current-repo.get)"
+    fi
+
     if [[ "$repo" = */* ]]; then
         owner=${repo%%/*}
         repo=${repo##*/}
     fi
+
+    if [ -z "$owner" ]; then
+        owner="$(gt.current-owner.get)"
+    fi
 }
 
+# TODO: review
 gt.parse_env_owner_type(){
     local O=${O:?Provide client name by O environment}
 
@@ -165,14 +193,19 @@ gt.parse_env_owner_type(){
     fi
 }
 
+# TODO: review
 gt.parse_env_owner_repo_type(){
-    local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
+    local O="${O:?Provide client name by O environment}"
 
     gt.parse_owner_repo
     if [ -z "$owner" ]; then
         owner=$(gt.dict.getput "current-owner")
         owner_type="$(gt.dict.getput "current-owner_type")"
         repo=$(gt.dict.getput "current-repo")
+    fi
+
+    if [ -z "${owner_type}" ]; then
+        owner_type="$(gt.owner_type.query "$owner")"
     fi
 }
 
@@ -224,7 +257,6 @@ gt.current-owner_type.get(){
     gt.dict.get "current-owner_type"
 }
 
-
 gt.eq_str_by_name(){
     for i in "$@"; do
         echo "$i=${!i}"
@@ -258,12 +290,6 @@ gt.org.info(){
     gt.get "/v5/orgs/${1:?Provide organization}"
 }
 
-# gt.get.header(){
-#     local url="$GT_URL${1:?Suburl}?access_token=$GT_TOKEN${2}"
-#     echo "Visiting $url" >&2
-#     curl -X GET -I --header 'Content-Type: application/json;charset=UTF-8' "$url" 2>/dev/null
-# }
-
 gt.repo.list(){
     @p '
         owner="" "Provide owner"
@@ -283,7 +309,6 @@ gt.enterprise.repo.list(){
         direct=true "" = true false
     '
 
-    gt.parse_env_owner_type
     gt.get.multi "/v5/enterprises/$owner/repos" type=all | jq -r ".[] | .full_name"
 }
 
@@ -294,7 +319,6 @@ gt.org.repo.list(){
         type=all "repo type" = all public private
     '
 
-    gt.parse_env_owner_type
     gt.get.multi "/v5/orgs/$owner/repos" type=all | jq -r ".[] | .full_name"
 }
 
@@ -303,17 +327,40 @@ gt.user.repo.list(){
     # TODO: afiiliation could be combination
     # TODO: add split,
     @p '
-        owner "Provide enterprise"
         visibility=all "" = public private all
         affiliation=owner "" =~ ^(owner|collaborator|organization_member|enterprise_member|admin)(,(owner|collaborator|organization_member|enterprise_member|admin))+$
         sort=created "" = created updated pushed full_name
         direction="" = asc desc ""
     '
 
-    gt.parse_env_owner_type
-    gt.get.multi "/v5/orgs/$owner/repos" owner visibility affiliation sort direction\
+    gt.get.multi "/v5/user/repos" visibility affiliation sort direction\
         | jq -r ".[] | .full_name"
+}
 
+gt.repo.url.http(){
+    @p '
+        owner="" "Provide owner"
+        repo "provide repo"
+    '
+
+    [ $# -ne 0 ] && repo="$1"
+    gt.parse_owner_repo
+    echo "https://gitee.com/${owner}/${repo}.git"
+}
+
+gt.repo.url(){
+    gt.repo.url.ssh "$@"
+}
+
+gt.repo.url.ssh(){
+    @p '
+        owner="" "Provide owner"
+        repo "provide repo"
+    '
+
+    [ $# -ne 0 ] && repo="$1"
+    gt.parse_owner_repo
+    echo "git@gitee.com:${owner}/${repo}.git"
 }
 
 gt.repo.clone(){
@@ -322,39 +369,76 @@ gt.repo.clone(){
     return $?
 }
 
+# shellcheck disable=SC2120
 gt.repo.clone.ssh(){
-    @p '
-        owner="none" "Provide owner"
-        repo "provide repo"
-    '
-    
-    gt.parse_owner_repo
-    git clone "git@github.com:$owner/$repo.git"
+    git clone "$(gt.repo.url.ssh "$@")"
 }
 
+# shellcheck disable=SC2120
 gt.repo.clone.https(){
-    # parse owner/user
-    gt.parse_owner_repo
-    git clone "https://github.com/$owner/$repo.git"
+    git clone "$(gt.repo.url.http "$@")"
 }
 
+# https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoForks
 gt.repo.fork(){
-    : auto fork
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+        organization="" "Provide organization"
+    '
+
+    gt.parse_owner_repo
+    gt.post.json "https://gitee.com/api/v5/repos/${owner}/${repo}/forks" organization
 }
 
-<<A
-How to use:
-gt.current-owner lteam18
-gt.repo.create "new" "abc" "cde"
-A
-gt.repo.create(){
-    for i in "$@"; do
-        "gt.$(gt.current-owner_type).repo.create" "$i"
+#################
+# Owner Operators
+#################
+
+# <<A
+# How to use:
+# gt.current-owner lteam18
+# gt.repo.create "new" "abc" "cde"
+# A
+# gt.repo.create(){
+#     local repo owner owner_type
+#     for repo in "$@"; do
+#         gt.parse_env_owner_repo_type
+#         "gt.$owner_type.repo.create"
+#     done
+# }
+
+gt.org.new(){
+    local owner="${1:?Provide organization name}"
+    local instance_name="${2:-$owner}"
+    eval "
+        $instance_name.info(){ gt.org.info $owner; }
+        $instance_name.repo.create(){ gt.org.repo.create --owner $owner \"\$@\"; }
+        $instance_name.repo.list(){ gt.org.repo.list --owner $owner \"\$@\"; }
+    "
+}
+
+gt.enterprise.new(){
+    local owner="${1:?Provide enterprise name}"
+    local instance_name="${2:-$owner}"
+    eval "
+        $instance_name.info(){ gt.enterprise.info $owner; }
+        $instance_name.repo.create(){ gt.enterprise.repo.create --owner $owner \"\$@\"; }
+        $instance_name.repo.list(){ gt.enterprise.repo.list  --owner $owner \"\$@\"; }
+    "
+}
+
+# https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepo
+gt.repo.destroy(){
+    local repo owner
+    for repo in "$@"; do
+        gt.parse_owner_repo
+        gt.delete "/v5/repos/${owner}/${repo}"
     done
 }
 
 # arguments NAME
-gt.user.repo.create(){
+gt.repo.create(){
     @p '
         has_issues=true     = true false
         has_wiki=true       = true false
@@ -367,8 +451,10 @@ gt.user.repo.create(){
         private) private=true;;
     esac
 
-    gt.post.json "/v5/user/repos" name has_issues has_wiki private
-    
+    local name
+    for name in "$@"; do
+        gt.post.json "/v5/user/repos" name has_issues has_wiki private | jq .full_name
+    done
 }
 
 # ORGANIZATION NAME
@@ -376,9 +462,9 @@ gt.user.repo.create(){
 
 # https://gitee.com/api/v5/swagger#/postV5OrgsOrgRepos
 gt.org.repo.create(){
-
     # TODO: I don't know what does path means for an organization repo
     @p '
+        owner   "organization name"
         path "provide path"
         description "repo description"
         homepage "repo home page"
@@ -400,7 +486,7 @@ gt.org.repo.create(){
 
     local name
     for name in "$@"; do
-        gt.post.json "/v5/orgs/$org/repos" \
+        gt.post.json "/v5/orgs/$owner/repos" \
             name path description homepage has_issues has_wiki public\
             can_comment auto_init gitignore_template license_template
     done
@@ -412,6 +498,7 @@ gt.org.repo.create(){
 # shellcheck disable=SC2154
 gt.enterprise.repo.create(){
     @p '
+        owner   "enterprise name"
         has_issues=true     = true false
         has_wiki=true       = true false
         access=private      = public private innerSource
@@ -428,15 +515,25 @@ gt.enterprise.repo.create(){
 
     local name
     for name in "$@"; do
-        gt.post.json "/v5/enterprises/$enterprise/repos" name has_issues has_wiki private
+        gt.post.json "/v5/enterprises/$owner/repos" name has_issues has_wiki private
     done
     return 0
 }
 
+#################
+# Repo Operators
+#################
 
-gt.repo.member(){
-    : Provide function, add from enterprise list
-    : Provide function, remove from existing member list
+gt.repo.new(){
+    local owner repo="${1:?Provide enterprise name}"
+    gt.parse_owner_repo
+    local instance_name="${2:-$repo}"
+
+    eval "
+        $instance_name.member.list(){ gt.repo.member.list \"\$@\"; }
+        $instance_name.member.add(){ gt.repo.member.add \"\$@\"; }
+        $instance_name.member.remove(){ gt.repo.member.remove \"\$@\"; }
+    "
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoCollaborators
@@ -477,121 +574,263 @@ gt.repo.member.add(){
 <<A
 gt.current-repo lteam/vscode
 gt.repo.member.remove chanchan hsn
+
+gt.repo.new lteam18/vscode
+lteam18/vscode.member.add chanchan hsn
+lteam18/vscode.member.remove hsn
+
+gt.repo.new vscode
+vscode.member.edit => with one list
+vscode.member.add
+vscode.member.remove hsn
 A
 
 # https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepoCollaboratorsUsername
 gt.repo.member.remove(){
     @p '
-        owner "Repo Owner"
+        owner="" "Repo Owner"
         repo "Repo name"
     '
-    owner=$(gt.current-owner)
-    repo=$(gt.current-repo)
+    gt.parse_owner_repo
 
     local username
     for username in "$@"; do
         gt.delete "/v5/repos/$owner/$repo/collaborators/$username"
     done
-    # gt.delete "/v5/repos/${owner?:Provide owner}/${repo?:Provide Repo}/collaborators/${username:?Provider Collaborator}"
+}
+
+gt.repo.info(){
+    local repo=${1:?Provide repo name} owner
+    gt.parse_owner_repo
+    echo "hi $owner $repo"
+    gt.get "/v5/repos/${owner}/${repo}"
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoReleases
 gt.repo.release.list(){
-    :
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoReleases
 gt.repo.release.create(){
-    :
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoReleasesId
 gt.repo.release.update(){
-    :
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 gt.repo.release.get_or_create(){
-    :
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepoReleasesId
 gt.repo.release.delete(){
-    :
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 gt.repo.release.attachment(){
-    : Provide manager
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 gt.repo.release.attachment.list(){
-    :
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # Provide multiple files
 gt.repo.release.attachment.upload(){
-    :
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # Delete the file in attachment list
 gt.repo.release.attachment.remove(){
-    :
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
-
-gt.pr(){
-    :
-}
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPulls
-gt.pr.create(){
-    :
+gt.repo.pr.create(){
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+        title "pr title"
+        head "source branch. Format: [username:]<branch>"
+        base "target branch. Format: [username:]<branch>"
+        body="" "pull request content"
+        milestone_number="" "milestone id"
+        labels=""
+        assignees="" "reviewer username list. Format: <username>[,<username>]"
+        testers="" "tester username list. Format: <username>[,<username>]"
+        prune_source_branch=false = true false
+    '
+
+}
+
+# https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPullsNumberAssignees
+gt.repo.pr.assign(){
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+        number "pull request id"
+        labels=""
+        assignees="" "reviewer username list. Format: <username>[,<username>]"
+    '
+
+    gt.parse_owner_repo
+    gt.post.json "/v5/repos/${owner}/${repo}/pulls/${number}/assignees"
+}
+
+# https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPullsNumberTesters
+gt.repo.pr.assign.testers(){
+    @p '
+        owner "Repo Owner"
+        repo "Repo name"
+        number "pull request id"
+        labels=""
+        testers="" "testers username list. Format: <username>[,<username>]"
+    '
+
+    gt.parse_owner_repo
+    gt.post.json "/v5/repos/${owner}/${repo}/pulls/${number}/testers" labels testers
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPulls
-gt.pr.list(){
-    :
+gt.repo.pr.list(){
+    @p '
+        owner "Repo Owner"
+        repo "Repo name"
+        state=open = open closed merged all
+    '
+
+    gt.parse_owner_repo
+    gt.get.multi "/v5/repos/${owner}/${repo}/pulls" state
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumber
-gt.pr.open(){
-    :
+gt.repo.pr.open(){
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumber
-gt.pr.status(){
-    :
+gt.repo.pr.status(){
+    state=all gt.repo.pr.list
 }
 
 # https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoPullsNumberAssignees
-gt.pr.review-status.reset(){
-    :
+gt.repo.pr.review-status.reset(){
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoPullsNumberTesters
-gt.pr.test-status.reset(){
-    :
+gt.repo.pr.test-status.reset(){
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # open navigator, using the viewer
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumber
-gt.pr.view(){
-    :
+gt.repo.pr.view(){
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+        id  "pull request id"
+    '
+    gt.parse_owner_repo
+    open_browser "https://gitee.com/${owner}/${repo}/pulls/${id}"
+}
+
+gt.repo.pr.checkout.http(){
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # git clone to local disk to compare
-gt.pr.checkout(){
-    :
+gt.repo.pr.merge.http(){
+    local source_branch="${1:?Provide source branch}"
+    local target_branch="${1:?Provide target branch}"
+
+    local repo_name=${repo_url##*/}
+    repo_name=${repo_name%.git}
+
+    if ! git branch; then
+        git clone "$repo_url"
+        cd repo_name || return 1
+    fi
+
+    git checkout "$target_branch"
+    git pull "$repo_url" "$source_branch"
+    echo "Please open the current folder to merge the code" >&2
+    # git push origin issue_I1N19D_ljh_using-java-10
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumberIssues
-gt.pr.issue.list(){
-    :
+gt.repo.pr.issue.list(){
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumberComments
-gt.pr.comment.list(){
+gt.repo.pr.comment.list(){
+    : TODO: assitance
     : list all of the comment in the terminal
+
+    @p '
+        owner="" "Repo Owner"
+        repo "Repo name"
+    '
+    gt.parse_owner_repo
 }
-
-
-

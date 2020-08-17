@@ -191,17 +191,19 @@ http.request(){
     local tmp
     tmp=$(mktemp)
     echo "$data" > "$tmp"
+    # echo "$data" >&2
 
     local code
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        # echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path"  
+        echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 1>&2
         eval curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 2>/dev/null
         code=$?
     else
-        eval curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 2>/dev/null
+        echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 1>&2
+        eval curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 2>/dev/null 2>/dev/null
         code=$?
     fi
-    rm "$tmp"
+    # rm "$tmp"
     return $code
 }
 
@@ -230,14 +232,19 @@ http.post.text(){ X=POST http.request.json_body "$@"; }
 http.post.bin(){ X=POST http.request.json_body "$@"; }
 
 http.get(){
-    local url=$1
+    local url=$1 key value
     shift
     (
         for i in "$@"; do
             if [[ "$i" = *=* ]]; then
-                http.qs.add "${i%=*}" "${i##*=}"
+                key="${i%=*}";  value="${i##*=}"
             else
-                http.qs.add "$i" "${!i}"
+                key="$i";       value="${!i}"
+            fi
+
+            # Notice: It may be a bug
+            if [ -n "$value" ]; then
+                http.qs.add "$key" "$value"
             fi
         done
         

@@ -31,12 +31,11 @@ p.__parse(){
     local oplist=()
     local choicelist=()
 
+    local line
+
     while read -r line; do
         line="$(str.trim "$line")"
         [ "$line" = "" ] && continue
-
-        # echo "$line" >&2
-        # echo "!!!!!!!!!!!!!!!" >&2
      
         local operator="str"
 
@@ -102,7 +101,7 @@ p.__parse(){
         if [[ "$parameter_name" == --* ]]; then
             shift
             parameter_name=${parameter_name:2}
-            local sw=0
+            local sw=0 i
             for i in "${!varlist[@]}"; do
                 [[ ! "${typelist[i]}" = arg* ]] && continue
                 local _varname=${varlist[i]}
@@ -127,26 +126,26 @@ p.__parse(){
     echo "$rest_argv_str  )"
 
     # setup default value
-    for i in $(seq "${#varlist[@]}"); do
-        local name="${varlist[$i]}"
-        local val="${vallist[$i]}"
+    for i in "${!varlist[@]}"; do
+        local name="${varlist[i]}"
+        local val="${vallist[i]}"
         if [ "$val" == "" ]; then
-            vallist[$i]=${deflist[$i]}
+            vallist[i]=${deflist[i]}
         fi
     done
 
     # using local value
-    for i in $(seq "${#varlist[@]}"); do
-        (( i=i-1 ))
+    for i in "${!varlist[@]}"; do
         local name="${varlist[i]}"
         local val="${vallist[i]}"
 
         local op="${oplist[$i]}"
+        # TODO: Should we quote? Please find out
         local choice=( ${choicelist[i]} )
 
         case "$op" in
         =~)
-            local match=0
+            local match=0 c
             for c in "${choice[@]}"; do
                 if [[ "$val" =~ $c ]]; then
                     match=1
@@ -161,7 +160,7 @@ p.__parse(){
                 return 0;
             fi;;
         =)
-            local match=0
+            local match=0 c
             for c in "${choice[@]}"; do
                 if [ "$c" == "$val" ]; then
                     match=1
