@@ -1,8 +1,9 @@
 # shellcheck shell=bash
 
+# TODO: we should only check status
 test.run.all() {
+    local i
     for i in $(typeset -F | cut -d ' ' -f 3 | grep "tc:" | grep -v "tc:setup" | grep -v "tc:teardown"); do
-        echo hi
         tc:setup
         @catch-final "
             Test Fail: codeline \$LINENO
@@ -36,3 +37,27 @@ test.tap(){
     echo "not ok $INDEX $DESCRIPTION"
 }
 
+testsuite(){
+    local i
+    for i in "$@"; do
+        if (
+            for i in $(typeset -F | cut -d ' ' -f 3 | grep "tc:" ); do
+                unset -f "$i" 
+            done >&2
+            source "$i" >&2
+            ( test.run.all ) >&2
+            echo "$?"
+        ); then
+            :
+        else
+            echo "Fail on test file: $i"
+            return 1
+        fi
+
+    done
+}
+
+# Move doctest here
+test.doctest(){
+    :
+}

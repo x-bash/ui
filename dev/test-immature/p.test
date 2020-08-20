@@ -1,4 +1,4 @@
-. p
+. ./p
 
 # p.__parse --repo hi --org "dy\" innoa" '
 # p.__parse --repo hi --org "dyi" '
@@ -13,6 +13,9 @@ work(){
         org =~ [[:alnum:]]+
         repo =~ [[:alnum:]]+
         access=public = public private inner-source
+        count=1 :int
+        fff=1 :float
+        state=open :, close open all
     '
 
     echo "org: $org"

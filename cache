@@ -14,37 +14,39 @@
 
 # expiration=1 cache.cmd curl www.github.com/v4/api
 # cache.cmd "curl www.github.com/v4/api" > a.txt
+
+str.md5(){
+    local cmd
+    if command -v md5 >/dev/null 2>&1; then
+        cmd=md5
+    else
+        cmd=md5sum
+    fi
+    if [ -z "$1" ]; then
+        $cmd | cut -d ' ' -f 1
+    else
+        echo -n "$1" | $cmd | cut -d ' ' -f 1
+    fi
+}
+
 cache.cmd(){
-    # local CACHE_EXPIRATION_IN_MIN=${CACHE_EXPIRATION_IN_MIN:-${cache_expiration_in_min:-60}}
+    local IFS=
+    local CACHE_EXPIRATION_IN_MIN=${CACHE_EXPIRATION_IN_MIN:-${cache_expiration_in_min:-60}}
     local FILEPATH="${CACHE_FILE:-${cache_file:-""}}"
     if [ -z "$FILEPATH" ]; then
-        echo "Expect environment cache_file or CACHE_FILE" >&2
-        return 1
-
-        FILEPATH="$(cache.cmd.get.filepath "$@")"
+        FILEPATH="${CACHE_FOLDER:$TMPDIR/x-cmd-path}"
+        mkdir -p "$FILEPATH"
+        FILEPATH="$FILEPATH/$(str.md5 "$*")"
     fi
 
-    # ( find "$FILEPATH" -mmin "-${CACHE_EXPIRATION}" | grep -q ^  ) || {
-    ( find "$FILEPATH" -mmin "-${CACHE_EXPIRATION}" | grep -q ^  ) || {
-        echo "FILEPATH does't exists or older than ${CACHE_EXPIRATION} min. Update" >&2
+    ( find "$FILEPATH" -mmin "-${CACHE_EXPIRATION_IN_MIN}" | grep -q ^  ) || {
+        echo "FILEPATH does't exists or older than ${CACHE_EXPIRATION_IN_MIN} min. Update" >&2
         eval "$@" | tee "$FILEPATH"
     }
 }
 
-
-cache.cmd.setup.auto.teardown(){
-    :
-}
-
-cache.cmd.get.filepath(){
-    # TODO: checking the folder
-    local IFS=$' '
-    local cmd="$*"
-
-    local md5value
-    md5value="$(str.md5 "$cmd")"
-
-    X_CMD_X_BASH_CACHE_CMD_FOLDER
+cache.cmd.setup.folder(){
+    CACHE_FOLDER="${1:?Provide cache folder}"
 }
 
 # consider temp using the local disk?

@@ -26,8 +26,10 @@ oo.create_new_function(){
 }
 
 oo.make(){
-    local O=${O:?Provode object name}
+    local O=${1:?Provode object name}
+    shift
     local code="unset -f $O.delete;"
+    local IFS='=' k v
     for i in "$@"; do
 
         if [ "$i" == "delete" ] || [ "$i" == "toJSON" ]; then
@@ -36,8 +38,7 @@ oo.make(){
             return 1
         fi
 
-        local k=$(echo $i | cut -d '=' -f 1)
-        local v=$(echo $i | cut -d '=' -f 2)
+        read -r k v <<<"$i"
         eval "$O.$k(){ echo '$v'; }"
 
         code="$code unset -f $O.$k;"

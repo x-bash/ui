@@ -1,5 +1,7 @@
 # shellcheck shell=bash
 
+# To be honest, I don't know why we should introduce it.
+
 datetime.new(){
     local VAR=${1:?variable}
 
@@ -34,8 +36,18 @@ datetime.new(){
     eval "${VAR}.delete(){ "$code" ; }"
 
     # @src std/oo
-    # O=${1:?variable} oo.make \
+    # oo.make ${1:?variable}\
     #     year=$(date +%Y) month=$(date +%m) day=$(date +%d) \
     #     hour=$(date +%H) minute=$(date +%M) second=$(date +%S) \
     #     timestamp_in_second=$(date +%s)
+}
+
+datetime.diff(){
+    local a="${1:?timestamp 1}.timestamp_in_second"
+    local b="${2:?timestamp 2}.timestamp_in_second"
+    echo $(( $($a) - $($b) ))
+}
+
+datetime.filename(){
+    date +%Y%m%d_%H%M%S
 }

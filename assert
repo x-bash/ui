@@ -138,3 +138,7 @@ testFun(){
 # TIMEOUT=3 MSGURE="Fail if wrong" @testsuite "work1" testFun1
 # TIMEOUT=5 @ts "work2" testFun2
 
+assert.int(){
+    :
+}
+

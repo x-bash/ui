@@ -1,14 +1,11 @@
 # shellcheck shell=bash
 
-# I=% fn.map "echo % hi" 1 2 3
 # fn.map "echo hi" 1 2 3
+# I=? fn.map "echo ? hi" 1 2 3
 fn.map(){
-    cmd="$1"
+    local cmd="$1" I=${I="%"}
     shift
-
-    local I
-
-    if [ -n "$I" ]; then
+    if [ -n "$I" ] && [[ "$cmd" =~ ^[[:alnum:]-_:+]+$ ]]; then
         for i in "$@"; do
             eval "${cmd/$"$I"/$i}";
         done

@@ -6,6 +6,18 @@ str.repr(){
     echo "\"${1//\"/\\\"}\""
 }
 
+list.repr(){
+    # echo "\"$(echo "$1" | sed s/\"/\\\\\"/g)\""
+    # echo "\"${1//\"/\\\\\"}\""
+
+    printf "( "
+    for i in "$@"; do
+        printf "\"${i//\"/\\\"}\""
+        printf " "
+    done
+    printf ")"
+}
+
 str.trim(){
     local var="$*"
     # remove leading whitespace characters
@@ -16,7 +28,7 @@ str.trim(){
 }
 
 # shellcheck disable=SC2142
-alias @p='local _rest_argv=(); if ! eval "$(p.__parse "$@")"; then return $?; fi <<<'
+alias @p='if ! eval "$(p.__parse "$@")"; then return $? || exit $?; fi <<<'
 
 # TODO: avoid IFS influence on this function
 p.__parse(){
@@ -33,6 +45,7 @@ p.__parse(){
 
     local line
 
+    # Step 1: Parsing into tokens
     while read -r line; do
         line="$(str.trim "$line")"
         [ "$line" = "" ] && continue
@@ -62,7 +75,7 @@ p.__parse(){
         IFS=$'\n'
 
         case "${all_arg_arr[1]}" in
-        = | =~ | str | float | int) 
+        = | =~ | :str | :str? | :float | :int | =[?] | =? | =~[?] | =~? )
             oplist+=( "${all_arg_arr[1]}" )
             choicelist+=( "${all_arg_arr[*]}" )
             ;;
@@ -87,6 +100,7 @@ p.__parse(){
 
     # echo setup environment value >&2
     
+    # Step 2: Init the valus with the enviroment
     for (( i=0; i < ${#varlist[@]}; ++i )); do
         [[ ! "${typelist[i]}" = *env ]] && continue
         local name=${varlist[i]}
@@ -96,6 +110,8 @@ p.__parse(){
     local rest_argv_str="local _rest_argv=( "
 
     # echo setup parameter value >&2
+
+    # Step 3: Init the values with the parameter
     while [ ! "$#" -eq 0 ]; do
         local parameter_name=$1
         if [[ "$parameter_name" == --* ]]; then
@@ -123,9 +139,9 @@ p.__parse(){
         fi
     done
 
-    echo "$rest_argv_str  )"
+    echo "$rest_argv_str ) 2>/dev/null"
 
-    # setup default value
+    # Step 4: If value is NULL, use the default value.
     for i in "${!varlist[@]}"; do
         local name="${varlist[i]}"
         local val="${vallist[i]}"
@@ -134,7 +150,7 @@ p.__parse(){
         fi
     done
 
-    # using local value
+    # Step 4: Type check and output the code
     for i in "${!varlist[@]}"; do
         local name="${varlist[i]}"
         local val="${vallist[i]}"
@@ -162,7 +178,7 @@ p.__parse(){
         =)
             local match=0 c
             for c in "${choice[@]}"; do
-                if [ "$c" == "$val" ]; then
+                if [ "$c" = "$val" ]; then
                     match=1
                     break
                 fi
@@ -173,18 +189,20 @@ p.__parse(){
                 echo 'return 2 2>/dev/null'
                 return 0
             fi ;;
-        str | int)
+        :str | :int)
             if [[ "$op" = "int" && ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
                 echo "echo ERROR: $name='$val' An integer expected. >&2"
                 echo 'return 1 2>/dev/null'
                 return 1
             fi
-            local match=0
+            local match=1
             for c in "${choice[@]}"; do
+                echo "fuck $c" >&2
                 if [ "$c" = "$val" ]; then
                     match=1
                     break
                 fi
+                match=0
             done
 
             if [ $match -eq 0 ]; then
@@ -192,16 +210,64 @@ p.__parse(){
                 echo 'return 1 2>/dev/null'
                 return 0
             fi ;;
-        *) [ "$op" == "" ] || echo ": TODO: $op" >&2
-        ;;
+        =[?] | =?)
+            local sep=${op[1]} i match
+            [[ "$op" == =[?] ]] &&  sep=${op[2]}
+            local data=("$(echo "$val" | tr "$sep" '\n')")
+            for i in "${data[@]}"; do
+                match=0
+                for c in "${choice[@]}"; do
+                    if [ "$i" = "$c" ]; then
+                        match=1
+                        break
+                    fi
+                done
+                if [ $match -eq 0 ]; then
+                    echo "echo ERROR: $name='$val' Item inside Not one of the candidate set >&2"
+                    echo 'return 2 2>/dev/null'
+                    return 0
+                fi
+            done
+
+            if [[ "$op" == =[?] ]]; then
+                echo "local $name 2>/dev/null"
+                echo "$name=$(list.repr "${data[@]}")"
+                continue
+            fi ;;
+        =~[?] | =~? )
+            local sep=${op[2]} i match
+            [[ "$op" == =~[?] ]] && sep=${op[3]}
+            local data=("$(echo "$val" | tr "$sep" '\n')")
+            for i in "${data[@]}"; do
+                match=0
+                for c in "${choice[@]}"; do
+                    if [[ "$i" =~ $c ]]; then
+                        match=1
+                        break
+                    fi
+                done
+                if [ $match -eq 0 ]; then
+                    echo "echo ERROR: $name='$val' Split with $sep and found one of the element is match the regex set >&2"
+                    echo 'return 2 2>/dev/null'
+                    return 0
+                fi
+            done
+
+            if [[ "$op" == =[?] ]]; then
+                echo "local $name 2>/dev/null"
+                echo "$name=$(list.repr "${data[@]}")"
+                continue
+            fi ;;
+        *) [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
         esac
 
         # TODO: notice the '' inside the string
         # echo "$val: $val" >&2
-        echo "local $name"
+        echo "local $name 2>/dev/null"
         echo "$name=$(str.repr "$val")"
         # echo "local $name=$(str.repr "$val")"
         # echo "--------"
     done
-
 }
+
+shopt -s expand_aliases

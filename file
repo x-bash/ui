@@ -5,12 +5,46 @@ file.exist_or_append(){
   local filename="$1"
   local string_to_append="$2"
   grep -F --quiet "$string_to_append" "$filename" || echo "$string_to_append" >> "$filename"
-  echo "$filename"
+#   echo "$filename"
 }
 
 # Auto delete
 @src std/@
 alias file.tmp='__file_tmp_filepath="${TMPDIR}tmpfile.$RANDOM"; echo $__file_tmp_filepath; @defer "rm -f $__file_tmp_filepath"'
+
+
+<<A Usage 1:
+file.tmp.setup
+@defer file.tmp.end
+
+a="$(file.tmp.get_path "/var/tcd")"
+A
+
+<<A Usage 2:
+file.tmp.auto
+
+a="$(file.tmp.get_path "/var/tcd")"
+A
+
+file.tmp.auto(){
+    file.tmp.begin
+    @src std/@
+    @defer file.tmp.end
+}
+
+_X_CMD_X_BASH_FILE_TMP_GLOBAL=
+file.tmp.begin(){
+    _X_CMD_X_BASH_FILE_TMP_GLOBAL="$(mktemp)"
+    mkdir -p "$_X_CMD_X_BASH_FILE_TMP_GLOBAL"
+}
+
+file.tmp.get_path(){
+    echo "$_X_CMD_X_BASH_FILE_TMP_GLOBAL/${1:-$RANDOM}"
+}
+
+file.tmp.end(){
+    rm -rf "$_X_CMD_X_BASH_FILE_TMP_GLOBAL"
+}
 
 # mapfile
 file.to_array(){
