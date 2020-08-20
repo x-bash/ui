@@ -179,7 +179,7 @@ assert.not_empty(){
     done
 }
 
-assert.fixstr(){
+assert.str_length(){
     local varname=${1:?Please provide variable name}
     local val=${!$varname}
     local len=${#val}
@@ -191,7 +191,7 @@ assert.fixstr(){
     fi
 }
 
-assert.str_is(){
+assert.str_eq(){
     local val=${!1:?Please provide variable name}
     shift
     for i in "$@"; do
@@ -203,7 +203,7 @@ assert.str_is(){
     done
 }
 
-assert.str_regex(){
+assert.str_match_regex(){
     local val=${!1:?Please provide variable name}
     shift
     for i in "$@"; do
