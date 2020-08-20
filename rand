@@ -12,7 +12,7 @@ rand.int(){
 
 # Refer https://serverfault.com/questions/103359/how-to-create-a-uuid-in-bash
 # Refer https://github.com/Bash-it/bash-it/blob/master/aliases/available/uuidgen.aliases.bash
-random.uuid(){
+rand.uuid(){
     if command -v uuid 1>/dev/null; then # Linux
         uuid "$@"
     elif command -v uuidgen 1>/dev/null; then # macOS/BSD
@@ -43,27 +43,27 @@ random.uuid(){
 }
 
 # Refer https://gist.github.com/earthgecko/3089509
-random.string(){
+rand.string(){
     local LENGTH=${1:-32}
     local CHARSET=${2:-'a-zA-Z0-9'}
     # LC_CTYPE setting according to https://wxnacy.com/2018/03/07/tr-Illegal-byte-sequence/
     cat /dev/random | LC_CTYPE=C tr -c -d $CHARSET | fold -w $LENGTH | head -n 1
 }
 
-random.alphanum(){ random.string "$@"; }
-random.alpha(){ random.string 'a-zA-Z'; }
-random.lowercase(){ random.string 'a-z'; }
-random.uppercase(){ random.string 'A-Z'; }
+rand.alphanum(){ rand.string "$@"; }
+rand.alpha(){ rand.string 'a-zA-Z'; }
+rand.lowercase(){ rand.string 'a-z'; }
+rand.uppercase(){ rand.string 'A-Z'; }
 
-random.ip.address(){
+rand.ip.address(){
     :
 }
 
-random.email.address(){
+rand.email.address(){
     :
 }
 
-random.valid.user.name(){
+rand.valid.user.name(){
     :
 }
 
