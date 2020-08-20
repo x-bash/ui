@@ -142,3 +142,81 @@ assert.int(){
     :
 }
 
+# shellcheck shell=bash
+
+type.is_array(){
+    declare -p ${1:?Please provide variable name} 2> /dev/null | grep -q '^declare \-a'
+}
+
+
+type.is_int(){
+    [[ "${1:?Please provide variable name}" =~ ^[1-9]+([0-9])*$ ]]
+}
+
+# .1 or 1. considered to be invalid
+type.is_float(){
+    [[ "${1:?Please provide variable name}" =~ ^[0-9]+(.[0-9]+)?$ ]]
+}
+
+
+@int(){
+    for i in "$@"; do
+        type.is_int "${!i}" || return 1
+    done
+}
+
+@float(){
+    for i in "$@"; do
+        type.is_float "${!i}" || return 1
+    done
+}
+
+@array(){
+    for i in "$@"; do
+        type.is_array "${!i}" || return 1
+    done
+}
+
+@not-empty(){
+    for i in "$@"; do
+        [ -n "${!i}" ] || return 1
+    done
+}
+
+@fixstr(){
+    local varname=${1:?Please provide variable name}
+    local val=${!$varname}
+    local len=${#val}
+    local expected_len=${2:?Expected length}
+    if [ "$len" -eq "$expected_len" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+@str-is(){
+    local val=${!1:?Please provide variable name}
+    shift
+    for i in "$@"; do
+        if [ "$val" = "$i" ]; then
+            return 0
+        else
+            return 1
+        fi
+    done
+}
+
+@str-regex(){
+    local val=${!1:?Please provide variable name}
+    shift
+    for i in "$@"; do
+        if [[ "$val" =~ ^$i$ ]]; then
+            return 0
+        else
+            return 1
+        fi
+    done
+}
+
+
