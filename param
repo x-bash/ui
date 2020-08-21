@@ -28,10 +28,10 @@ str.trim(){
 }
 
 # shellcheck disable=SC2142
-alias @p='if ! eval "$(p.__parse "$@")"; then return $? || exit $?; fi <<<'
+alias param='if ! eval "$(param.__parse "$@")"; then return $? || exit $?; fi <<<'
 
 # TODO: avoid IFS influence on this function
-p.__parse(){
+param.__parse(){
 
     local i IFS=
 

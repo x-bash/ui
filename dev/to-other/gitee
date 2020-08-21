@@ -2,7 +2,7 @@
 
 # TODO: Add --dry-run
 
-# @src std/http
+# @src std/http std/param
 
 . p
 . dict
@@ -235,7 +235,7 @@ gt.current-repo.get(){
 gt.current-owner.set(){ 
     local O="_x_cmd_x_bash_gitee_${O:?Provide client name by O environment}"
 
-    @p '
+    param '
         owner "Provide owner name"
         type=none "Provide type name" = user enterprise organization none
     '
@@ -291,7 +291,7 @@ gt.org.info(){
 }
 
 gt.repo.list(){
-    @p '
+    param '
         owner="" "Provide owner"
         owner_type="" "Provide type"
     '
@@ -303,7 +303,7 @@ gt.repo.list(){
 
 # https://gitee.com/api/v5/swagger#/getV5EnterprisesEnterpriseRepos
 gt.enterprise.repo.list(){
-    @p '
+    param '
         owner "Provide enterprise"
         type=all "repo type" = all public internal private
         direct=true "" = true false
@@ -314,7 +314,7 @@ gt.enterprise.repo.list(){
 
 # https://gitee.com/api/v5/swagger#/getV5OrgsOrgRepos
 gt.org.repo.list(){
-    @p '
+    param '
         owner "Provide enterprise"
         type=all "repo type" = all public private
     '
@@ -326,7 +326,7 @@ gt.org.repo.list(){
 gt.user.repo.list(){
     # TODO: afiiliation could be combination
     # TODO: add split,
-    @p '
+    param '
         visibility=all "" = public private all
         affiliation=owner "" =~ ^(owner|collaborator|organization_member|enterprise_member|admin)(,(owner|collaborator|organization_member|enterprise_member|admin))+$
         sort=created "" = created updated pushed full_name
@@ -338,7 +338,7 @@ gt.user.repo.list(){
 }
 
 gt.repo.url.http(){
-    @p '
+    param '
         owner="" "Provide owner"
         repo "provide repo"
     '
@@ -353,7 +353,7 @@ gt.repo.url(){
 }
 
 gt.repo.url.ssh(){
-    @p '
+    param '
         owner="" "Provide owner"
         repo "provide repo"
     '
@@ -381,7 +381,7 @@ gt.repo.clone.https(){
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoForks
 gt.repo.fork(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
         organization="" "Provide organization"
@@ -439,7 +439,7 @@ gt.repo.destroy(){
 
 # arguments NAME
 gt.repo.create(){
-    @p '
+    param '
         has_issues=true     = true false
         has_wiki=true       = true false
         access=private      = public private innerSource
@@ -463,7 +463,7 @@ gt.repo.create(){
 # https://gitee.com/api/v5/swagger#/postV5OrgsOrgRepos
 gt.org.repo.create(){
     # TODO: I don't know what does path means for an organization repo
-    @p '
+    param '
         owner   "organization name"
         path "provide path"
         description "repo description"
@@ -497,7 +497,7 @@ gt.org.repo.create(){
 # https://gitee.com/api/v5/swagger#/postV5EnterprisesEnterpriseRepos
 # shellcheck disable=SC2154
 gt.enterprise.repo.create(){
-    @p '
+    param '
         owner   "enterprise name"
         has_issues=true     = true false
         has_wiki=true       = true false
@@ -554,7 +554,7 @@ gt.repo.member.add(){
         echo "Example: repo=d-y-innovations/demo-repo gt.repo.member.add pull:user1,user2 push:user3,user2 admin:user5"
     fi
 
-    @p '
+    param '
         owner "repo owner"
         repo "repo name"
         permission=pull "Repo permission" = push push admin
@@ -587,7 +587,7 @@ A
 
 # https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepoCollaboratorsUsername
 gt.repo.member.remove(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -608,7 +608,7 @@ gt.repo.info(){
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoReleases
 gt.repo.release.list(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -617,7 +617,7 @@ gt.repo.release.list(){
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoReleases
 gt.repo.release.create(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -626,7 +626,7 @@ gt.repo.release.create(){
 
 # https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoReleasesId
 gt.repo.release.update(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -634,7 +634,7 @@ gt.repo.release.update(){
 }
 
 gt.repo.release.get_or_create(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -643,7 +643,7 @@ gt.repo.release.get_or_create(){
 
 # https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepoReleasesId
 gt.repo.release.delete(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -651,7 +651,7 @@ gt.repo.release.delete(){
 }
 
 gt.repo.release.attachment(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -659,7 +659,7 @@ gt.repo.release.attachment(){
 }
 
 gt.repo.release.attachment.list(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -668,7 +668,7 @@ gt.repo.release.attachment.list(){
 
 # Provide multiple files
 gt.repo.release.attachment.upload(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -677,7 +677,7 @@ gt.repo.release.attachment.upload(){
 
 # Delete the file in attachment list
 gt.repo.release.attachment.remove(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -687,7 +687,7 @@ gt.repo.release.attachment.remove(){
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPulls
 gt.repo.pr.create(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
         title "pr title"
@@ -705,7 +705,7 @@ gt.repo.pr.create(){
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPullsNumberAssignees
 gt.repo.pr.assign(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
         number "pull request id"
@@ -719,7 +719,7 @@ gt.repo.pr.assign(){
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPullsNumberTesters
 gt.repo.pr.assign.testers(){
-    @p '
+    param '
         owner "Repo Owner"
         repo "Repo name"
         number "pull request id"
@@ -733,7 +733,7 @@ gt.repo.pr.assign.testers(){
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPulls
 gt.repo.pr.list(){
-    @p '
+    param '
         owner "Repo Owner"
         repo "Repo name"
         state=open = open closed merged all
@@ -745,7 +745,7 @@ gt.repo.pr.list(){
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumber
 gt.repo.pr.open(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -759,7 +759,7 @@ gt.repo.pr.status(){
 
 # https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoPullsNumberAssignees
 gt.repo.pr.review-status.reset(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -768,7 +768,7 @@ gt.repo.pr.review-status.reset(){
 
 # https://gitee.com/api/v5/swagger#/patchV5ReposOwnerRepoPullsNumberTesters
 gt.repo.pr.test-status.reset(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -778,7 +778,7 @@ gt.repo.pr.test-status.reset(){
 # open navigator, using the viewer
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumber
 gt.repo.pr.view(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
         id  "pull request id"
@@ -788,7 +788,7 @@ gt.repo.pr.view(){
 }
 
 gt.repo.pr.checkout.http(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -816,7 +816,7 @@ gt.repo.pr.merge.http(){
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumberIssues
 gt.repo.pr.issue.list(){
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '
@@ -828,7 +828,7 @@ gt.repo.pr.comment.list(){
     : TODO: assitance
     : list all of the comment in the terminal
 
-    @p '
+    param '
         owner="" "Repo Owner"
         repo "Repo name"
     '

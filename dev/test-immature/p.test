@@ -9,7 +9,7 @@
 # '
 
 work(){
-    @p '
+    param '
         org =~ [[:alnum:]]+
         repo =~ [[:alnum:]]+
         access=public = public private inner-source
