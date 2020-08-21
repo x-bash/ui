@@ -9,8 +9,8 @@
 @src std/dict
 # @src std/oo # std/dict -> std/list -> std/oo
 
-. dict
-. oo
+# . dict
+# . oo
 
 http.new(){
     oo.create_new_function http "$@"
@@ -42,8 +42,20 @@ http.make(){
 #     echo "${O:?Provide name}_x-bash_http_header"
 # }
 
-http.header.add(){ dict.put "header.${1:?header key}" "${2:?value}"; }
-http.header.add_by_name(){ for i in "$@"; do http.header.add "$i" "${!i}"; done; }
+http.header.put(){ 
+    dict.put "header.${1:?header key}" "${2:?value}"; 
+}
+
+http.header.mput(){
+    for i in "$@"; do
+        if [[ "$i" = *=* ]]; then
+            http.header.put "${i%=*}" "${i##*=}"
+        else
+            http.header.put "$i"
+        fi
+    done
+}
+
 http.header.remove(){ dict.remove "header.${1:?header key}"; }
 http.header.dump(){
     [ -z "$O" ] && return 1
@@ -70,7 +82,7 @@ $HEADER
 }
 
 http.header.content-type.eq(){
-    http.header.add "Content-Type" "${1:?Content-Type candidates like application/json}"
+    http.header.put "Content-Type" "${1:?Content-Type candidates like application/json}"
 }
 
 http.header.content-type.eq.json+utf8(){ http.header.content-type.eq "application/json;charset=utf-8"; }
@@ -79,11 +91,11 @@ http.header.content-type.eq.yml(){  http.header.content-type.eq "application/yml
 http.header.content-type.eq.text(){ http.header.content-type.eq "application/text"; }
 
 http.header.referer.eq(){
-    http.header.add "Referer" "${1:?Referer}"
+    http.header.put "Referer" "${1:?Referer}"
 }
 
 http.header.agent.eq(){
-    http.header.add "User-Agent" "${1:?User agent}"
+    http.header.put "User-Agent" "${1:?User agent}"
 }
 
 http.dict.getput(){
@@ -124,8 +136,20 @@ http.path(){
     fi
 }
 
-http.qs.add(){ dict.put "qs.${1:?header key}" "${2:?value}"; }
-http.qs.add_by_name(){ for i in "$@"; do http.qs.add "$i" "${!i}"; done; }
+http.qs.put(){
+    dict.put "qs.${1:?header key}" "${2:-${!1}}"
+}
+
+http.qs.mput(){
+    for i in "$@"; do
+        if [[ "$i" = *=* ]]; then
+            http.qs.put "${i%=*}" "${i##*=}"
+        else
+            http.qs.put "$i"
+        fi
+    done;
+}
+
 http.qs.remove(){ dict.remove "qs.${1:?header key}"; }
 http.qs.dump(){
     [ -z "$O" ] && return 1
@@ -152,8 +176,22 @@ http.eq_str_by_name(){
     done
 }
 
-http.body.add(){ dict.put "body.${1:?header key}" "${2:?value}"; }
-http.body.add_by_name(){ for i in "$@"; do http.body.add "$i" "${!i}"; done; }
+# Just in case.
+http.body.put(){
+    dict.put "body.${1:?header key}" "${2:-${!1}}"
+}
+
+# Redis like naming
+http.body.mput(){
+    for i in "$@"; do
+        if [[ "$i" = *=* ]]; then
+            http.body.put "${i%=*}" "${i##*=}"
+        else
+            http.body.put "$i"
+        fi
+    done;
+}
+
 http.body.remove(){ dict.remove "body.${1:?header key}"; }
 http.body.dump.json(){
     [ -z "$O" ] && return 1
@@ -211,14 +249,7 @@ http.request.json_body(){
     local url=$1
     shift
     (
-        for i in "$@"; do
-            if [[ "$i" = *=* ]]; then
-                http.body.add "${i%=*}" "${i##*=}"
-            else
-                http.body.add "$i" "${!i}"
-            fi
-        done
-        
+        http.body.mput "$@"
         http.request "$url" "$(http.body.dump.json "")"
     )
 }
@@ -235,18 +266,19 @@ http.get(){
     local url=$1 key value
     shift
     (
-        for i in "$@"; do
-            if [[ "$i" = *=* ]]; then
-                key="${i%=*}";  value="${i##*=}"
-            else
-                key="$i";       value="${!i}"
-            fi
+        # for i in "$@"; do
+        #     if [[ "$i" = *=* ]]; then
+        #         key="${i%=*}";  value="${i##*=}"
+        #     else
+        #         key="$i";       value="${!i}"
+        #     fi
 
-            # Notice: It may be a bug
-            if [ -n "$value" ]; then
-                http.qs.add "$key" "$value"
-            fi
-        done
+        #     # Notice: It may be a bug
+        #     if [ -n "$value" ]; then
+        #         http.qs.add "$key" "$value"
+        #     fi
+        # done
+        http.qs.mput "$@"
         
         X=GET http.request "$url"
     )
