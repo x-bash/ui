@@ -294,3 +294,20 @@ http.put.bin(){ X=PUT http.request.json_body "$@"; }
 http.delete(){ X=DELETE http.request "$@"; }
 
 http.head(){ X=HEAD http.request "$@"; }
+
+http.browse(){
+    local BROWSER=${BROWSER:-$BROWSER}
+    local website=${1:?Provide websites}
+    if [ -n "$BROWSER" ]; then
+        $BROWSER "$website"
+    elif uname -a | grep -q Darwin; then
+        open -a "/Applications/Safari.app" "$website"
+    elif command -v xdg-open > /dev/null; then
+        xdg-open "$website"
+    elif command -v gnome-open > /dev/null; then
+        gnome-open "$website"
+    else
+        echo "Could not detect the web browser to use."
+        return 1
+    fi
+}
