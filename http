@@ -263,7 +263,9 @@ http.post.text(){ X=POST http.request.json_body "$@"; }
 http.post.bin(){ X=POST http.request.json_body "$@"; }
 
 http.get(){
-    local url=$1 key value
+    local url=$1 
+    # local key value
+    
     shift
     (
         # for i in "$@"; do

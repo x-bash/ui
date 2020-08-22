@@ -49,8 +49,6 @@ param.__parse(){
     while read -r line; do
         line="$(str.trim "$line")"
         [ "$line" = "" ] && continue
-     
-        local operator="str"
 
         local all_arg_arr=() IFS=
         # all_arg_arr=( "$(str.arg "$line")" )
@@ -211,13 +209,14 @@ param.__parse(){
                 return 0
             fi ;;
         =[?] | =?)
-            local sep=${op[1]} i match
+            local sep=${op[1]} match
             [[ "$op" == =[?] ]] &&  sep=${op[2]}
             local data=("$(echo "$val" | tr "$sep" '\n')")
-            for i in "${data[@]}"; do
+            local datum
+            for datum in "${data[@]}"; do
                 match=0
                 for c in "${choice[@]}"; do
-                    if [ "$i" = "$c" ]; then
+                    if [ "$datum" = "$c" ]; then
                         match=1
                         break
                     fi
@@ -238,10 +237,11 @@ param.__parse(){
             local sep=${op[2]} i match
             [[ "$op" == =~[?] ]] && sep=${op[3]}
             local data=("$(echo "$val" | tr "$sep" '\n')")
-            for i in "${data[@]}"; do
+            local datum
+            for datum in "${data[@]}"; do
                 match=0
                 for c in "${choice[@]}"; do
-                    if [[ "$i" =~ $c ]]; then
+                    if [[ "$datum" =~ $c ]]; then
                         match=1
                         break
                     fi

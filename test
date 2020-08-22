@@ -38,19 +38,20 @@ test.tap(){
 }
 
 testsuite(){
-    local i
-    for i in "$@"; do
+    local filepath func
+    for filepath in "$@"; do
         if (
-            for i in $(typeset -F | cut -d ' ' -f 3 | grep "tc:" ); do
-                unset -f "$i" 
+            for func in $(typeset -F | cut -d ' ' -f 3 | grep "tc:" ); do
+                unset -f "$func" 
             done >&2
-            source "$i" >&2
+            # shellcheck disable=SC1090
+            source "$filepath" >&2
             ( test.run.all ) >&2
             echo "$?"
         ); then
             :
         else
-            echo "Fail on test file: $i"
+            echo "Fail on test file: $filepath"
             return 1
         fi
 

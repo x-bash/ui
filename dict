@@ -98,7 +98,10 @@ dict.print(){
         # [ -n "$key_filter" ] && [[ ! "$k" =~ $key_filter ]] && continue
         # [ -n "$value_filter" ] && [[ ! "$v" =~ $value_filter ]] && continue
 
+        # Using glob. So no quote for that
+        # shellcheck disable=SC2053
         [ -n "$key_filter" ] && [[ ! "$k" == $key_filter ]] && continue
+        # shellcheck disable=SC2053
         [ -n "$value_filter" ] && [[ ! "$v" == $value_filter ]] && continue
 
         echo -e "$k${sep}$v"
@@ -132,7 +135,7 @@ dict.load(){
 
 dict.__toJSON(){
     local first=0
-    local k v vp
+    local k v
 
     local IFS=$'\n'
     # Using consider using environment.

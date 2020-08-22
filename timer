@@ -45,9 +45,11 @@ timer.new(){
 #> REPEAT=3 timer.measure "sleep 3s"
 #3 3 3
 timer.measure(){
+    # shellcheck disable=SC2034
     local start i
     local A=()
-    for i in $(seq ${REPEAT:-1}); do
+    # shellcheck disable=SC2034
+    for i in $(seq "${REPEAT:-1}"); do
         timer.make start
         eval "$@" 1>/dev/null 2>&1
         A=("${A[@]}" "$(O=start timer.elapsed)")
