@@ -4,8 +4,11 @@ param '
     org "org-name" :str
     repo=hi "repo-name"
     access = public private all
+    sort =[,] repo time update
+    show =~[,] (repo)|(time)|(update)
 '
 
+# show =~[,] (repo)|(time)|(update)
     #1=repo = repo hi
     #... "Provide owner name"
 
@@ -16,5 +19,5 @@ echo.name(){
     done
 }
 
-echo.name org repo access
+echo.name org repo access sort show
 
