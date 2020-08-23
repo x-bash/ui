@@ -1,12 +1,24 @@
-@src std/param
+# @src std/param
+. ./param
 
-org=d-y-i repo=work work --direction dee --meter
+# org=d-y-i repo=work work --direction dee --meter
 
 work(){
-    @argenv org     "Provide organization"
-    @argenv repo    "Provide work"
-    @arg    direction=abc "" == abc dec a
-    @arg    meter=cde   ""   =~ [0-9]{1,3}
+
+    param '
+    org     "Provide organization"
+    repo    "Provide work"
+    direction=abc "" == abc dec a
+    meter=333   ""   =~ [0-9]{1,3}
+    '
+
+    echo "$org" "$repo" "$direction" "$meter" 
+    echo "rest args: ${_rest_argv[@]}"
+
+    # @argenv org     "Provide organization"
+    # @argenv repo    "Provide work"
+    # @arg    direction=abc "" == abc dec a
+    # @arg    meter=cde   ""   =~ [0-9]{1,3}
     
     # support environment variable
     # major variable could be in arguments
@@ -23,6 +35,6 @@ work(){
     
 }
 
-work --org=dyi --repo aircraft
+work --org dyi --repo aircraft 1 2 3
 
-org=dyi repo=aircraft work
+org=dyi repo=aircraft work 1 2 3

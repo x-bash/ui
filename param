@@ -28,7 +28,7 @@ str.trim(){
 }
 
 # shellcheck disable=SC2142
-alias param='if ! eval "$(param.__parse "$@")"; then return $? || exit $?; fi <<<'
+alias param='if ! eval "$(param.__parse "$@")"; then return $? 2>/dev/null || exit $?; fi <<<'
 
 # TODO: avoid IFS influence on this function
 param.__parse(){
@@ -75,14 +75,16 @@ param.__parse(){
         case "${all_arg_arr[1]}" in
         = | =~ | :str | :str? | :float | :int | =[?] | =? | =~[?] | =~? )
             oplist+=( "${all_arg_arr[1]}" )
-            choicelist+=( "${all_arg_arr[*]}" )
+            choicelist+=( "${all_arg_arr[*]:2}" )
             ;;
         *)
             description="${all_arg_arr[1]}"
             oplist+=( "${all_arg_arr[2]}" )
-            choicelist+=( "${all_arg_arr[*]}" )
+            choicelist+=( "${all_arg_arr[*]:3}" )
             ;;
         esac
+
+        
 
         deslist+=("$description")
         typelist+=("argenv")
@@ -154,7 +156,8 @@ param.__parse(){
         local val="${vallist[i]}"
 
         local op="${oplist[$i]}"
-        # TODO: Should we quote? Please find out
+        # TODO: Should we quote? Please find out. 
+        # No. It should be populated.
         local choice=( ${choicelist[i]} )
 
         case "$op" in
@@ -193,9 +196,15 @@ param.__parse(){
                 echo 'return 1 2>/dev/null'
                 return 1
             fi
+
+            if [ ${#val} -eq 0 ]; then
+                echo "echo ERROR: A non-null value is expected. >&2"
+                echo 'return 1 2>/dev/null'
+                return 1
+            fi
+
             local match=1
             for c in "${choice[@]}"; do
-                echo "fuck $c" >&2
                 if [ "$c" = "$val" ]; then
                     match=1
                     break
@@ -204,6 +213,8 @@ param.__parse(){
             done
 
             if [ $match -eq 0 ]; then
+                # echo "123 ${#choicelist[@]}" >&2
+                echo "123 ${#choice[@]}" >&2
                 echo "echo ERROR: $name='$val' Not inside the $op set >&2"
                 echo 'return 1 2>/dev/null'
                 return 0

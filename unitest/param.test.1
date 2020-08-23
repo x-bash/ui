@@ -1,0 +1,20 @@
+. param
+
+param '
+    org "org-name" :str
+    repo=hi "repo-name"
+    access = public private all
+'
+
+    #1=repo = repo hi
+    #... "Provide owner name"
+
+
+echo.name(){
+    for i in "$@"; do
+        echo "$i: ${!i}"
+    done
+}
+
+echo.name org repo access
+
