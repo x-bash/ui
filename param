@@ -73,7 +73,7 @@ param.__parse(){
         IFS=$'\n'
 
         case "${all_arg_arr[1]}" in
-        = | =~ | :str | :str? | :float | :int | =\[?\] | =? | =~\[?\] | =~? )
+        = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
             oplist+=( "${all_arg_arr[1]}" )
             choicelist+=( "${all_arg_arr[*]:2}" )
             ;;
@@ -87,6 +87,9 @@ param.__parse(){
         deslist+=("$description")
         typelist+=("argenv")
     done <<< "$(cat -)"
+
+    echo "local _varlist 2>/dev/null"
+    echo "_varlist=$(list.repr "${varlist[@]}")"
 
     # echo "--------"
     # echo "var list: ${varlist[@]}"
@@ -188,17 +191,19 @@ param.__parse(){
                 echo 'return 2 2>/dev/null'
                 return 0
             fi ;;
-        :str | :int)
-            if [[ "$op" = "int" && ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
-                echo "echo ERROR: $name='$val' An integer expected. >&2"
-                echo 'return 1 2>/dev/null'
-                return 1
-            fi
-
+        =str | =int)
             if [ ${#val} -eq 0 ]; then
                 echo "echo ERROR: A non-null value is expected. >&2"
                 echo 'return 1 2>/dev/null'
                 return 1
+            fi
+
+            if [ "$op" = "=int" ]; then
+                if  [[ ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
+                    echo "echo ERROR: $name='$val' An integer expected. >&2"
+                    echo 'return 1 2>/dev/null'
+                    return 1
+                fi
             fi
 
             local match=1

@@ -1,11 +1,39 @@
 . param
 
+# help documentation
+# param '
+#     org "org name"
+#         :str
+#     repo "repo name" argENV
+#         :str
+#     access "repo work"
+#         [public] := public private all
+#     sort "sort order"
+#         [repo,time] :=[,] repo time update
+#     show "show order"
+#         [repo,time] :=~[,] (repo)|(time)|(update)    
+# '
+
+# param.example "org" "bash param.test.1 --repo hi"
+
+# param '
+#     org "org-name" 
+#         =str
+#     repo=hi "repo-name"
+#     access
+#         = public private all
+#     sort        
+#         =[,] repo time update
+#     show        
+#         =~[,] (repo)|(time)|(update)
+# '
+
 param '
-    org "org-name" :str
+    org "org-name"              =str
     repo=hi "repo-name"
-    access = public private all
-    sort =[,] repo time update
-    show =~[,] (repo)|(time)|(update)
+    access                      = public private all
+    sort                        =[,] repo time update
+    show                        =~[,] (repo)|(time)|(update)
 '
 
 # show =~[,] (repo)|(time)|(update)
@@ -20,4 +48,6 @@ echo.name(){
 }
 
 echo.name org repo access sort show
+
+echo "${_varlist[@]}"
 
