@@ -23,20 +23,20 @@ str.trim(){
 
 line.to_array.trim.ignore_empty(){
     local name=${1:?Array name}
-    local line
+    local line arr=()
     while read -r line; do
         line="$(str.trim "$line")"
         [ "$line" = "" ] && continue
-
-        eval "$name+=( \"$line\" )"
-    done
+        arr+=("$line")
+    done <<< "$(cat -)"
+    eval "$name"'=("${arr[@]}")'
 }
 
 # shellcheck disable=SC2142
 alias param='if ! eval "$(param.__parse "$@")"; then return $? 2>/dev/null || exit $?; fi <<<'
 
 param._type.regex(){
-    local c val="${1:?Provide value}"
+    local c val="$1" # val="${1:?Provide value}"
     shift
     for c in "$@"; do
         if [[ "$val" =~ ^($c)$ ]]; then
@@ -47,7 +47,7 @@ param._type.regex(){
 }
 
 param._type.streq(){
-    local c val="${1:?Provide value}"
+    local c val="$1" # val="${1:?Provide value}"
     shift
     for c in "$@"; do
         if [ "$val" = "$c" ]; then
@@ -168,15 +168,33 @@ param.__parse(){
     local vallist=() deflist=() # default
     local oplist=() choicelist=()
 
-    local linelist=() line all_arg_arr
-    line.to_array.trim.ignore_empty linelist
+    local linelist=() line nextline lineindex all_arg_arr all_arg_arr2
+    line.to_array.trim.ignore_empty linelist 
 
     # Step 1: Parsing into tokens
-    for line in "${linelist[@]}"; do
+    # for line in "${linelist[@]}"; do
+    for (( lineindex=0; lineindex < ${#linelist[@]}; lineindex++ )); do
+        line="${linelist[lineindex]}"
+
         # shellcheck disable=SC2207 # this rule is wrong
         all_arg_arr=( $(echo "$line" | xargs -n 1) ) # all_arg_arr=( "$(str.arg "$line")" )
 
+        nextline="${linelist[lineindex+1]}"
+        if [[ "$nextline" = =* ]]; then
+            # shellcheck disable=SC2207 # this rule is wrong
+            all_arg_arr2=( $(echo "$nextline" | xargs -n 1) )
+            all_arg_arr+=("${all_arg_arr2[@]}")
+            (( lineindex ++ ))
+        fi
+        
         varname=${all_arg_arr[0]}
+        # if [[ $varname =~ ^(arg)+((ENV)|(env))+: ]]; then
+        #     varname=${varname#*:}
+        #     typelist+=( "${varname%%:*}" )
+        # else
+        #     typelist+=("argenv")
+        # fi
+
         if [[ $varname == *=* ]]; then
             local default="${varname#*=}"
             varname="${varname%%=*}"

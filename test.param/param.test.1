@@ -28,13 +28,37 @@
 #         =~[,] (repo)|(time)|(update)
 # '
 
+# param '
+#     org "org-name"              argenv    =str
+#     repo=hi "repo-name"         
+#     access                      arg       = public private all
+#     sort                        argENV    =[,] repo time update
+#     show                        arg       =~[,] (repo)|(time)|(update)
+# '
+
 param '
-    org "org-name"              =str
-    repo=hi "repo-name"         
-    access                      = public private all
-    sort                        =[,] repo time update
-    show                        =~[,] (repo)|(time)|(update)
+    org  "org-name"
+        =str
+    repo=hi "repo-name"
+    access=public "Access code"
+        =       public private all
+    sort
+        =[,]    repo time update
+    show
+        =~[,]   (repo)|(time)|(update)
 '
+
+# param '
+#     org "org-name"
+#         =str
+#     repo=hi "repo-name"
+#     access=public "Access code"
+#         = public private all
+#     sort
+#         =[,] repo time update
+#     show
+#         =~[,] (repo)|(time)|(update)
+# '
 
 # show =~[,] (repo)|(time)|(update)
     #1=repo = repo hi
