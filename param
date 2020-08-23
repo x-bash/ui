@@ -207,14 +207,14 @@ param.__parse(){
             if [ ${#val} -eq 0 ]; then
                 echo "echo ERROR: A non-null value is expected. >&2"
                 echo 'return 1 2>/dev/null'
-                return 1
+                return 0
             fi
 
             if [ "$op" = "=int" ]; then
                 if  [[ ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
                     echo "echo ERROR: $name='$val' An integer expected. >&2"
                     echo 'return 1 2>/dev/null'
-                    return 1
+                    return 0
                 fi
             fi
 
