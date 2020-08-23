@@ -127,3 +127,15 @@ list.top(){
 list.print(){
     eval "echo \"\${${O:?Require Object Name}[*]}\""
 }
+
+list.repr(){
+    # echo "\"$(echo "$1" | sed s/\"/\\\\\"/g)\""
+    # echo "\"${1//\"/\\\\\"}\""
+
+    printf "( "
+    for i in "$@"; do
+        # printf "\"${i//\"/\\\"}\""
+        printf '"%s" ' "${i//\"/\\\"}"
+    done
+    printf ")"
+}

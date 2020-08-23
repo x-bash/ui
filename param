@@ -1,19 +1,13 @@
 #shellcheck shell=bash
 
 str.repr(){
-    # echo "\"$(echo "$1" | sed s/\"/\\\\\"/g)\""
-    # echo "\"${1//\"/\\\\\"}\""
-    echo "\"${1//\"/\\\"}\""
+    printf '"%s"' "${1//\"/\\\"}"
 }
 
 list.repr(){
-    # echo "\"$(echo "$1" | sed s/\"/\\\\\"/g)\""
-    # echo "\"${1//\"/\\\\\"}\""
-
     printf "( "
     for i in "$@"; do
-        printf "\"${i//\"/\\\"}\""
-        printf " "
+        printf '"%s" ' "${i//\"/\\\"}"
     done
     printf ")"
 }
@@ -53,6 +47,7 @@ param._type.streq(){
 }
 
 param._type.check(){
+    # shellcheck disable=SC2016
     local CHOICE_LIST_MUST_NOT_BE_EMTPY='
         [ "${#@}" -eq 0 ] && {
             echo "echo ERROR: Please provide candidate list right after $op for parameter[$name] >&2"
@@ -96,7 +91,7 @@ param._type.check(){
             fi
         fi
 
-        [ "${#choice[@]}" -ne 0 ] && {
+        [ "${#@}" -ne 0 ] && {
             if ! param._type.streq "$val" "$@"; then
                 echo "echo ERROR: $name='$val' Not inside the $op set. >&2"
                 echo 'return 1 2>/dev/null'
@@ -106,9 +101,10 @@ param._type.check(){
     =\[?\] | =?)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        local sep=${op:1:1};    
-        [[ "$op" == =\[?\] ]] &&  sep=${op:2:1}
-        local data=( $(echo "$val" | tr "$sep" '\n') )
+        local sep=${op:1:1};
+        [[ "$op" == '=['?']' ]] &&  sep=${op:2:1}
+        # shellcheck disable=SC2207
+        local data=( $(echo "$val" | tr "$sep" '\n') ) # should not quote '$(...)'
         [ ${#data[@]} -eq 0 ] && data=("")
         local datum
         
@@ -120,7 +116,7 @@ param._type.check(){
             fi
         done
 
-        if [[ "$op" == =\[?\] ]]; then
+        if [[ "$op" == '=['?']' ]]; then
             echo "local $name 2>/dev/null"
             echo "$name=$(list.repr "${data[@]}")"
             return 0 # continue
@@ -129,8 +125,9 @@ param._type.check(){
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
         local sep=${op:2:1};    
-        [[ "$op" == =~\[?\] ]] && sep=${op:3:1}
-        local data=( $(echo "$val" | tr "$sep" '\n') )
+        [[ "$op" == '=~['?']' ]] && sep=${op:3:1}
+        # shellcheck disable=SC2207
+        local data=( $(echo "$val" | tr "$sep" '\n') ) # should not quote '$(...)'
         [ ${#data[@]} -eq 0 ] && data=("")
         local datum
         for datum in "${data[@]}"; do
@@ -140,7 +137,7 @@ param._type.check(){
             return 1
         done
 
-        if [[ "$op" == =~\[?\] ]]; then
+        if [[ "$op" == '=~['?']' ]]; then
             echo "local $name 2>/dev/null"
             echo "$name=$(list.repr "${data[@]}")"
             return 0 # continue
@@ -259,7 +256,8 @@ param.__parse(){
         # if [ "${vallist[i]}" == "" ]; then
         #     vallist[i]=${deflist[i]}
         # fi
-        local choices=( ${choicelist[i]} )
+        # shellcheck disable=SC2206
+        local choices=( ${choicelist[i]} )  # should not quote '$(...)'
 
         param._type.check "${varlist[i]}" "${vallist[i]}" "${oplist[$i]}" "${choices[@]}"
         [ $? -eq 1 ] && return 1

@@ -40,3 +40,11 @@ line.fmap(){
     done
 }
 
+
+line.to_array(){
+    local name=${1:?Array name}
+    local line
+    while read -r line; do
+        eval "$name+=( \"$line\" )"
+    done
+}
