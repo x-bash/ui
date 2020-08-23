@@ -89,7 +89,7 @@ param._type.check(){
         fi ;;
     =str | =int)
         if [ ${#val} -eq 0 ]; then
-            echo "echo ERROR: A non-null value is expected. >&2"
+            echo "echo ERROR: A non-null value is expected for parameter: $name >&2"
             echo 'return 1 2>/dev/null'
             return 1
         fi
@@ -121,7 +121,7 @@ param._type.check(){
         
         for datum in "${data[@]}"; do
             if ! param._type.streq "$datum" "$@"; then
-                echo "echo ERROR: $name='$val' Split with [$sep]. And element $datum DOESNOT match the string set >&2"
+                echo "echo ERROR: [$name='$val'] After splited with \'$sep\', element '$datum' does NOT match the string set >&2"
                 echo 'return 2 2>/dev/null'
                 return 1
             fi
@@ -143,7 +143,7 @@ param._type.check(){
         local datum
         for datum in "${data[@]}"; do
             param._type.regex "$datum" "$@" && continue
-            echo "echo ERROR: $name='$val' Split with [$sep]. And element $datum DOESNOT match the regex set >&2"
+            echo "echo ERROR: [$name='$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set >&2"
             echo 'return 2 2>/dev/null'
             return 1
         done
@@ -188,14 +188,14 @@ param.__parse(){
         fi
         
         varname=${all_arg_arr[0]}
-        # if [[ $varname =~ ^(arg)+((ENV)|(env))+: ]]; then
-        #     varname=${varname#*:}
-        #     typelist+=( "${varname%%:*}" )
-        # else
-        #     typelist+=("argenv")
-        # fi
+        if [[ "$varname" =~ ^(arg)+((ENV)|(env))+: ]]; then
+            typelist+=( "${varname%%:*}" )
+            varname="${varname#*:}"
+        else
+            typelist+=("arg")
+        fi
 
-        if [[ $varname == *=* ]]; then
+        if [[ "$varname" == *=* ]]; then
             local default="${varname#*=}"
             varname="${varname%%=*}"
             varlist+=("$varname")
@@ -218,7 +218,6 @@ param.__parse(){
         esac 
 
         deslist+=("$description")
-        typelist+=("argenv")
     done
 
     echo "local _varlist 2>/dev/null"
