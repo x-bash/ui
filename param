@@ -54,30 +54,30 @@ param._type.streq(){
 
 param._type.check(){
     local CHOICE_LIST_MUST_NOT_BE_EMTPY='
-        [ "${#choice[@]}" -eq 0 ] && {
+        [ "${#@}" -eq 0 ] && {
             echo "echo ERROR: Please provide candidate list right after $op for parameter[$name] >&2"
             echo "return 1 2>/dev/null"
             return 0
         }
     '
 
-    local name="$1" val="$2" op="$3"
-    shift 3
-    choice=("$@")
+    local IFS=$'\n'
 
+    local name="$1" val="$2" op="$3"; shift 3
     case "$op" in
     =~)
         echo "$op" >&2
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-        if ! param._type.regex "$val" "${choice[@]}"; then
+        if ! param._type.regex "$val" "$@"; then
             echo "echo ERROR:  $name='$val' NOT match any regex defined >&2"
             echo 'return 1 2>/dev/null'
             return 1
         fi;;
     =)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-        if ! param._type.streq "$val" "${choice[@]}"; then
-            echo "echo ERROR: $name='$val' Not one of the candidate set >&2"
+        if ! param._type.streq "$val" "$@"; then
+            echo "$val" "$@" >&2
+            echo "echo ERROR: $name='$val' Not one of the candidate set. >&2"
             echo 'return 2 2>/dev/null'
             return 1
         fi ;;
@@ -97,8 +97,8 @@ param._type.check(){
         fi
 
         [ "${#choice[@]}" -ne 0 ] && {
-            if ! param._type.streq "$val" "${choice[@]}"; then
-                echo "echo ERROR: $name='$val' Not inside the $op set >&2"
+            if ! param._type.streq "$val" "$@"; then
+                echo "echo ERROR: $name='$val' Not inside the $op set. >&2"
                 echo 'return 1 2>/dev/null'
                 return 1
             fi 
@@ -106,14 +106,15 @@ param._type.check(){
     =\[?\] | =?)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        local sep=${op:1:1}
+        local sep=${op:1:1};    
         [[ "$op" == =\[?\] ]] &&  sep=${op:2:1}
         local data=( $(echo "$val" | tr "$sep" '\n') )
         [ ${#data[@]} -eq 0 ] && data=("")
         local datum
+        
         for datum in "${data[@]}"; do
-            if ! param._type.streq "$datum" "${choice[@]}"; then
-                echo "echo ERROR: $name='$val' Split with $sep. And element $datum DOESNOT match the string set >&2"
+            if ! param._type.streq "$datum" "$@"; then
+                echo "echo ERROR: $name='$val' Split with [$sep]. And element $datum DOESNOT match the string set >&2"
                 echo 'return 2 2>/dev/null'
                 return 1
             fi
@@ -124,21 +125,19 @@ param._type.check(){
             echo "$name=$(list.repr "${data[@]}")"
             return 0 # continue
         fi ;;
-
     =~\[?\] | =~? )
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        local sep=${op:2:1} i match
+        local sep=${op:2:1};    
         [[ "$op" == =~\[?\] ]] && sep=${op:3:1}
         local data=( $(echo "$val" | tr "$sep" '\n') )
         [ ${#data[@]} -eq 0 ] && data=("")
         local datum
         for datum in "${data[@]}"; do
-            if ! param._type.regex "$datum" "${choice[@]}"; then
-                echo "echo ERROR: $name='$val' Split with $sep. And element $datum DOESNOT match the regex set >&2"
-                echo 'return 2 2>/dev/null'
-                return 1
-            fi
+            param._type.regex "$datum" "$@" && continue
+            echo "echo ERROR: $name='$val' Split with [$sep]. And element $datum DOESNOT match the regex set >&2"
+            echo 'return 2 2>/dev/null'
+            return 1
         done
 
         if [[ "$op" == =~\[?\] ]]; then
@@ -154,7 +153,6 @@ param._type.check(){
     return 0
 }
 
-# TODO: avoid IFS influence on this function
 param.__parse(){
     local i IFS=$'\n'
 
@@ -261,8 +259,10 @@ param.__parse(){
         # if [ "${vallist[i]}" == "" ]; then
         #     vallist[i]=${deflist[i]}
         # fi
+        local choices=( ${choicelist[i]} )
 
-        param._type.check "${varlist[i]}" "${vallist[i]}" "${oplist[$i]}" ${choicelist[i]}
+        param._type.check "${varlist[i]}" "${vallist[i]}" "${oplist[$i]}" "${choices[@]}"
+        [ $? -eq 1 ] && return 1
     done
 }
 
