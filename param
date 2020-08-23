@@ -233,8 +233,15 @@ param.__parse(){
     
     # Step 2: Init the valus with the enviroment
     for (( i=0; i < ${#varlist[@]}; ++i )); do
-        [[ ! "${typelist[i]}" = *env ]] && continue
         local name=${varlist[i]}
+        if [[ "${typelist[i]}" = *env ]]; then
+            :
+        elif [[ "${typelist[i]}" = *ENV ]]; then
+            name="$(echo "$name" | tr '[:lower:]' '[:upper:]')"
+        else
+            continue
+        fi
+
         local value="${!name}"
         [ -n "$value" ] && vallist[i]=$value
     done
