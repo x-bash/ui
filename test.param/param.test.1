@@ -35,8 +35,10 @@
 #     sort                        argENV    =[,] repo time update
 #     show                        arg       =~[,] (repo)|(time)|(update)
 # '
+## 
 
 param '
+    ... "Provice repo names" =~ [[:alnum:]]+ ([[:alnum:]]+)/([[:alnum:]]+)
     argenv:org  "org-name"
         =str
     repo=hi "repo-name"
@@ -47,6 +49,19 @@ param '
     show
         =~[,]   (repo)|(time)|(update)
 '
+
+
+echo.name(){
+    for i in "$@"; do
+        echo "$i: ${!i}"
+    done
+}
+
+echo.name org repo access sort show
+
+echo "${_varlist[@]}"
+
+
 
 # param '
 #     org "org-name"
@@ -63,13 +78,3 @@ param '
 # show =~[,] (repo)|(time)|(update)
     #1=repo = repo hi
     #... "Provide owner name"
-
-echo.name(){
-    for i in "$@"; do
-        echo "$i: ${!i}"
-    done
-}
-
-echo.name org repo access sort show
-
-echo "${_varlist[@]}"

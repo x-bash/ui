@@ -72,7 +72,6 @@ param._type.check(){
     local name="$1" val="$2" op="$3"; shift 3
     case "$op" in
     =~)
-        echo "$op" >&2
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
         if ! param._type.regex "$val" "$@"; then
             echo "echo ERROR:  $name='$val' NOT match any regex defined >&2"
@@ -128,8 +127,10 @@ param._type.check(){
         done
 
         if [[ "$op" == '=['?']' ]]; then
-            echo "local $name 2>/dev/null"
-            echo "$name=$(list.repr "${data[@]}")"
+            [[ ! "$name" == \$* ]] && {
+                echo "local $name 2>/dev/null"
+                echo "$name=$(list.repr "${data[@]}")"
+            }
             return 0 # continue
         fi ;;
     =~\[?\] | =~? )
@@ -149,15 +150,19 @@ param._type.check(){
         done
 
         if [[ "$op" == '=~['?']' ]]; then
-            echo "local $name 2>/dev/null"
-            echo "$name=$(list.repr "${data[@]}")"
+            [[ ! "$name" == \$* ]] && {
+                echo "local $name 2>/dev/null"
+                echo "$name=$(list.repr "${data[@]}")"
+            }
             return 0 # continue
         fi ;;
     *)  [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
     esac
 
-    echo "local $name 2>/dev/null"
-    echo "$name=$(str.repr "$val")"
+    [[ ! "$name" == \$* ]] && {
+        echo "local $name 2>/dev/null"
+        echo "$name=$(str.repr "$val")"
+    }
     return 0
 }
 
@@ -167,6 +172,9 @@ param.__parse(){
     local varlist=() typelist=()  deslist=()
     local vallist=() deflist=() # default
     local oplist=() choicelist=()
+
+    local arg_description arg_deslist=() arg_oplist=() arg_choicelist=()
+    local rest_argv_des="" rest_argv_op="" rest_argv_choices=()
 
     local linelist=() line nextline lineindex all_arg_arr all_arg_arr2
     line.to_array.trim.ignore_empty linelist 
@@ -186,8 +194,41 @@ param.__parse(){
             all_arg_arr+=("${all_arg_arr2[@]}")
             (( lineindex ++ ))
         fi
+
+        varname="${all_arg_arr[0]}"
+
+        ###### BEGIN: handle #1 like
+        if [[ "$varname" =~ \#[:number:]+ ]]; then
+            varname="${varname:1}"
+            case "${all_arg_arr[1]}" in
+            = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
+                arg_oplist+=( "${all_arg_arr[1]}" )
+                arg_choicelist+=( "${all_arg_arr[*]:2}" ) ;;
+            *)
+                arg_description="${all_arg_arr[1]}"
+                arg_oplist+=( "${all_arg_arr[2]}" )
+                arg_choicelist+=( "${all_arg_arr[@]:3}" ) ;;
+            esac
+            arg_deslist+=("$arg_description")
+            continue
+        fi
+        ###### END: handle #1 like
+
+        ###### BEGIN: handle ... for rest_argv
+        if [ "$varname" = "..." ]; then
+            case "${all_arg_arr[1]}" in
+            = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
+                rest_argv_op="${all_arg_arr[1]}"
+                rest_argv_choices=( "${all_arg_arr[@]:2}" ) ;;
+            *)
+                rest_argv_des="${all_arg_arr[1]}"
+                rest_argv_op="${all_arg_arr[2]}"
+                rest_argv_choices=( "${all_arg_arr[@]:3}" ) ;;
+            esac
+            continue
+        fi
+        ###### END: handle ... for rest_argv
         
-        varname=${all_arg_arr[0]}
         if [[ "$varname" =~ ^(arg)+((ENV)|(env))+: ]]; then
             typelist+=( "${varname%%:*}" )
             varname="${varname#*:}"
@@ -245,14 +286,16 @@ param.__parse(){
         local value="${!name}"
         [ -n "$value" ] && vallist[i]=$value
     done
-    
+
     local rest_argv_str="local _rest_argv=( "
+    local rest_argv=()
 
     # Step 3: Init the values with the parameter
     while [ ! "$#" -eq 0 ]; do
         local parameter_name=$1
         if [[ ! "$parameter_name" == --* ]]; then
             rest_argv_str+="$(str.repr "$parameter_name") "
+            rest_argv+=("$parameter_name")
             shift
             continue
         fi
@@ -292,6 +335,29 @@ param.__parse(){
         param._type.check "${varlist[i]}" "${vallist[i]}" "${oplist[$i]}" "${choices[@]}"
         [ $? -eq 1 ] && return 1
     done
+
+    # Step 5: Handle the parameter number
+    local max_i=0
+    for i in "${!arg_deslist[@]}"; do
+
+        [ $max_i -lt "$i" ] && max_i=$i
+
+        # shellcheck disable=SC2206
+        local choices=( ${arg_choicelist[i]} )  # should not quote '$(...)'
+
+        param._type.check "\$$i" "${rest_argv[i]}" "${oplist[$i]}" "${choices[@]}"
+        [ $? -eq 1 ] && return 1
+    done
+
+    (( max_i ++ ))
+
+    # Step 6: Handle the rest parameter
+    if [ -n "$rest_argv_op" ]; then
+        for i in "${!rest_argv[@]:max_i}"; do
+            param._type.check "\$$i" "${rest_argv[i]}" "$rest_argv_op" "${rest_argv_choices[@]}"
+            [ $? -eq 1 ] && return 1
+        done
+    fi
 }
 
 shopt -s expand_aliases
