@@ -21,6 +21,17 @@ str.trim(){
     echo -n "$var"
 }
 
+line.to_array.trim.ignore_empty(){
+    local name=${1:?Array name}
+    local line
+    while read -r line; do
+        line="$(str.trim "$line")"
+        [ "$line" = "" ] && continue
+
+        eval "$name+=( \"$line\" )"
+    done
+}
+
 # shellcheck disable=SC2142
 alias param='if ! eval "$(param.__parse "$@")"; then return $? 2>/dev/null || exit $?; fi <<<'
 
@@ -157,16 +168,13 @@ param.__parse(){
     local vallist=() deflist=() # default
     local oplist=() choicelist=()
 
-    # Step 1: Parsing into tokens
-    local line
-    while read -r line; do
-        line="$(str.trim "$line")"
-        [ "$line" = "" ] && continue
+    local linelist=() line all_arg_arr
+    line.to_array.trim.ignore_empty linelist
 
-        local all_arg_arr=()
-        # all_arg_arr=( "$(str.arg "$line")" )
+    # Step 1: Parsing into tokens
+    for line in "${linelist[@]}"; do
         # shellcheck disable=SC2207 # this rule is wrong
-        all_arg_arr=( $(echo "$line" | xargs -n 1) )
+        all_arg_arr=( $(echo "$line" | xargs -n 1) ) # all_arg_arr=( "$(str.arg "$line")" )
 
         varname=${all_arg_arr[0]}
         if [[ $varname == *=* ]]; then
@@ -184,18 +192,16 @@ param.__parse(){
         case "${all_arg_arr[1]}" in
         = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
             oplist+=( "${all_arg_arr[1]}" )
-            choicelist+=( "${all_arg_arr[*]:2}" )
-            ;;
+            choicelist+=( "${all_arg_arr[*]:2}" ) ;;
         *)
             description="${all_arg_arr[1]}"
             oplist+=( "${all_arg_arr[2]}" )
-            choicelist+=( "${all_arg_arr[*]:3}" )
-            ;;
+            choicelist+=( "${all_arg_arr[*]:3}" ) ;;
         esac 
 
         deslist+=("$description")
         typelist+=("argenv")
-    done <<< "$(cat -)"
+    done
 
     echo "local _varlist 2>/dev/null"
     echo "_varlist=$(list.repr "${varlist[@]}")"
