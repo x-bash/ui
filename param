@@ -120,8 +120,6 @@ param.__parse(){
     # echo "dflist: ${deflist[@]}"
     # echo "op list: ${oplist[@]}"
     # echo "--------"
-
-    # echo setup environment value >&2
     
     # Step 2: Init the valus with the enviroment
     for (( i=0; i < ${#varlist[@]}; ++i )); do
@@ -131,8 +129,6 @@ param.__parse(){
     done
     
     local rest_argv_str="local _rest_argv=( "
-
-    # echo setup parameter value >&2
 
     # Step 3: Init the values with the parameter
     while [ ! "$#" -eq 0 ]; do
@@ -175,7 +171,7 @@ param.__parse(){
 
     local CHOICE_LIST_MUST_NOT_BE_EMTPY='
         [ "${#choice[@]}" -eq 0 ] && {
-            echo "echo ERROR: Please provide candidate list right after $op for parameter $name >&2"
+            echo "echo ERROR: Please provide candidate list right after $op for parameter[$name] >&2"
             echo "return 1 2>/dev/null"
             return 0
         }
@@ -272,16 +268,11 @@ param.__parse(){
                 echo "$name=$(list.repr "${data[@]}")"
                 continue
             fi ;;
-        *)
-            [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
+        *)  [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
         esac
 
-        # TODO: notice the '' inside the string
-        # echo "$val: $val" >&2
         echo "local $name 2>/dev/null"
         echo "$name=$(str.repr "$val")"
-        # echo "local $name=$(str.repr "$val")"
-        # echo "--------"
     done
 }
 
