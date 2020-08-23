@@ -52,47 +52,139 @@ param._type.streq(){
     return 1
 }
 
+param._type.check(){
+    local CHOICE_LIST_MUST_NOT_BE_EMTPY='
+        [ "${#choice[@]}" -eq 0 ] && {
+            echo "echo ERROR: Please provide candidate list right after $op for parameter[$name] >&2"
+            echo "return 1 2>/dev/null"
+            return 0
+        }
+    '
+
+    local name="$1" val="$2" op="$3"
+    shift 3
+    choice=("$@")
+
+    case "$op" in
+    =~)
+        echo "$op" >&2
+        eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
+        if ! param._type.regex "$val" "${choice[@]}"; then
+            echo "echo ERROR:  $name='$val' NOT match any regex defined >&2"
+            echo 'return 1 2>/dev/null'
+            return 1
+        fi;;
+    =)
+        eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
+        if ! param._type.streq "$val" "${choice[@]}"; then
+            echo "echo ERROR: $name='$val' Not one of the candidate set >&2"
+            echo 'return 2 2>/dev/null'
+            return 1
+        fi ;;
+    =str | =int)
+        if [ ${#val} -eq 0 ]; then
+            echo "echo ERROR: A non-null value is expected. >&2"
+            echo 'return 1 2>/dev/null'
+            return 1
+        fi
+
+        if [ "$op" = "=int" ]; then
+            if  [[ ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
+                echo "echo ERROR: $name='$val' An integer expected. >&2"
+                echo 'return 1 2>/dev/null'
+                return 1
+            fi
+        fi
+
+        [ "${#choice[@]}" -ne 0 ] && {
+            if ! param._type.streq "$val" "${choice[@]}"; then
+                echo "echo ERROR: $name='$val' Not inside the $op set >&2"
+                echo 'return 1 2>/dev/null'
+                return 1
+            fi 
+        };;
+    =\[?\] | =?)
+        eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
+
+        local sep=${op:1:1}
+        [[ "$op" == =\[?\] ]] &&  sep=${op:2:1}
+        local data=( $(echo "$val" | tr "$sep" '\n') )
+        [ ${#data[@]} -eq 0 ] && data=("")
+        local datum
+        for datum in "${data[@]}"; do
+            if ! param._type.streq "$datum" "${choice[@]}"; then
+                echo "echo ERROR: $name='$val' Split with $sep. And element $datum DOESNOT match the string set >&2"
+                echo 'return 2 2>/dev/null'
+                return 1
+            fi
+        done
+
+        if [[ "$op" == =\[?\] ]]; then
+            echo "local $name 2>/dev/null"
+            echo "$name=$(list.repr "${data[@]}")"
+            return 0 # continue
+        fi ;;
+
+    =~\[?\] | =~? )
+        eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
+
+        local sep=${op:2:1} i match
+        [[ "$op" == =~\[?\] ]] && sep=${op:3:1}
+        local data=( $(echo "$val" | tr "$sep" '\n') )
+        [ ${#data[@]} -eq 0 ] && data=("")
+        local datum
+        for datum in "${data[@]}"; do
+            if ! param._type.regex "$datum" "${choice[@]}"; then
+                echo "echo ERROR: $name='$val' Split with $sep. And element $datum DOESNOT match the regex set >&2"
+                echo 'return 2 2>/dev/null'
+                return 1
+            fi
+        done
+
+        if [[ "$op" == =~\[?\] ]]; then
+            echo "local $name 2>/dev/null"
+            echo "$name=$(list.repr "${data[@]}")"
+            return 0 # continue
+        fi ;;
+    *)  [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
+    esac
+
+    echo "local $name 2>/dev/null"
+    echo "$name=$(str.repr "$val")"
+    return 0
+}
+
 # TODO: avoid IFS influence on this function
 param.__parse(){
+    local i IFS=$'\n'
 
-    local i IFS=
-
-    local varlist=()
-    local typelist=()
-    local vallist=()
-    local deslist=()
-    local deflist=()
-    local oplist=()
-    local choicelist=()
-
-    local line
+    local varlist=() typelist=()  deslist=()
+    local vallist=() deflist=() # default
+    local oplist=() choicelist=()
 
     # Step 1: Parsing into tokens
+    local line
     while read -r line; do
         line="$(str.trim "$line")"
         [ "$line" = "" ] && continue
 
-        local all_arg_arr=() IFS=
+        local all_arg_arr=()
         # all_arg_arr=( "$(str.arg "$line")" )
-        IFS=$'\n' # different from '\n'
         # shellcheck disable=SC2207 # this rule is wrong
         all_arg_arr=( $(echo "$line" | xargs -n 1) )
 
         varname=${all_arg_arr[0]}
-
         if [[ $varname == *=* ]]; then
             local default="${varname#*=}"
             varname="${varname%%=*}"
             varlist+=("$varname")
-            vallist+=("$default")
+            vallist+=("$default") # Default value
             deflist+=("$default")
         else
             varlist+=("$varname")
             vallist+=("")
             deflist+=("")
         fi
-
-        IFS=$'\n'
 
         case "${all_arg_arr[1]}" in
         = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
@@ -125,7 +217,8 @@ param.__parse(){
     for (( i=0; i < ${#varlist[@]}; ++i )); do
         [[ ! "${typelist[i]}" = *env ]] && continue
         local name=${varlist[i]}
-        vallist[i]=${!name}
+        local value="${!name}"
+        [ -n "$value" ] && vallist[i]=$value
     done
     
     local rest_argv_str="local _rest_argv=( "
@@ -133,146 +226,43 @@ param.__parse(){
     # Step 3: Init the values with the parameter
     while [ ! "$#" -eq 0 ]; do
         local parameter_name=$1
-        if [[ "$parameter_name" == --* ]]; then
-            shift
-            parameter_name=${parameter_name:2}
-            local sw=0 i
-            for i in "${!varlist[@]}"; do
-                [[ ! "${typelist[i]}" = arg* ]] && continue
-                local _varname=${varlist[i]}
-                if [ "$parameter_name" == "$_varname" ]; then
-                    vallist[i]=$1
-                    shift
-                    sw=1
-                    break
-                fi
-            done
-            if [ $sw -eq 0 ]; then
-                echo "ERROR: Unsupported parameter: --$parameter_name" >&2
-                echo "return 1 2>/dev/null"
-                return 0
-            fi
-        else
+        if [[ ! "$parameter_name" == --* ]]; then
             rest_argv_str+="$(str.repr "$parameter_name") "
             shift
+            continue
         fi
+
+        parameter_name=${parameter_name:2}
+        shift
+        local sw=0 i
+        for i in "${!varlist[@]}"; do
+            [[ ! "${typelist[i]}" = arg* ]] && continue
+            local _varname=${varlist[i]}
+            if [ "$parameter_name" == "$_varname" ]; then
+                vallist[i]=$1
+                shift
+                sw=1
+                break
+            fi
+        done
+        if [ $sw -eq 0 ]; then
+            echo "ERROR: Unsupported parameter: --$parameter_name" >&2
+            echo "return 1 2>/dev/null"
+            return 0
+        fi
+            
     done
 
     echo "$rest_argv_str ) 2>/dev/null"
 
-    # Step 4: If value is NULL, use the default value.
+    # Step 4: If value is NULL, use the default value. Then, Type-CHECK
     for i in "${!varlist[@]}"; do
-        local name="${varlist[i]}"
-        local val="${vallist[i]}"
-        if [ "$val" == "" ]; then
-            vallist[i]=${deflist[i]}
-        fi
-    done
+        # For some starnge case, it might not be redundant.
+        # if [ "${vallist[i]}" == "" ]; then
+        #     vallist[i]=${deflist[i]}
+        # fi
 
-    local CHOICE_LIST_MUST_NOT_BE_EMTPY='
-        [ "${#choice[@]}" -eq 0 ] && {
-            echo "echo ERROR: Please provide candidate list right after $op for parameter[$name] >&2"
-            echo "return 1 2>/dev/null"
-            return 0
-        }
-    '
-
-    # Step 4: Type check and output the code
-    for i in "${!varlist[@]}"; do
-        local name="${varlist[i]}"
-        local val="${vallist[i]}"
-
-        local op="${oplist[$i]}"
-        # TODO: Should we quote? Please find out. 
-        # No. It should be populated.
-        local choice=( ${choicelist[i]} )
-
-        case "$op" in
-        =~)
-            echo "$op" >&2
-            eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-            if ! param._type.regex "$val" "${choice[@]}"; then
-                echo "echo ERROR:  $name='$val' NOT match any regex defined >&2"
-                echo 'return 1 2>/dev/null'
-                return 0
-            fi;;
-        =)
-            eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-            if ! param._type.streq "$val" "${choice[@]}"; then
-                echo "echo ERROR: $name='$val' Not one of the candidate set >&2"
-                echo 'return 2 2>/dev/null'
-                return 0
-            fi ;;
-        =str | =int)
-            if [ ${#val} -eq 0 ]; then
-                echo "echo ERROR: A non-null value is expected. >&2"
-                echo 'return 1 2>/dev/null'
-                return 0
-            fi
-
-            if [ "$op" = "=int" ]; then
-                if  [[ ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
-                    echo "echo ERROR: $name='$val' An integer expected. >&2"
-                    echo 'return 1 2>/dev/null'
-                    return 0
-                fi
-            fi
-
-            [ "${#choice[@]}" -ne 0 ] && {
-                if ! param._type.streq "$val" "${choice[@]}"; then
-                    echo "echo ERROR: $name='$val' Not inside the $op set >&2"
-                    echo 'return 1 2>/dev/null'
-                    return 0
-                fi 
-            };;
-        =\[?\] | =?)
-            eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-
-            local sep=${op:1:1}
-            [[ "$op" == =\[?\] ]] &&  sep=${op:2:1}
-            local data=( $(echo "$val" | tr "$sep" '\n') )
-            [ ${#data[@]} -eq 0 ] && data=("")
-            local datum
-            for datum in "${data[@]}"; do
-                if ! param._type.streq "$datum" "${choice[@]}"; then
-                    echo "echo ERROR: $name='$val' Split with $sep. And element $datum DOESNOT match the string set >&2"
-                    echo 'return 2 2>/dev/null'
-                    return 0
-                fi
-            done
-
-            if [[ "$op" == =\[?\] ]]; then
-                echo "local $name 2>/dev/null"
-                echo "$name=$(list.repr "${data[@]}")"
-                continue
-            fi ;;
-
-        =~\[?\] | =~? )
-            eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-
-            local sep=${op:2:1} i match
-            [[ "$op" == =~\[?\] ]] && sep=${op:3:1}
-            local data=( $(echo "$val" | tr "$sep" '\n') )
-            [ ${#data[@]} -eq 0 ] && data=("")
-            local datum
-            for datum in "${data[@]}"; do
-                if ! param._type.regex "$datum" "${choice[@]}"; then
-                    echo "echo ERROR: $name='$val' Split with $sep. And element $datum DOESNOT match the regex set >&2"
-                    echo 'return 2 2>/dev/null'
-                    return 0
-                fi
-            done
-
-            if [[ "$op" == =~\[?\] ]]; then
-                echo "local $name 2>/dev/null"
-                echo "$name=$(list.repr "${data[@]}")"
-                continue
-            fi ;;
-        *)  [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
-        esac
-
-        echo "local $name 2>/dev/null"
-        echo "$name=$(str.repr "$val")"
+        param._type.check "${varlist[i]}" "${vallist[i]}" "${oplist[$i]}" ${choicelist[i]}
     done
 }
 
