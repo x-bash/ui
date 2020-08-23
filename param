@@ -30,6 +30,28 @@ str.trim(){
 # shellcheck disable=SC2142
 alias param='if ! eval "$(param.__parse "$@")"; then return $? 2>/dev/null || exit $?; fi <<<'
 
+param._type.regex(){
+    local c val="${1:?Provide value}"
+    shift
+    for c in "$@"; do
+        if [[ "$val" =~ ^($c)$ ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+param._type.streq(){
+    local c val="${1:?Provide value}"
+    shift
+    for c in "$@"; do
+        if [ "$val" = "$c" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 # TODO: avoid IFS influence on this function
 param.__parse(){
 
@@ -151,6 +173,14 @@ param.__parse(){
         fi
     done
 
+    local CHOICE_LIST_MUST_NOT_BE_EMTPY='
+        [ "${#choice[@]}" -eq 0 ] && {
+            echo "echo ERROR: Please provide candidate list right after $op for parameter $name >&2"
+            echo "return 1 2>/dev/null"
+            return 0
+        }
+    '
+
     # Step 4: Type check and output the code
     for i in "${!varlist[@]}"; do
         local name="${varlist[i]}"
@@ -163,30 +193,16 @@ param.__parse(){
 
         case "$op" in
         =~)
-            local match=0 c
-            for c in "${choice[@]}"; do
-                if [[ "$val" =~ ^($c)$ ]]; then
-                    match=1
-                    break
-                fi
-            done
-
-            if [ $match -eq 0 ]; then
+            echo "$op" >&2
+            eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
+            if ! param._type.regex "$val" "${choice[@]}"; then
                 echo "echo ERROR:  $name='$val' NOT match any regex defined >&2"
-                # echo "echo '$val' expected to be ${choice[@]} >&2"
                 echo 'return 1 2>/dev/null'
-                return 0;
+                return 0
             fi;;
         =)
-            local match=0 c
-            for c in "${choice[@]}"; do
-                if [ "$c" = "$val" ]; then
-                    match=1
-                    break
-                fi
-            done
-
-            if [ $match -eq 0 ]; then
+            eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
+            if ! param._type.streq "$val" "${choice[@]}"; then
                 echo "echo ERROR: $name='$val' Not one of the candidate set >&2"
                 echo 'return 2 2>/dev/null'
                 return 0
@@ -206,38 +222,24 @@ param.__parse(){
                 fi
             fi
 
-            local match=1
-            for c in "${choice[@]}"; do
-                if [ "$c" = "$val" ]; then
-                    match=1
-                    break
-                fi
-                match=0
-            done
-
-            if [ $match -eq 0 ]; then
-                # echo "123 ${#choicelist[@]}" >&2
-                echo "123 ${#choice[@]}" >&2
-                echo "echo ERROR: $name='$val' Not inside the $op set >&2"
-                echo 'return 1 2>/dev/null'
-                return 0
-            fi ;;
+            [ "${#choice[@]}" -ne 0 ] && {
+                if ! param._type.streq "$val" "${choice[@]}"; then
+                    echo "echo ERROR: $name='$val' Not inside the $op set >&2"
+                    echo 'return 1 2>/dev/null'
+                    return 0
+                fi 
+            };;
         =\[?\] | =?)
-            local sep=${op:1:1} match
+            eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
+
+            local sep=${op:1:1}
             [[ "$op" == =\[?\] ]] &&  sep=${op:2:1}
             local data=( $(echo "$val" | tr "$sep" '\n') )
             [ ${#data[@]} -eq 0 ] && data=("")
             local datum
             for datum in "${data[@]}"; do
-                match=0
-                for c in "${choice[@]}"; do
-                    if [ "$datum" = "$c" ]; then
-                        match=1
-                        break
-                    fi
-                done
-                if [ $match -eq 0 ]; then
-                    echo "echo ERROR: $name='$val' Item inside Not one of the candidate set >&2"
+                if ! param._type.streq "$datum" "${choice[@]}"; then
+                    echo "echo ERROR: $name='$val' Split with $sep. And element $datum DOESNOT match the string set >&2"
                     echo 'return 2 2>/dev/null'
                     return 0
                 fi
@@ -250,21 +252,16 @@ param.__parse(){
             fi ;;
 
         =~\[?\] | =~? )
+            eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
+
             local sep=${op:2:1} i match
             [[ "$op" == =~\[?\] ]] && sep=${op:3:1}
             local data=( $(echo "$val" | tr "$sep" '\n') )
             [ ${#data[@]} -eq 0 ] && data=("")
             local datum
             for datum in "${data[@]}"; do
-                match=0
-                for c in "${choice[@]}"; do
-                    if [[ "$datum" =~ ^($c)$ ]]; then
-                        match=1
-                        break
-                    fi
-                done
-                if [ $match -eq 0 ]; then
-                    echo "echo ERROR: $name='$val' Split with $sep and found none of the element is match the regex set >&2"
+                if ! param._type.regex "$datum" "${choice[@]}"; then
+                    echo "echo ERROR: $name='$val' Split with $sep. And element $datum DOESNOT match the regex set >&2"
                     echo 'return 2 2>/dev/null'
                     return 0
                 fi
@@ -275,7 +272,8 @@ param.__parse(){
                 echo "$name=$(list.repr "${data[@]}")"
                 continue
             fi ;;
-        *) [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
+        *)
+            [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
         esac
 
         # TODO: notice the '' inside the string
