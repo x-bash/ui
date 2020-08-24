@@ -1,0 +1,67 @@
+param.example(){
+    local i
+    printf "Example:\n"
+    for (( i=1; i<${#@}; i++ )); do
+        printf "  $(tput setaf 6)%s:$(tput init)\n" "* ${!i}"
+        (( i++ ))
+        printf "    > $(tput setaf 2)%s$(tput init)\n" "${!i}"
+    done
+}
+
+param.help(){
+    printf "%s:\n" "${FUNCNAME[0]}"
+    param.help.item "$1" "$2" "$3"
+    param.help.item "$4" "$5" "$6"
+}
+
+param.help.item(){
+    local varname="$1"
+    local typedef="$2"
+    local descrip="$3"
+
+    local max_width
+    max_width="$(tput cols)"
+    (( max_width > 80 )) && (( max_width = 80 ))
+    (( max_width -= 20 ))
+
+    local space30 diffspace
+    space30="$(printf "%${max_width}s" "")"
+
+    local a b
+    a="$(printf "    --%s  <%s>" "${varname}" "${typedef}")"
+    b="$(printf "    $(tput bold; tput setaf 6)--%s$(tput init)  <$(tput setaf 3)%s$(tput init)>" "${varname}" "${typedef}")"
+    
+    if [ $max_width -le ${#a} ]; then
+        printf "%s\n$space30%s" "$b" "$descrip"
+    else
+        local diff=$(( max_width - ${#a} ))
+        diffspace="$( printf "%${diff}s" " " )"
+        printf "%s${diffspace}$(tput bold; tput setaf 1)%s$(tput init)" "$b" "$descrip"
+    fi
+    printf "\n"
+}
+
+
+param.example \
+    "Rebuild the page in sort order 'repo,time,update'" \
+    "gt.repo.page.build --org x-bash --repo std --sort repo,time,update" \
+    "Retrieve the page info" \
+    "gt.repo.page.info --org x-bash --repo std"
+
+echo
+
+param.help "access" \
+    "public|private, default" \
+    "access name" \
+    "abc" \
+    "cde" \
+    "kka"
+
+echo
+
+param.help "access" \
+    "public|private|inner-source|all|what, default private" \
+    "access name" \
+    "abc" \
+    "cde" \
+    "kka"
