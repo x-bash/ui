@@ -96,7 +96,7 @@ param._type.check(){
         fi
 
         if [ "$op" = "=int" ]; then
-            if  [[ ! "$val" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]; then
+            if  [[ ! "$val" =~ ^[\ \t]*[0-9]+[\ \t]*$ ]]; then
                 echo "echo ERROR: $name='$val' An integer expected. >&2"
                 echo 'return 1 2>/dev/null'
                 return 1
@@ -146,7 +146,7 @@ param._type.check(){
         local datum
         for datum in "${data[@]}"; do
             param._type.regex "$datum" "$@" && continue
-            echo "echo ERROR: [$name='$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set >&2"
+            echo "echo ERROR: [$name='$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set. >&2"
             echo 'return 2 2>/dev/null'
             return 1
         done
@@ -199,9 +199,10 @@ param.__parse(){
         fi
 
         varname="${all_arg_arr[0]}"
-
+        # echo "AAA $varname" >&2
         ###### BEGIN: handle #1 like
-        if [[ "$varname" =~ \#[:number:]+ ]]; then
+        if [[ "$varname" =~ \#[[:digit:]]+ ]]; then
+            # echo "KKK $varname" >&2
             varname="${varname:1}"
             case "${all_arg_arr[1]}" in
             = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
@@ -212,6 +213,7 @@ param.__parse(){
                 arg_oplist+=( "${all_arg_arr[2]}" )
                 arg_choicelist+=( "${all_arg_arr[*]:3}" ) ;;
             esac
+            # echo "!!! ${arg_oplist[@]}" >&2
             arg_deslist+=("$arg_description")
             continue
         fi
@@ -228,11 +230,7 @@ param.__parse(){
             *)
                 rest_argv_des="${all_arg_arr[1]}"
                 rest_argv_op="${all_arg_arr[2]}"
-                # echo "11111 $IFS ${all_arg_arr[*]:3}" >&2
-                # echo "22222 ${all_arg_arr[@]:3}" >&2
-                
                 rest_argv_choices=( "${all_arg_arr[@]:3}" )
-                # echo "33333 ${#rest_argv_choices[@]}" >&2
                 ;;
             esac
             IFS=$'\n'
@@ -275,14 +273,6 @@ param.__parse(){
     echo "local _varlist 2>/dev/null"
     echo "_varlist=$(list.repr "${varlist[@]}")"
 
-    # echo "--------"
-    # echo "var list: ${varlist[@]}"
-    # echo "val list: ${vallist[@]}"
-    # echo "deslist: ${#deslist[@]}"
-    # echo "dflist: ${deflist[@]}"
-    # echo "op list: ${oplist[@]}"
-    # echo "--------"
-    
     # Step 2: Init the valus with the enviroment
     for (( i=0; i < ${#varlist[@]}; ++i )); do
         local name=${varlist[i]}
@@ -351,22 +341,20 @@ param.__parse(){
     # Step 5: Handle the parameter number
     local max_i=-1
     for i in "${!arg_deslist[@]}"; do
-        [ $max_i -lt "$i" ] && max_i=i
+        [ $max_i -lt "$i" ] && max_i=$i
 
         # shellcheck disable=SC2206
         local choices=( ${arg_choicelist[i]} )  # should not quote '$(...)'
-
-        param._type.check "\\\$$i" "${rest_argv[i]}" "${oplist[$i]}" "${choices[@]}"
+        param._type.check "\\\$$i" "${rest_argv[i]}" "${arg_oplist[i]}" "${choices[@]}"
         [ $? -eq 1 ] && return 1
     done
-
-    echo "${rest_argv[*]} $max_i" >&2
 
     # Step 6: Handle the rest parameter
     if [ -n "$rest_argv_op" ]; then
         for i in "${!rest_argv[@]}"; do
-            [ "$i" -le $max_i ] && continue
-            param._type.check "\\\$$i" "${rest_argv[i]}" "$rest_argv_op" "${rest_argv_choices[@]}"
+            [ "$i" -le "$max_i" ] && continue
+            
+            param._type.check "\\\$$((i+1))" "${rest_argv[i]}" "$rest_argv_op" "${rest_argv_choices[@]}"
             [ $? -eq 1 ] && return 1
         done
     fi
