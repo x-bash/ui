@@ -23,7 +23,7 @@ str.trim(){
 
 line.to_array.trim.ignore_empty(){
     local name=${1:?Array name}
-    local line arr=()
+    local line arr=() IFS=
     while read -r line; do
         line="$(str.trim "$line")"
         [ "$line" = "" ] && continue
@@ -39,7 +39,9 @@ param._type.regex(){
     local c val="$1" # val="${1:?Provide value}"
     shift
     for c in "$@"; do
+        # echo "!!! $c" >&2
         if [[ "$val" =~ ^($c)$ ]]; then
+            # echo "success: $val" >&2
             return 0
         fi
     done
@@ -87,7 +89,7 @@ param._type.check(){
             return 1
         fi ;;
     =str | =int)
-        if [ ${#val} -eq 0 ]; then
+        if [ -z "${val}" ]; then
             echo "echo ERROR: A non-null value is expected for parameter: $name >&2"
             echo 'return 1 2>/dev/null'
             return 1
@@ -127,7 +129,7 @@ param._type.check(){
         done
 
         if [[ "$op" == '=['?']' ]]; then
-            [[ ! "$name" == \$* ]] && {
+            [[ ! "$name" == \\\$* ]] && {
                 echo "local $name 2>/dev/null"
                 echo "$name=$(list.repr "${data[@]}")"
             }
@@ -150,7 +152,7 @@ param._type.check(){
         done
 
         if [[ "$op" == '=~['?']' ]]; then
-            [[ ! "$name" == \$* ]] && {
+            [[ ! "$name" == \\\$* ]] && {
                 echo "local $name 2>/dev/null"
                 echo "$name=$(list.repr "${data[@]}")"
             }
@@ -159,7 +161,7 @@ param._type.check(){
     *)  [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
     esac
 
-    [[ ! "$name" == \$* ]] && {
+    [[ ! "$name" == \\\$* ]] && {
         echo "local $name 2>/dev/null"
         echo "$name=$(str.repr "$val")"
     }
@@ -191,7 +193,8 @@ param.__parse(){
         if [[ "$nextline" = =* ]]; then
             # shellcheck disable=SC2207 # this rule is wrong
             all_arg_arr2=( $(echo "$nextline" | xargs -n 1) )
-            all_arg_arr+=("${all_arg_arr2[@]}")
+            # TODO: !!!
+            all_arg_arr+=( "${all_arg_arr2[@]}" )
             (( lineindex ++ ))
         fi
 
@@ -207,7 +210,7 @@ param.__parse(){
             *)
                 arg_description="${all_arg_arr[1]}"
                 arg_oplist+=( "${all_arg_arr[2]}" )
-                arg_choicelist+=( "${all_arg_arr[@]:3}" ) ;;
+                arg_choicelist+=( "${all_arg_arr[*]:3}" ) ;;
             esac
             arg_deslist+=("$arg_description")
             continue
@@ -216,15 +219,23 @@ param.__parse(){
 
         ###### BEGIN: handle ... for rest_argv
         if [ "$varname" = "..." ]; then
+            IFS=
             case "${all_arg_arr[1]}" in
             = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
                 rest_argv_op="${all_arg_arr[1]}"
-                rest_argv_choices=( "${all_arg_arr[@]:2}" ) ;;
+                rest_argv_choices=( "${all_arg_arr[@]:2}" )
+                ;;
             *)
                 rest_argv_des="${all_arg_arr[1]}"
                 rest_argv_op="${all_arg_arr[2]}"
-                rest_argv_choices=( "${all_arg_arr[@]:3}" ) ;;
+                # echo "11111 $IFS ${all_arg_arr[*]:3}" >&2
+                # echo "22222 ${all_arg_arr[@]:3}" >&2
+                
+                rest_argv_choices=( "${all_arg_arr[@]:3}" )
+                # echo "33333 ${#rest_argv_choices[@]}" >&2
+                ;;
             esac
+            IFS=$'\n'
             continue
         fi
         ###### END: handle ... for rest_argv
@@ -247,7 +258,7 @@ param.__parse(){
             vallist+=("")
             deflist+=("")
         fi
-
+        
         case "${all_arg_arr[1]}" in
         = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
             oplist+=( "${all_arg_arr[1]}" )
@@ -256,7 +267,7 @@ param.__parse(){
             description="${all_arg_arr[1]}"
             oplist+=( "${all_arg_arr[2]}" )
             choicelist+=( "${all_arg_arr[*]:3}" ) ;;
-        esac 
+        esac
 
         deslist+=("$description")
     done
@@ -329,6 +340,7 @@ param.__parse(){
         # if [ "${vallist[i]}" == "" ]; then
         #     vallist[i]=${deflist[i]}
         # fi
+
         # shellcheck disable=SC2206
         local choices=( ${choicelist[i]} )  # should not quote '$(...)'
 
@@ -337,24 +349,24 @@ param.__parse(){
     done
 
     # Step 5: Handle the parameter number
-    local max_i=0
+    local max_i=-1
     for i in "${!arg_deslist[@]}"; do
-
-        [ $max_i -lt "$i" ] && max_i=$i
+        [ $max_i -lt "$i" ] && max_i=i
 
         # shellcheck disable=SC2206
         local choices=( ${arg_choicelist[i]} )  # should not quote '$(...)'
 
-        param._type.check "\$$i" "${rest_argv[i]}" "${oplist[$i]}" "${choices[@]}"
+        param._type.check "\\\$$i" "${rest_argv[i]}" "${oplist[$i]}" "${choices[@]}"
         [ $? -eq 1 ] && return 1
     done
 
-    (( max_i ++ ))
+    echo "${rest_argv[*]} $max_i" >&2
 
     # Step 6: Handle the rest parameter
     if [ -n "$rest_argv_op" ]; then
-        for i in "${!rest_argv[@]:max_i}"; do
-            param._type.check "\$$i" "${rest_argv[i]}" "$rest_argv_op" "${rest_argv_choices[@]}"
+        for i in "${!rest_argv[@]}"; do
+            [ "$i" -le $max_i ] && continue
+            param._type.check "\\\$$i" "${rest_argv[i]}" "$rest_argv_op" "${rest_argv_choices[@]}"
             [ $? -eq 1 ] && return 1
         done
     fi
