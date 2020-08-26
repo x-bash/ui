@@ -445,7 +445,7 @@ param.help(){
     printf "%s:\n" "${funcname}" # "${FUNCNAME[0]}"
     while [ $# -gt 0 ]; do
         param.help.item "$1" "$2" "$3"
-        shift 3
+        shift 1; shift 1; shift 1 # Not equal shift 3
     done
 }
 

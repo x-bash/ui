@@ -1,3 +1,5 @@
+. param
+
 param.example(){
     local i
     printf "Example:\n"
@@ -8,8 +10,6 @@ param.example(){
     done
 }
 
-. p
-
 param.example \
     "Rebuild the page in sort order 'repo,time,update'" \
     "gt.repo.page.build --org x-bash --repo std --sort repo,time,update" \
@@ -18,16 +18,16 @@ param.example \
 
 echo
 
-param.help "access" \
+param.help "" "access" \
     "public|private, default" \
     "access name" \
     "abc" \
     "cde" \
     "kka"
 
-echo
+# echo
 
-param.help "access" \
+param.help "" "access" \
     "public|private|inner-source|all|what, default private" \
     "access name" \
     "abc" \
