@@ -35,16 +35,34 @@ line.to_array.trim.ignore_empty(){
 # shellcheck disable=SC2142
 # alias param='if ! eval "$(param.__parse "${FUNCNAME[0]}" "$@")"; then param.help.show; return $? 2>/dev/null || exit $?; fi <<<'
 # alias param='eval "$(param.__parse "${FUNCNAME[0]}" "$@")" <<<'
-alias param='{ eval "$(param.__parse "${FUNCNAME[0]}" "$@")"; } <<<'
+# alias param='{ eval "$(param.__parse "${FUNCNAME[0]:-$0}" "$@")"; } <<<'
 
-param.help(){
-    echo "output help doc"
-}
+# alias param='
+#     local _param_code 2>/dev/null; 
+#     _param_code="$(param.__parse "${FUNCNAME[0]:-$0}" "$@")"
+#     if [ $? -eq 0 ]; then 
+#         eval "${_param_code}"
+#     else
+#         return $? 2>/dev/null || exit $?; 
+#     fi <<<'
+
+
+alias param='
+    local _param_code _param_help_docs 2>/dev/null; 
+    { 
+        _param_code="$(param.__parse "${FUNCNAME[0]:-$0}" "$@")"; 
+        if [ $? -eq 0 ]; then 
+            eval "$_param_code"; 
+        else 
+            return $? 2>/dev/null || exit $?; 
+        fi 
+    } <<<'
+
 
 alias show_help_then_return_or_exit="param.help.show; return 1 2>/dev/null || exit 1; "
 
 param.help.show(){
-    param.help "${_param_help_docs[@]}"
+    param.help "$funcname" "${_param_help_docs[@]}" >&2
 }
 
 param._type.regex(){
@@ -75,8 +93,8 @@ param._type.check(){
     # shellcheck disable=SC2016
     local CHOICE_LIST_MUST_NOT_BE_EMTPY='
         [ "${#@}" -eq 0 ] && {
-            echo "echo ERROR: Please provide candidate list right after $op for parameter[$name] >&2"
-            echo "show_help_then_return_or_exit"
+            echo "ERROR: Please provide candidate list right after $op for parameter[$name]" >&2
+            param.help.show
             return 0
         }
     '
@@ -88,37 +106,37 @@ param._type.check(){
     =~)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
         if ! param._type.regex "$val" "$@"; then
-            echo "echo ERROR:  $name='$val' NOT match any regex defined >&2"
-            echo 'show_help_then_return_or_exit'
+            echo "ERROR:  $name='$val' NOT match any regex defined" >&2
+            param.help.show
             return 1
         fi;;
     =)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
         if ! param._type.streq "$val" "$@"; then
-            echo "$val" "$@" >&2
-            echo "echo ERROR: $name='$val' Not one of the candidate set. >&2"
-            echo 'show_help_then_return_or_exit'
+            # echo "$val" "$@" >&2
+            echo "ERROR: $name='$val' Not one of the candidate set." >&2
+            param.help.show
             return 1
         fi ;;
     =str | =int)
         if [ -z "${val}" ]; then
-            echo "echo ERROR: A non-null value is expected for parameter: $name >&2"
-            echo 'show_help_then_return_or_exit'
+            echo "ERROR: A non-null value is expected for parameter: $name" >&2
+            param.help.show
             return 1
         fi
 
         if [ "$op" = "=int" ]; then
             if  [[ ! "$val" =~ ^[\ \t]*[0-9]+[\ \t]*$ ]]; then
-                echo "echo ERROR: $name='$val' An integer expected. >&2"
-                echo 'show_help_then_return_or_exit'
+                echo "ERROR: $name='$val' An integer expected." >&2
+                param.help.show
                 return 1
             fi
         fi
 
         [ "${#@}" -ne 0 ] && {
             if ! param._type.streq "$val" "$@"; then
-                echo "echo ERROR: $name='$val' Not inside the $op set. >&2"
-                echo 'show_help_then_return_or_exit'
+                echo "ERROR: $name='$val' Not inside the $op set." >&2
+                param.help.show
                 return 1
             fi 
         };;
@@ -134,8 +152,8 @@ param._type.check(){
         
         for datum in "${data[@]}"; do
             if ! param._type.streq "$datum" "$@"; then
-                echo "echo ERROR: [$name='$val'] After splited with \'$sep\', element '$datum' does NOT match the string set >&2"
-                echo 'show_help_then_return_or_exit'
+                echo "ERROR: [$name='$val'] After splited with \'$sep\', element '$datum' does NOT match the string set" >&2
+                param.help.show
                 return 1
             fi
         done
@@ -158,8 +176,8 @@ param._type.check(){
         local datum
         for datum in "${data[@]}"; do
             param._type.regex "$datum" "$@" && continue
-            echo "echo ERROR: [$name='$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set. >&2"
-            echo 'show_help_then_return_or_exit'
+            echo "ERROR: [$name='$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set." >&2
+            param.help.show
             return 1
         done
 
@@ -182,7 +200,8 @@ param._type.check(){
 
 param.__parse(){
     local i IFS=$'\n'
-    local funcname=$1; shift
+    local funcname="$1"; shift
+    # echo "Funcname : $funcname $@" >&2
     
 
     local varlist=() typelist=()  deslist=()
@@ -284,6 +303,41 @@ param.__parse(){
         deslist+=("$description")
     done
 
+
+    # Step 1a: Install help
+
+    echo "${varlist[@]}" >&2
+    echo "${deflist[@]}" >&2
+    for i in "${!varlist[@]}"; do
+        local name=${varlist[i]} # $1
+        local desc=${deslist[i]} # $3
+        local op="${oplist[i]}"
+        local def="${deflist[i]}"
+
+        IFS=$'\n'
+        local choices=( ${choicelist[i]} )
+
+
+        local type_desc
+        if [ -n "$def" ]; then
+            type_desc="Default[$def]. "
+        fi
+        
+        case "$op" in
+            = | ==) IFS='|'; type_desc+="${choices[*]}";;
+            =~) IFS='|'; type_desc+="Regex pattern: ${choices[*]}";;
+            =str) IFS='|'; type_desc+="String. ${choices[*]}";;
+            =int) IFS='|'; type_desc+="Int type. ${choices[*]}";;
+            *) type_desc+=""
+        esac
+
+        echo "fff $type_desc"
+
+        _param_help_docs+=( "$name" "$type_desc" "$desc")
+    done
+
+    IFS=$'\n'
+
     echo "local _varlist 2>/dev/null"
     echo "_varlist=$(list.repr "${varlist[@]}")"
 
@@ -309,7 +363,8 @@ param.__parse(){
     while [ ! "$#" -eq 0 ]; do
         local parameter_name=$1
         if [ "$parameter_name" = --help ] || [ "$parameter_name" = -h ]; then
-            eval "return 1"
+            param.help.show
+            return 1
         fi
 
         if [[ ! "$parameter_name" == --* ]]; then
@@ -334,7 +389,7 @@ param.__parse(){
         done
         if [ $sw -eq 0 ]; then
             echo "ERROR: Unsupported parameter: --$parameter_name" >&2
-            echo "show_help_then_return_or_exit"
+            param.help.show
             return 0
         fi
             
@@ -354,7 +409,7 @@ param.__parse(){
 
         param._type.check "${varlist[i]}" "${vallist[i]}" "${oplist[$i]}" "${choices[@]}"
         [ $? -eq 1 ] && {
-            echo "show_help_then_return_or_exit"
+            param.help.show
             return 1
         }
     done
@@ -367,10 +422,7 @@ param.__parse(){
         # shellcheck disable=SC2206
         local choices=( ${arg_choicelist[i]} )  # should not quote '$(...)'
         param._type.check "\\\$$i" "${rest_argv[i]}" "${arg_oplist[i]}" "${choices[@]}"
-        [ $? -eq 1 ] && {
-            echo "show_help_then_return_or_exit"
-            return 1
-        }
+        [ $? -eq 1 ] && return 1
     done
 
     # Step 6: Handle the rest parameter
@@ -379,12 +431,48 @@ param.__parse(){
             [ "$i" -le "$max_i" ] && continue
             
             param._type.check "\\\$$((i+1))" "${rest_argv[i]}" "$rest_argv_op" "${rest_argv_choices[@]}"
-            [ $? -eq 1 ] && {
-                echo "show_help_then_return_or_exit"
-                return 1
-            }
+            [ $? -eq 1 ] && return 1
         done
     fi
 }
 
 shopt -s expand_aliases
+
+param.help(){
+    echo
+    echo "----------------"
+    local funcname="$1" i; shift
+    printf "%s:\n" "${funcname}" # "${FUNCNAME[0]}"
+    while [ $# -gt 0 ]; do
+        param.help.item "$1" "$2" "$3"
+        shift 3
+    done
+}
+
+param.help.item(){
+    local varname="$1"
+    local typedef="$2"
+    local descrip="$3"
+
+    local max_width
+    max_width="$(tput cols)"
+    (( max_width > 80 )) && (( max_width = 80 ))
+    (( max_width -= 20 ))
+
+    local space30 diffspace
+    space30="$(printf "%${max_width}s" "")"
+
+    local a b
+    a="$(printf "    --%s  <%s>" "${varname}" "${typedef}")"
+    b="$(printf "    $(tput bold; tput setaf 6)--%s$(tput init)  <$(tput setaf 3)%s$(tput init)>" "${varname}" "${typedef}")"
+    
+    if [ $max_width -le ${#a} ]; then
+        printf "%s\n$space30%s" "$b" "$descrip"
+    else
+        local diff=$(( max_width - ${#a} ))
+        diffspace="$( printf "%${diff}s" " " )"
+        printf "%s${diffspace}$(tput bold; tput setaf 1)%s$(tput init)" "$b" "$descrip"
+    fi
+    printf "\n"
+}
+
