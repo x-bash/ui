@@ -513,12 +513,14 @@ param.help.item(){
 alias param.example='local _param_example 2>/dev/null; param.__example _param_example'
 
 param.example.show(){
+    # shellcheck disable=SC2154
     echo "$_param_example"
 }
 
 param.__example(){
     local name=$1 s
     shift
+    # shellcheck disable=SC2034
     s="$(param.__example.cat "$@")"
     eval "$name=\"\$s\""
 }
