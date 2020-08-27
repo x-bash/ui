@@ -52,11 +52,11 @@ alias param='
     local _param_code _param_help_docs 2>/dev/null; 
     { 
         _param_code="$(param.__parse "${FUNCNAME[0]:-$0}" "$@")"; 
-        if [ $? -eq 0 ]; then 
-            eval "$_param_code"; 
-        else 
-            return $? 2>/dev/null || exit $?;
-        fi 
+        case "$?" in
+            0) eval "$_param_code" ;;
+            1) return 1 2>/dev/null || exit 1 ;;
+            *) return 0 ;;
+        esac
     } <<<'
 
 
@@ -64,6 +64,7 @@ alias show_help_then_return_or_exit="param.help.show; return 1 2>/dev/null || ex
 
 param.help.show(){
     param.help "$funcname" "${_param_help_docs[@]}" >&2
+    param.example.show >&2
 }
 
 param._type.regex(){
@@ -261,7 +262,6 @@ param.__parse(){
         fi
 
         varname="${all_arg_arr[0]}"
-        # echo "AAA $varname" >&2
         ###### BEGIN: handle #1 like
         if [[ "$varname" =~ \#[[:digit:]]+ ]]; then
             # echo "KKK $varname" >&2
@@ -348,6 +348,14 @@ param.__parse(){
 
         deslist+=("$description")
         oplist+=( "$op" )
+    done
+
+    # Step 1b: Check --help or -h
+    for i in $#; do
+        if [ "$i" = "-h" ] || [ "$i" = "--help" ]; then
+            param.help.show
+            return 2
+        fi
     done
 
     # Step 1c: Setupt _varlist
@@ -456,7 +464,8 @@ shopt -s expand_aliases
 param.help(){
     echo
     echo "----------------"
-    local funcname="$1" i; shift
+    local i funcname="${1#*/}"
+    shift
     printf "%s:\n" "${funcname}" # "${FUNCNAME[0]}"
     while [ $# -gt 0 ]; do
         # echo "fff"
@@ -501,3 +510,26 @@ param.help.item(){
     printf "\n"
 }
 
+alias param.example='local _param_example 2>/dev/null; param.__example _param_example'
+
+param.example.show(){
+    echo "$_param_example"
+}
+
+param.__example(){
+    local name=$1 s
+    shift
+    s="$(param.__example.cat "$@")"
+    eval "$name=\"\$s\""
+}
+
+param.__example.cat(){
+    local i
+    echo "----------------"
+    printf "Example:\n"
+    for (( i=1; i<${#@}; i++ )); do
+        printf "  $(tput setaf 6)%s:$(tput init)\n" "* ${!i}"
+        (( i++ ))
+        printf "    > $(tput setaf 2)%s$(tput init)\n" "${!i}"
+    done
+}

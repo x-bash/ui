@@ -37,6 +37,11 @@
 # '
 ## 
 
+param.example "Rebuild the page in sort order 'repo,time,update'" \
+    "gt.repo.page.build --org x-bash --repo std --sort repo,time,update" \
+    "Retrieve the page info" \
+    "gt.repo.page.info --org x-bash --repo std"
+
 param '
     #1   "Working Number"  =int
     #2   "Working Number"  =int
