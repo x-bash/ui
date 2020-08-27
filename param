@@ -307,7 +307,6 @@ param.__parse(){
 
 
     # Step 1a: Install help
-
     for i in "${!varlist[@]}"; do
         local name="${varlist[i]}" # $1
         local desc="${deslist[i]}" # $3
@@ -325,13 +324,13 @@ param.__parse(){
             =int) IFS='|'; type_desc="Int type. ${choices[*]}";;
             =\[?\]) 
                 o="${op:2:1}"
-                IFS='|'; 
-                type_desc="Join by $o Item: ${choices[*]}"
+                IFS=' '; 
+                type_desc="Join by '$o'. Item: ${choices[*]}"
                 ;;
             =~\[?\])
                 o="${op:3:1}"
-                IFS='|'; 
-                # type_desc="Join by '$o', Item match regex: ${choices[*]}"
+                IFS=' '; 
+                type_desc="Join by '$o'. Item match regex: ${choices[*]}"
                 ;;
             *) type_desc=""
         esac
@@ -470,16 +469,18 @@ param.help.item(){
     space30="$(printf "%${max_width}s" "")"
 
     local a b
-    a="$(printf "    --%-10s%-10s<%s>" "${varname}" "${default}" "${typedef}")"
-    # b="$(printf "    $(tput bold; tput setaf 6)--%-10s$(tput init)%-10s<$(tput setaf 3)%s$(tput init)>" "${varname}" "${default}" "${typedef}")"
+    a="$(printf "    --%-10s %-10s <%s>" "${varname}" "${default}" "${typedef}")"
+    b="$(printf "    $(tput bold; tput setaf 6)--%-10s$(tput init) %-10s <$(tput setaf 3)%s$(tput init)>" "${varname}" "${default}" "${typedef}")"
     
+    descrip="$(tput bold; tput setaf 1)$descrip$(tput init)"
+
     if [ $max_width -le ${#a} ]; then
-        printf "%s\n$space30%s" "$default" "$a" "$descrip"
+        printf "%s\n$space30%s"  "$b" "$descrip"
     else
         local diff=$(( max_width - ${#a} ))
         diffspace="$( printf "%${diff}s" " " )"
-        printf "%s${diffspace}%s" "$a" "$descrip"
-        # printf "%s${diffspace}$(tput bold; tput setaf 1)%s$(tput init)" "$a" "$descrip"
+        # printf "%s${diffspace}%s" "$b" "$descrip"
+        printf "%s${diffspace}%s" "$b" "$descrip"
     fi
     printf "\n"
 }
