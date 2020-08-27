@@ -47,6 +47,7 @@ line.to_array.trim.ignore_empty(){
 #     fi <<<'
 
 
+# shellcheck disable=SC2154
 alias param='
     local _param_code _param_help_docs 2>/dev/null; 
     { 
@@ -54,7 +55,7 @@ alias param='
         if [ $? -eq 0 ]; then 
             eval "$_param_code"; 
         else 
-            return $? 2>/dev/null || exit $?; 
+            return $? 2>/dev/null || exit $?;
         fi 
     } <<<'
 
@@ -198,15 +199,43 @@ param._type.check(){
     return 0
 }
 
+param.__parse.add_help_doc_item(){
+    local IFS
+
+    local name="${1}" # $1
+    local desc="${2}" # $3
+    local op="${3}"
+    local default="${4}"
+    shift; shift; shift; shift
+
+    local type_desc="" o
+
+    case "$op" in
+        = | ==) IFS='|'; type_desc="$*";;
+        =~) IFS='|'; type_desc="Regex pattern: $*";;
+        =str) IFS='|'; [ $# -eq 0 ] && type_desc="String" || type_desc="String: $*" ;;
+        =int) IFS='|'; [ $# -eq 0 ] && type_desc="Int" || type_desc="Int: $*" ;;
+        =\[?\]) 
+            o="${op:2:1}"
+            IFS=' '; type_desc="Join by '$o'. Item: $*"
+            ;;
+        =~\[?\])
+            o="${op:3:1}"
+            IFS=' '; type_desc="Join by '$o'. Item match regex: $*"
+            ;;
+        *) type_desc=""
+    esac
+
+    _param_help_docs+=( "$name" "$default" "$type_desc" "$desc")
+}
+
 param.__parse(){
     local i IFS=$'\n'
     local funcname="$1"; shift
-    # echo "Funcname : $funcname $@" >&2
-    
 
-    local varlist=() typelist=()  deslist=()
-    local vallist=() deflist=() # default
-    local oplist=() choicelist=()
+    local varlist=()    typelist=()     deslist=()
+    local vallist=()    deflist=()      # default
+    local oplist=()     choicelist=()
 
     local arg_description arg_deslist=() arg_oplist=() arg_choicelist=()
     local rest_argv_des="" rest_argv_op="" rest_argv_choices=()
@@ -239,14 +268,18 @@ param.__parse(){
             varname="${varname:1}"
             case "${all_arg_arr[1]}" in
             = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
+                arg_description=""
                 arg_oplist+=( "${all_arg_arr[1]}" )
-                arg_choicelist+=( "${all_arg_arr[*]:2}" ) ;;
+                arg_choicelist+=( "${all_arg_arr[*]:2}" ) 
+                param.__parse.add_help_doc_item "$varname" "$arg_description" "${all_arg_arr[1]}" "" "${all_arg_arr[@]:2}"
+                ;;
             *)
                 arg_description="${all_arg_arr[1]}"
                 arg_oplist+=( "${all_arg_arr[2]}" )
-                arg_choicelist+=( "${all_arg_arr[*]:3}" ) ;;
+                arg_choicelist+=( "${all_arg_arr[*]:3}" ) 
+                param.__parse.add_help_doc_item "$varname" "$arg_description" "${all_arg_arr[2]}" "" "${all_arg_arr[@]:3}"
+                ;;
             esac
-            # echo "!!! ${arg_oplist[@]}" >&2
             arg_deslist+=("$arg_description")
             continue
         fi
@@ -254,16 +287,19 @@ param.__parse(){
 
         ###### BEGIN: handle ... for rest_argv
         if [ "$varname" = "..." ]; then
-            IFS=
+            # IFS=
             case "${all_arg_arr[1]}" in
             = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
                 rest_argv_op="${all_arg_arr[1]}"
                 rest_argv_choices=( "${all_arg_arr[@]:2}" )
+                param.__parse.add_help_doc_item "$varname" "" "${all_arg_arr[1]}" "" "${all_arg_arr[@]:2}"
                 ;;
             *)
                 rest_argv_des="${all_arg_arr[1]}"
                 rest_argv_op="${all_arg_arr[2]}"
                 rest_argv_choices=( "${all_arg_arr[@]:3}" )
+
+                param.__parse.add_help_doc_item "$varname" "$rest_argv_des" "${all_arg_arr[2]}" "" "${all_arg_arr[@]:3}"
                 ;;
             esac
             IFS=$'\n'
@@ -278,70 +314,45 @@ param.__parse(){
             typelist+=("arg")
         fi
 
+        local default
         if [[ "$varname" == *=* ]]; then
-            local default="${varname#*=}"
+            default="${varname#*=}"
             varname="${varname%%=*}"
             varlist+=("$varname")
             vallist+=("$default") # Default value
             deflist+=("$default")
         else
+            default=""
             varlist+=("$varname")
             vallist+=("")
             deflist+=("")
         fi
         
-        local description
+        IFS=$'\n'
+        local description op
         case "${all_arg_arr[1]}" in
         = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
             description=""
-            oplist+=( "${all_arg_arr[1]}" )
-            choicelist+=( "${all_arg_arr[*]:2}" ) ;;
+            op="${all_arg_arr[1]}"
+            choicelist+=( "${all_arg_arr[*]:2}" ) 
+            param.__parse.add_help_doc_item "$varname" "$description" "$op" "$default" "${all_arg_arr[@]:2}"
+            ;;
+            
         *)
             description="${all_arg_arr[1]}"
-            oplist+=( "${all_arg_arr[2]}" )
-            choicelist+=( "${all_arg_arr[*]:3}" ) ;;
+            op="${all_arg_arr[2]}"
+            choicelist+=( "${all_arg_arr[*]:3}" )
+            param.__parse.add_help_doc_item "$varname" "$description" "$op" "$default" "${all_arg_arr[@]:3}"
+            ;;
         esac
 
         deslist+=("$description")
+        oplist+=( "$op" )
     done
 
-
-    # Step 1a: Install help
-    for i in "${!varlist[@]}"; do
-        local name="${varlist[i]}" # $1
-        local desc="${deslist[i]}" # $3
-        local op="${oplist[i]}"
-        local def="${deflist[i]}"
-
-        IFS=$'\n'
-        local choices=( ${choicelist[i]} )
-        local type_desc="" o
-        
-        case "$op" in
-            = | ==) IFS='|'; type_desc="${choices[*]}";;
-            =~) IFS='|'; type_desc="Regex pattern: ${choices[*]}";;
-            =str) IFS='|'; type_desc="String. ${choices[*]}";;
-            =int) IFS='|'; type_desc="Int type. ${choices[*]}";;
-            =\[?\]) 
-                o="${op:2:1}"
-                IFS=' '; 
-                type_desc="Join by '$o'. Item: ${choices[*]}"
-                ;;
-            =~\[?\])
-                o="${op:3:1}"
-                IFS=' '; 
-                type_desc="Join by '$o'. Item match regex: ${choices[*]}"
-                ;;
-            *) type_desc=""
-        esac
-
-        echo "fff $type_desc"
-
-        _param_help_docs+=( "$name" "$def" "$type_desc" "$desc")
-    done
+    # Step 1c: Setupt _varlist
 
     IFS=$'\n'
-
     echo "local _varlist 2>/dev/null"
     echo "_varlist=$(list.repr "${varlist[@]}")"
 
@@ -469,12 +480,17 @@ param.help.item(){
     space30="$(printf "%${max_width}s" "")"
 
     local a b
-    a="$(printf "    --%-10s %-10s <%s>" "${varname}" "${default}" "${typedef}")"
-    b="$(printf "    $(tput bold; tput setaf 6)--%-10s$(tput init) %-10s <$(tput setaf 3)%s$(tput init)>" "${varname}" "${default}" "${typedef}")"
+    if [[ "$varname" =~ [0-9]+ ]]; then
+        varname="\$$varname"
+    elif [ "$varname" != "..." ]; then
+        varname="--$varname"
+    fi
+    a="$(printf "    %-10s %-10s <%s>" "${varname}" "${default}" "${typedef}")"
+    b="$(printf "    $(tput bold; tput setaf 6)%-10s$(tput init) %-10s <$(tput setaf 3)%s$(tput init)>" "${varname}" "${default}" "${typedef}")"
     
     descrip="$(tput bold; tput setaf 1)$descrip$(tput init)"
 
-    if [ $max_width -le ${#a} ]; then
+    if [ "$max_width" -le "${#a}" ]; then
         printf "%s\n$space30%s"  "$b" "$descrip"
     else
         local diff=$(( max_width - ${#a} ))
