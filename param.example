@@ -18,18 +18,22 @@ param.example \
 
 echo
 
-param.help "" "access" \
-    "public|private, default" \
-    "access name" \
-    "abc" \
-    "cde" \
-    "kka"
+# param.help "" "access" \
+#     "public" \
+#     "public|private, default , ..." \
+#     "access name" \
+#     "abc" \
+#     "aaa" \
+#     "cde" \
+#     "kka"
 
-# echo
+echo
 
 param.help "" "access" \
+    "public" \
     "public|private|inner-source|all|what, default private" \
     "access name" \
     "abc" \
+    "aaa" \
     "cde" \
     "kka"
