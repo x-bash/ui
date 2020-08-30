@@ -279,11 +279,18 @@ gt.org.info(){
 
 gt.repo.list(){
     param '
-        owner="" "Provide owner"
-        onwer_type="" "Provide owner type. If undefiend, will query gitee to retrive the type"
+        #1  "Provide owner"
     '
 
-    if gt.parse_env_owner_type; then
+    local owner owner_type
+    owner="${_rest_argv[0]}"
+    if [ -z "$owner" ]; then
+        gt.user.repo.list "$@"
+    else
+        owner_type="$(gt.owner_type.query "$owner")"
+    fi
+
+    if [ -n "$owner_type" ] && [ -n "$owner" ]; then
         "gt.${owner_type}.repo.list" "$@"
     else
         printf "Please provide owner and owner_type\n" >&2
@@ -294,7 +301,7 @@ gt.repo.list(){
 # https://gitee.com/api/v5/swagger#/getV5EnterprisesEnterpriseRepos
 gt.enterprise.repo.list(){
     param '
-        owner "Provide enterprise"
+        #1 "Provide enterprise"
         type=all "repo type" = all public internal private
         direct=true "" = true false
     '
@@ -305,7 +312,7 @@ gt.enterprise.repo.list(){
 # https://gitee.com/api/v5/swagger#/getV5OrgsOrgRepos
 gt.org.repo.list(){
     param '
-        owner "Provide enterprise"
+        #1 "Provide enterprise"
         type=all "repo type" = all public private
     '
 
@@ -318,9 +325,9 @@ gt.user.repo.list(){
     # TODO: add split,
     param '
         visibility=all "" = public private all
-        affiliation=owner "" =~ ^(owner|collaborator|organization_member|enterprise_member|admin)(,(owner|collaborator|organization_member|enterprise_member|admin))+$
+        affiliation=owner =, owner collaborator organization_member enterprise_member admin
         sort=created "" = created updated pushed full_name
-        direction="" = asc desc ""
+        direction="desc" = asc desc
     '
 
     gt.get.multi "/v5/user/repos" visibility affiliation sort direction\
@@ -584,10 +591,11 @@ alias gt.param.repo.list='
 gt.repo.page.info(){
     gt.param.repo.owner
     gt.get "/v5/repos/${owner}/${repo}/pages"
-    
 }
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPagesBuilds
+# Even we could use it
+# {"message":"非付费pages，不允许部署 pages"}
 gt.repo.page.build(){
     gt.param.repo.owner
     gt.post.json "/v5/repos/${owner}/${repo}/pages/builds"
@@ -752,7 +760,7 @@ gt.repo.pr.create(){
         base "target branch. Format: [username:]<branch>"
         body="" "pull request content"
         milestone_number="" "milestone id"
-        labels=""
+        labels="" "labels"
         assignees="" "reviewer username list. Format: <username>[,<username>]"
         testers="" "tester username list. Format: <username>[,<username>]"
         prune_source_branch=false = true false
