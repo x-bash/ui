@@ -137,35 +137,6 @@ gt.token.dump(){
     printf "%s" "$current_token" >"$TOKEN_PATH"
 }
 
-# gt.owner.set(){
-#     local O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}"
-
-#     local owner="$1"
-
-#     # TODO: If type not given, we should query the api to find out its type
-#     local type="$2"
-#     gt.current-owner "$owner"
-#     gt.current-owner_type "$type"
-# }
-
-# gt._owner(){
-#     repo=${owner:-$(gt.dict.getput "current-repo")}
-#     if [[ "$repo" = */* ]]; then
-#         owner=${repo%%/*}
-#         repo=${repo##*/}
-#     fi
-
-#     echo "${owner}"
-# }
-
-# gt._repo(){
-#     repo=${owner:-$(gt.dict.getput "current-repo")}
-#     if [[ "$repo" = */* ]]; then
-#         owner=${repo%%/*}
-#         repo=${repo##*/}
-#     fi 
-# }
-
 gt.parse_owner_repo(){
     local O="${O:-GITEE_DEFAULT}"
 
@@ -236,33 +207,16 @@ gt.current-repo.set(){
 
 gt.current-repo.get(){
     gt.dict.get "current-repo"
-    # gt.current-owner.get
-    # gt.current-owner_type.get
 }
 
 gt.current-owner.set(){ 
     local O="${O:-GITEE_DEFAULT}"
-    # local O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}"
-
     param '
         #1 "Provide owner name" =str
-        #2=none "Provide type name" = user enterprise organization none
     '
 
     local owner="${_rest_argv[0]}"
-    local type="${_rest_argv[1]}"
-
-    if [ "$type" == "none" ]; then
-        # get type
-        type="$(gt.owner_type.query "$owner")"
-        if [ -z "$type" ]; then
-            echo "$owner is not a valid owner in gitee." >&2
-            return 1
-        fi
-    fi
-
     gt.dict.put "current-owner" "$owner"
-    gt.dict.put "current-owner_type" "$type"
 }
 
 gt.current-owner.get(){
@@ -278,23 +232,26 @@ gt.current-owner_type.get(){
     local data
     data="$(gt.dict.get "current-owner_type")"
     if [ -z "$data" ]; then
-        return 1
+        owner="$(gt.current-owner.get)"
+        data=$(gt.owner_type.query "$owner")
+        if [ -z "$data" ]; then
+            return 1
+        else
+            gt.dict.put "current-owner_type" "$data"
+        fi
     fi
     printf "%s" "$data"
 }
 
-# gt.eq_str_by_name(){
-#     for i in "$@"; do
-#         echo "$i=${!i}"
-#     done
-# }
-
 # It is very rare
 gt.org.create(){
     param '
-        org "organization name" =str
+        ... "organization name" =str
     '
-    gt.post "/v5/users/organization" name="$org" org="$org"
+    local org
+    for org in "${_rest_argv[@]}"; do
+        gt.post "/v5/users/organization" name="$org" org="$org"
+    done
 }
 
 # TODO: better solution?
