@@ -150,8 +150,8 @@ param._type.check(){
         # shellcheck disable=SC2207
         local data=( $(echo "$val" | tr "$sep" '\n') ) # should not quote '$(...)'
         [ ${#data[@]} -eq 0 ] && data=("")
+
         local datum
-        
         for datum in "${data[@]}"; do
             if ! param._type.streq "$datum" "$@"; then
                 echo "ERROR: [$name='$val'] After splited with \'$sep\', element '$datum' does NOT match the string set" >&2
@@ -175,6 +175,7 @@ param._type.check(){
         # shellcheck disable=SC2207
         local data=( $(echo "$val" | tr "$sep" '\n') ) # should not quote '$(...)'
         [ ${#data[@]} -eq 0 ] && data=("")
+
         local datum
         for datum in "${data[@]}"; do
             param._type.regex "$datum" "$@" && continue

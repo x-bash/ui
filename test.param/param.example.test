@@ -1,16 +1,8 @@
-. param
+#! /usr/bin/env bash
 
-param.example(){
-    local i
-    printf "Example:\n"
-    for (( i=1; i<${#@}; i++ )); do
-        printf "  $(tput setaf 6)%s:$(tput init)\n" "* ${!i}"
-        (( i++ ))
-        printf "    > $(tput setaf 2)%s$(tput init)\n" "${!i}"
-    done
-}
+source param
 
-param.example \
+param.__example.cat \
     "Rebuild the page in sort order 'repo,time,update'" \
     "gt.repo.page.build --org x-bash --repo std --sort repo,time,update" \
     "Retrieve the page info" \
