@@ -529,15 +529,30 @@ gt.repo.new(){
     "
 }
 
+# repo:
+# 1. using --repo
+# 2. using $1
+# 3. if no owner, using global owner
+# 4. if no repo, using global repo
+
 # shellcheck disable=SC2142
-alias gt.repo.read.args='
+alias gt.param.repo.owner='
     param '\''
-        owner="" "Repo Owner"
-        repo="" "Repo name"
+        repo "Provide repo"
     '\''
-    repo="${1:-$repo}"
-    if ! gt.parse_owner_repo; then
-        return 1
+
+    repo=${_rest_argv[0]:-$repo}
+    local owner
+    if [[ "$repo" == */* ]]; then
+        owner=${repo%/*}
+        repo=${repo##*/}
+    else
+        owner="$(gt.current-owner.get)"
+        if [ -z "$owner" ]; then
+            printf "Owner not found. Global owner not set.\n" >&2
+        else
+            printf "Using default owner: %s\n" "$owner" >&2
+        fi
     fi
 '
 
@@ -556,14 +571,14 @@ alias gt.param.repo.list='
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPages
 gt.repo.page.info(){
-    gt.repo.read.args
+    gt.param.repo.owner
     gt.get "/v5/repos/${owner}/${repo}/pages"
     
 }
 
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPagesBuilds
 gt.repo.page.build(){
-    gt.repo.read.args
+    gt.param.repo.owner
     gt.post.json "/v5/repos/${owner}/${repo}/pages/builds"
 }
 
