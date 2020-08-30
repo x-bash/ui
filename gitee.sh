@@ -330,14 +330,12 @@ gt.user.repo.list(){
 alias gt.param.owner.repo=''
 
 gt.repo.url.http(){
-    param '
-        owner="" "Provide owner"
-        repo "provide repo"
-    '
-
-    [ $# -ne 0 ] && repo="$1"
-    gt.parse_owner_repo
-    printf "https://gitee.com/%s/%s.git" "$owner" "$repo"
+    gt.param.repo.list
+    (
+        for repo in "${repo_list[@]}"; do
+            printf "https://gitee.com/%s.git\n" "$repo"
+        done
+    )
 }
 
 gt.repo.url(){
@@ -345,15 +343,12 @@ gt.repo.url(){
 }
 
 gt.repo.url.ssh(){
-    # TODO: bug repo could be ""
-    param '
-        owner="" "Provide owner"
-        repo="" "provide repo"
-    '
-
-    [ $# -ne 0 ] && repo="$1"
-    gt.parse_owner_repo
-    printf "git@gitee.com:%s/%s.git" "$owner" "$repo"
+    gt.param.repo.list
+    (
+        for repo in "${repo_list[@]}"; do
+            printf "git@gitee.com:%s.git\n" "$repo"
+        done
+    )
 }
 
 gt.repo.clone(){
@@ -584,14 +579,6 @@ alias gt.param.repo.list='
         done
     ) )
 '
-
-alias_check(){
-    gt.param.repo.list
-
-    for i in "${repo_list[@]}"; do
-        echo fff $i
-    done
-}
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPages
 gt.repo.page.info(){
