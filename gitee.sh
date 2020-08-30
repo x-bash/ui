@@ -1,12 +1,14 @@
 # shellcheck shell=bash
 
-@src std/http std/param
+# @src std/http std/param
+. http
+. param
 
 # Introducing context
 gt.make(){
     local O_ORIGINAL=${1:?Provide client name by O environment}
 
-    if [ "$O_ORIGINAL" = "GITEE_DEFAULT" ]; then
+    if [ -n "$GITEE_DEFAULT" ] && [ "$O_ORIGINAL" = "GITEE_DEFAULT" ]; then
         echo "Name 'GITEE_DEFAULT' is reserved for internal use."
         return 1
     fi
@@ -16,15 +18,21 @@ gt.make(){
     http.make "$O" 'https://gitee.com/api'
     http.header.content-type.eq.json+utf8
 
-    local DEFAULT_TOKEN_PATH="$HOME/.x-cmd.com/x-bash/gitee/TOKEN/default"
-    if [ -f "$DEFAULT_TOKEN_PATH" ]; then
-        O=$O_ORIGINAL gitee.token.set $(cat "$DEFAULT_TOKEN_PATH")
+    local TOKEN=${2:-""}
+    if [ -n "$TOKEN" ]; then
+        printf "Init token by second parameter \n" >&2
+        O=$O_ORIGINAL gt.token.set "$TOKEN"
+    elif [ -n "$GITEE_TOKEN" ]; then
+        printf "Init token with env GITEE_TOKEN\n" >&2
+        O=$O_ORIGINAL gt.token.set "$GITEE_TOKEN"
+    else
+        local DEFAULT_TOKEN_PATH="$HOME/.x-cmd.com/x-bash/gitee/TOKEN/default"
+        if [ -f "$DEFAULT_TOKEN_PATH" ]; then
+            printf "Init token using config: $DEFAULT_TOKEN_PATH\n" >&2
+            O=$O_ORIGINAL gt.token.set $(cat "$DEFAULT_TOKEN_PATH")
+        fi
     fi
 }
-
-if [ -z "$DO_NOT_INIT_GITEE_DEFAULT" ]; then
-    gt.make "GITEE_DEFAULT"
-fi
 
 gt.new(){
     oo.create_new_function gt "$@"
@@ -104,8 +112,8 @@ gt.token.set(){
     gt.dict.put "access_token" "$GITEE_TOKEN"
 
     O="_x_cmd_x_bash_gitee_$O"
-    http.body.add access_token "$GITEE_TOKEN"
-    http.qs.add access_token "$GITEE_TOKEN"
+    http.body.put access_token "$GITEE_TOKEN"
+    http.qs.put access_token "$GITEE_TOKEN"
 
     # TODO: get user information, set current owner is user
 }
@@ -116,11 +124,17 @@ gt.token.get(){
 
 gt.token.dump(){
     local current_token="${1:-$(gt.token.get)}" # check GITEE_TOKEN ?
+    if [ -z "$current_token" ]; then
+        pritnf "Token NOT set. Please defined token using 'gt.token.set'."
+    fi
+
     local name=${2:-"default"}
     
     local TOKEN_PATH="$HOME/.x-cmd.com/x-bash/gitee/TOKEN/$name"
+    mkdir -p "$(dirname $TOKEN_PATH)"
+
     echo "dumping token to $name. Filepath is: $TOKEN_PATH" >&2
-    echo "$current_token" >"$TOKEN_PATH"
+    printf "%s" "$current_token" >"$TOKEN_PATH"
 }
 
 # gt.owner.set(){
@@ -169,19 +183,22 @@ gt.parse_owner_repo(){
     fi
 }
 
-# TODO: review
 gt.parse_env_owner_type(){
     local O=${O:-GITEE_DEFAULT}
 
     if [ -z "$owner" ]; then
         owner=$(gt.dict.getput "current-owner")
         owner_type="$(gt.dict.getput "current-owner_type")"
-        return 0
     fi
 
-    if [ -z "${owner_type}" ]; then
+    if [ -n "$owner" ] && [ -z "${owner_type}" ]; then
         owner_type="$(gt.owner_type.query "$owner")"
     fi
+
+    if [ -z "$owner" ] && [ -z "$owner_type" ]; then
+        return 1
+    fi
+    return 0
 }
 
 # TODO: review
@@ -212,51 +229,71 @@ gt.current-repo.set(){
     O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}" gt.dict.getput "current-repo" "$1";
 
     [ -n "$owner" ] && {
-        echo "changing owner: $owner" >&2
-        gt.current-owner.set
+        echo "Changing owner: $owner" >&2
+        gt.current-owner.set "$owner"
     }
 }
 
 gt.current-repo.get(){
     gt.dict.get "current-repo"
-    gt.current-owner.get
-    gt.current-owner_type.get
+    # gt.current-owner.get
+    # gt.current-owner_type.get
 }
 
 gt.current-owner.set(){ 
-    local O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}"
+    local O="${O:-GITEE_DEFAULT}"
+    # local O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}"
 
     param '
-        owner "Provide owner name"
-        type=none "Provide type name" = user enterprise organization none
+        #1 "Provide owner name" =str
+        #2=none "Provide type name" = user enterprise organization none
     '
+
+    local owner="${_rest_argv[0]}"
+    local type="${_rest_argv[1]}"
 
     if [ "$type" == "none" ]; then
         # get type
         type="$(gt.owner_type.query "$owner")"
+        if [ -z "$type" ]; then
+            echo "$owner is not a valid owner in gitee." >&2
+            return 1
+        fi
     fi
 
-    gt.dict.getput "current-owner" "$owner"
-    gt.dict.getput "current-owner_type" "$type"
+    gt.dict.put "current-owner" "$owner"
+    gt.dict.put "current-owner_type" "$type"
 }
 
 gt.current-owner.get(){
-    gt.dict.get "current-owner"
+    local data
+    data="$(gt.dict.get "current-owner")"
+    if [ -z "$data" ]; then
+        return 1
+    fi
+    printf "%s" "$data"
 }
 
 gt.current-owner_type.get(){
-    gt.dict.get "current-owner_type"
+    local data
+    data="$(gt.dict.get "current-owner_type")"
+    if [ -z "$data" ]; then
+        return 1
+    fi
+    printf "%s" "$data"
 }
 
-gt.eq_str_by_name(){
-    for i in "$@"; do
-        echo "$i=${!i}"
-    done
-}
+# gt.eq_str_by_name(){
+#     for i in "$@"; do
+#         echo "$i=${!i}"
+#     done
+# }
 
 # It is very rare
 gt.org.create(){
-    @env org "organization name"
+    param '
+        org "organization name" =str
+    '
     gt.post "/v5/users/organization" name="$org" org="$org"
 }
 
@@ -264,9 +301,11 @@ gt.org.create(){
 gt.owner_type.query(){
     local owner="${1:?Provide owner name}"
     
-    gt.org.info "$owner" 1>/dev/null 2>&1 && echo "org" && return 0
-    gt.enterprise.info "$owner" 1>/dev/null 2>&1 && echo "enterprise" && return 0
-    gt.user.info "$owner" 1>/dev/null 2>&1 && echo "user" && return 0
+    gt.org.info "$owner" 1>/dev/null 2>&1 && printf "org" && return 0
+    gt.enterprise.info "$owner" 1>/dev/null 2>&1 && printf "enterprise" && return 0
+    gt.user.info "$owner" 1>/dev/null 2>&1 && printf "user" && return 0
+
+    return 1
 }
 
 gt.user.info(){
@@ -284,12 +323,15 @@ gt.org.info(){
 gt.repo.list(){
     param '
         owner="" "Provide owner"
-        owner_type="" "Provide type"
+        onwer_type="" "Provide owner type. If undefiend, will query gitee to retrive the type"
     '
 
-    gt.parse_env_owner_type
-    "gt.${owner_type}.repo.list" "$@"
-    # gt.get.multi "/v5/${owner_type}s/$owner/repos" type=all | jq -r ".[] | .full_name"
+    if gt.parse_env_owner_type; then
+        "gt.${owner_type}.repo.list" "$@"
+    else
+        printf "Please provide owner and owner_type\n" >&2
+        param.help.show
+    fi
 }
 
 # https://gitee.com/api/v5/swagger#/getV5EnterprisesEnterpriseRepos
@@ -328,6 +370,8 @@ gt.user.repo.list(){
         | jq -r ".[] | .full_name"
 }
 
+alias gt.param.owner.repo=''
+
 gt.repo.url.http(){
     param '
         owner="" "Provide owner"
@@ -336,7 +380,7 @@ gt.repo.url.http(){
 
     [ $# -ne 0 ] && repo="$1"
     gt.parse_owner_repo
-    echo "https://gitee.com/${owner}/${repo}.git"
+    printf "https://gitee.com/%s/%s.git" "$owner" "$repo"
 }
 
 gt.repo.url(){
@@ -352,7 +396,7 @@ gt.repo.url.ssh(){
 
     [ $# -ne 0 ] && repo="$1"
     gt.parse_owner_repo
-    echo "git@gitee.com:${owner}/${repo}.git"
+    printf "git@gitee.com:%s/%s.git" "$owner" "$repo"
 }
 
 gt.repo.clone(){
@@ -538,6 +582,19 @@ alias gt.repo.read.args='
     if ! gt.parse_owner_repo; then
         return 1
     fi
+'
+
+# shellcheck disable=SC2142
+alias gt.param.repo.list='
+    param '\''
+        ... "Provide repo list"
+    '\''
+
+    if [ ${#_rest_argv[@]} -eq 0 ]; then
+        _rest_argv=( "$(gt.current-owner.get)/$(gt.current-repo.get)" )
+    fi
+
+    local repo_list=( "${_rest_argv[@]}" )
 '
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPages
@@ -851,3 +908,7 @@ gt.repo.pr.comment.list(){
     '
     gt.parse_owner_repo
 }
+
+if [ -z "$DO_NOT_INIT_GITEE_DEFAULT" ]; then
+    gt.make "GITEE_DEFAULT"
+fi

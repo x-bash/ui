@@ -109,12 +109,12 @@ http.dict.getput(){
 
 http.dict.get(){
     local O="${O:?Provide Object name}"
-    dict.get "${1:?Provide key}"
+    dict.get "${1:?Provide dict key}"
 }
 
 http.dict.put(){
     local O="${O:?Provide Object name}"
-    dict.put "${1:?Provide key}" "${2:?Provide value}" 
+    dict.put "${1:?Provide dict key}" "${2:?Provide dict value}" 
 }
 
 http.cd(){
