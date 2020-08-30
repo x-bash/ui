@@ -197,7 +197,7 @@ gt.current-repo.set(){
     local repo="$1" owner=""
 
     gt.parse_owner_repo
-    O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}" gt.dict.getput "current-repo" "$1";
+    gt.dict.getput "current-repo" "$1";
 
     [ -n "$owner" ] && {
         echo "Changing owner: $owner" >&2
@@ -529,12 +529,6 @@ gt.repo.new(){
     "
 }
 
-# repo:
-# 1. using --repo
-# 2. using $1
-# 3. if no owner, using global owner
-# 4. if no repo, using global repo
-
 # shellcheck disable=SC2142
 alias gt.param.repo.owner='
     param '\''
@@ -563,11 +557,41 @@ alias gt.param.repo.list='
     '\''
 
     if [ ${#_rest_argv[@]} -eq 0 ]; then
-        _rest_argv=( "$(gt.current-owner.get)/$(gt.current-repo.get)" )
+        # Notice, $() should not quote!!!
+        _rest_argv=( $(
+            owner=$(gt.current-owner.get)
+            repo=$(gt.current-repo.get)
+            if [ -n "$owner" ] && [ -n "$repo" ]; then
+                printf "$owner/$repo"
+            fi
+        ) )
     fi
 
-    local repo_list=( "${_rest_argv[@]}" )
+    local repo_list
+    repo_list=( $(
+        for repo in "${_rest_argv[@]}"; do
+            if [[ "$repo" == */* ]]; then
+                printf "$repo\n"
+            else
+                owner="$(gt.current-owner.get)"
+                if [ -z "$owner" ]; then
+                    printf "Owner not found. Global owner not set.\n" >&2
+                    return 1
+                else
+                    printf "$owner/$repo\n"
+                fi
+            fi
+        done
+    ) )
 '
+
+alias_check(){
+    gt.param.repo.list
+
+    for i in "${repo_list[@]}"; do
+        echo fff $i
+    done
+}
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPages
 gt.repo.page.info(){
