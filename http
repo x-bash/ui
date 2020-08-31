@@ -178,7 +178,8 @@ http.eq_str_by_name(){
 
 # Just in case.
 http.body.put(){
-    dict.put "body.${1:?header key}" "${2:-${!1}}"
+    local value="${2:-${!1}}"
+    [ -n "$value" ] && dict.put "body.${1:?header key}" "$value"
 }
 
 # Redis like naming
@@ -209,14 +210,21 @@ http.body.dump.json(){
     done | dict.__toJSON "$@"
 }
 
+http.resp.header.all(){
+    cat "${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}"
+}
+
 http.resp.header(){
+    local filepath="${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}"
     local filter=${1:?provide filter} A
-    A="$(grep "$filter:" "${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}")"
+    A="$(grep "$filter:" "$filepath")"
     A="${A##$filter: }"
     echo -n "${A%"${A##*[![:space:]]}"}"
 }
 
 http.request(){
+    local IFS=$' '
+
     local O="${O:?Please provide O}"
 
     local X=${X:-get)} data=${2:-"$D"} path
@@ -228,21 +236,43 @@ http.request(){
 
     local tmp
     tmp=$(mktemp)
-    echo "$data" > "$tmp"
-    # echo "$data" >&2
+    echo "body is: $data" > "$tmp"
+    [ -n "$DEBUG" ] && echo "body is: $data" >&2
 
     local code
+    local REDIRECT=/dev/null
+    [ -n "$DEBUG" ] && REDIRECT=/dev/stderr
+
+    local header_file="${TMPDIR}x-cmd-x-bash-std-http-$O"
+
+    local data
+
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 1>&2
-        eval curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 2>/dev/null
-        code=$?
+        echo curl -D "$header_file" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 1>$REDIRECT
+        data="$(eval curl -D "$header_file"  -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 2>$REDIRECT)"
     else
-        echo curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 1>&2
-        eval curl --fail -D "${TMPDIR}x-cmd-x-bash-std-http-$O" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 2>/dev/null 2>/dev/null
-        code=$?
+        echo curl -D "$header_file" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 1>$REDIRECT
+        data="$(eval curl -D "$header_file" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 2>$REDIRECT)"
     fi
-    # rm "$tmp"
-    return $code
+    rm "$tmp"
+
+    [ -n "$DEBUG" ] && {
+        echo -e "\n------------"
+        echo "Response Header is:"
+        cat "$header_file"
+        echo -e "------------\n"
+    } >&2
+
+    local a b c
+    read -r a b c <<<"$(cat "$header_file")"
+    
+    if [ -n "$b" ] && [ "$b" -ge 200 ] && [ "$b" -le 299 ]; then
+        echo "$data"
+        return 0
+    fi
+
+    [ -n "$DEBUG" ] && echo "$data" >&2
+    return 1
 }
 
 http.request.json_body(){

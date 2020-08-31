@@ -49,7 +49,7 @@ line.to_array.trim.ignore_empty(){
 
 # shellcheck disable=SC2154
 alias param='
-    local _param_code _param_help_docs 2>/dev/null; 
+    local _param_code _param_help_docs=() 2>/dev/null; 
     { 
         _param_code="$(param.__parse "${FUNCNAME[0]:-$0}" "$@")"; 
         case "$?" in
@@ -229,6 +229,7 @@ param.__parse.add_help_doc_item(){
     esac
 
     _param_help_docs+=( "$name" "$default" "$type_desc" "$desc")
+
 }
 
 param.__parse(){
@@ -458,6 +459,9 @@ param.__parse(){
             [ $? -eq 1 ] && return 1
         done
     fi
+
+    echo funcname="${funcname}"
+    echo "_param_help_docs=$(list.repr "${_param_help_docs[@]}")"
 }
 
 shopt -s expand_aliases
