@@ -5,7 +5,7 @@
 # Section 1: Instantiation & Utilities
 # Section 2: Dict & Path
 # Section 3: Header
-# Section 4: QueryString
+# Section 4: QueryString & Body
 # Section 5: Request & Response
 # Section 6: CRUD -- post get put delete
 ############################
@@ -137,7 +137,7 @@ http.header.agent.eq(){
 
 
 ############################
-# Section 4: QueryString
+# Section 4: QueryString & Body
 ############################
 # Notice: http.qs.put will put the empty value
 http.qs.put(){
@@ -231,6 +231,10 @@ http.resp.header(){
     echo -n "${A%"${A##*[![:space:]]}"}"
 }
 
+http.resp.body(){
+    cat "$(http_.resp.latest.body.filepath)"
+}
+
 http_.resp.latest.header.filepath(){
     echo "${TMPDIR}x-cmd-x-bash-std-http-header.${O:?Please provide O}"
 }
@@ -239,7 +243,7 @@ http_.resp.latest.body.filepath(){
     echo "${TMPDIR}x-cmd-x-bash-std-http-body.${O:?Please provide O}"
 }
 
-http.request(){
+http_.request(){
     local IFS=$' '
     local O="${O:?Please provide O}"
 
@@ -293,10 +297,10 @@ http.request(){
     return 1
 }
 
-http.request.json_body() (  # Notice: Using subshell
+http_.request.json_body() (  # Notice: Using subshell
     url=$1;  shift
     http.body.mput "$@"
-    http.request "$url" "$(http.body.dump.json "")"
+    http_.request "$url" "$(http.body.dump.json "")"
 )
 
 ############################
@@ -304,26 +308,26 @@ http.request.json_body() (  # Notice: Using subshell
 ############################
 
 # crud
-http.post(){ X=POST http.request "$@"; }
-http.post.json(){ X=POST http.request.json_body "$@"; }
+http.post(){ X=POST http_.request "$@"; }
+http.post.json(){ X=POST http_.request.json_body "$@"; }
 # TODO
-http.post.form(){ X=POST http.request.json_body "$@"; }
-http.post.text(){ X=POST http.request.json_body "$@"; }
-http.post.bin(){ X=POST http.request.json_body "$@"; }
+http.post.form(){ X=POST http_.request.json_body "$@"; }
+http.post.text(){ X=POST http_.request.json_body "$@"; }
+http.post.bin(){ X=POST http_.request.json_body "$@"; }
 
 http.get() (    # Notice: Using subshell
         url=$1;  shift
         http.qs.mput "$@"
-        X=GET http.request "$url"
+        X=GET http_.request "$url"
 )
 
-http.put(){ X=PUT http.request "$@"; }
-http.put.json(){ X=PUT http.request.json_body "$@"; }
+http.put(){ X=PUT http_.request "$@"; }
+http.put.json(){ X=PUT http_.request.json_body "$@"; }
 # TODO
-http.put.form(){ X=PUT http.request.json_body "$@"; }
-http.put.text(){ X=PUT http.request.json_body "$@"; }
-http.put.bin(){ X=PUT http.request.json_body "$@"; }
+http.put.form(){ X=PUT http_.request.json_body "$@"; }
+http.put.text(){ X=PUT http_.request.json_body "$@"; }
+http.put.bin(){ X=PUT http_.request.json_body "$@"; }
 
-http.delete(){ X=DELETE http.request "$@"; }
+http.delete(){ X=DELETE http_.request "$@"; }
 
-http.head(){ X=HEAD http.request "$@"; }
+http.head(){ X=HEAD http_.request "$@"; }

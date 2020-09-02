@@ -49,27 +49,6 @@ gt.resp.body(){
 
 gt.get(){ O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}" http.get "$@";  }
 gt.get.multi(){
-    # local O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}"
-
-    # local first=() second="" flag=0
-    # for i in "$@"; do
-    #     if [ "$i" == "--" ]; then
-    #         flag=1
-    #         continue
-    #     fi
-
-    #     if [ "$flag" -eq 0 ]; then
-    #         first+=("$i")
-    #     else
-    #         second+=("$i")
-    #     fi
-    # done
-
-    # if [ "${#second[@]}" -eq 0 ]; then
-    #     second=("cat")
-    # fi 
-
-
     local i=1 total_page=100000
     for (( i=1; i <= total_page; i++ )); do
         # echo gt.get "$@" page=$i per_page=100 >&2
@@ -163,8 +142,8 @@ gt.parse_env_owner_type(){
     local O=${O:-GITEE_DEFAULT}
 
     if [ -z "$owner" ]; then
-        owner=$(gt.dict.getput "current-owner")
-        owner_type="$(gt.dict.getput "current-owner_type")"
+        owner=$(gt.dict.get "current-owner")
+        owner_type="$(gt.dict.get "current-owner_type")"
     fi
 
     if [ -n "$owner" ] && [ -z "${owner_type}" ]; then
@@ -183,9 +162,9 @@ gt.parse_env_owner_repo_type(){
 
     gt.parse_owner_repo
     if [ -z "$owner" ]; then
-        owner=$(gt.dict.getput "current-owner")
-        owner_type="$(gt.dict.getput "current-owner_type")"
-        repo=$(gt.dict.getput "current-repo")
+        owner=$(gt.dict.get "current-owner")
+        owner_type="$(gt.dict.get "current-owner_type")"
+        repo=$(gt.dict.get "current-repo")
     fi
 
     if [ -z "${owner_type}" ]; then
@@ -393,23 +372,6 @@ gt.repo.fork(){
     gt.post.json "https://gitee.com/api/v5/repos/${owner}/${repo}/forks" organization
 }
 
-#################
-# Owner Operators
-#################
-
-# <<A
-# How to use:
-# gt.current-owner lteam18
-# gt.repo.create "new" "abc" "cde"
-# A
-# gt.repo.create(){
-#     local repo owner owner_type
-#     for repo in "$@"; do
-#         gt.parse_env_owner_repo_type
-#         "gt.$owner_type.repo.create"
-#     done
-# }
-
 gt.org.new(){
     local owner="${1:?Provide organization name}"
     local instance_name="${2:-$owner}"
@@ -432,11 +394,11 @@ gt.enterprise.new(){
 
 # https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepo
 gt.repo.destroy(){
-    # gt.param.repo.list
-    # for repo in "${repo_list[@]}"; do
-    for repo in "${@}"; do
+    gt.param.repo.list
+    for repo in "${repo_list[@]}"; do
         echo "Deleting repo: $repo" >&2
-        gt.delete "/v5/repos/${repo}" >/dev/null || echo "Code is $?. Deleting repo failure: $repo" >&2
+        gt.delete "/v5/repos/${repo}" >/dev/null \
+            || echo "Code is $?. Deleting repo failure: $repo. Probably because it desn't exists." >&2
     done
 }
 
@@ -712,6 +674,8 @@ gt.repo.info(){
     # gt.get "/v5/repos/${owner}/${repo}"
 }
 
+### gitee release infomation. Using this to optimize the integration action workflow
+
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoReleases
 gt.repo.release.list(){
     gt.param.normalize.from_arg1_or_repo
@@ -808,6 +772,7 @@ gt.repo.release.attachment.remove(){
 }
 
 
+### Pull Request Facility. It should fit it the pull request workflow.
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPulls
 gt.repo.pr.create(){
     param '
