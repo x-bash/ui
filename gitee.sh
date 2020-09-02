@@ -232,6 +232,58 @@ gt.current-owner_type.get(){
     printf "%s" "$data"
 }
 
+
+# shellcheck disable=SC2142
+alias gt.param.normalize.from_arg1_or_repo='
+    param '\''
+        #1      "Provide repo"
+        repo="" "Provide repo"
+    '\''
+
+    repo="$(gt.param.normalize.repo ${_rest_argv[0]:-$repo})"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+'
+
+### Repo
+
+# shellcheck disable=SC2142
+alias gt.param.repo.normalize.from_repo='
+    param '\''
+        repo="" "Provide repo"
+    '\''
+
+    repo="$(gt.param.normalize.repo $repo)"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+'
+
+# shellcheck disable=SC2142
+alias gt.param.repo.list='
+    param '\''
+        ... "Provide repo list"
+    '\''
+
+    if [ ${#_rest_argv[@]} -eq 0 ]; then
+        # Notice, $() should not quote!!!
+        _rest_argv=( "" )
+    fi
+
+    local repo_list
+    repo_list=( $(
+        for repo in "${_rest_argv[@]}"; do
+            repo="$(gt.param.normalize.repo "$repo")"
+            if [ $? -ne 0 ]; then
+                return 1
+            fi
+            printf "%s\n" "$repo"
+        done
+    ) )
+'
+
+
 # It is very rare
 gt.org.create(){
     param '
@@ -395,6 +447,7 @@ gt.enterprise.new(){
 # https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepo
 gt.repo.destroy(){
     gt.param.repo.list
+    echo here
     for repo in "${repo_list[@]}"; do
         echo "Deleting repo: $repo" >&2
         gt.delete "/v5/repos/${repo}" >/dev/null \
@@ -424,7 +477,7 @@ gt.repo.create(){
     local name
     for name in "${_rest_argv[@]}"; do
         { 
-            gt.post.json "/v5/user/repos" name has_issues has_wiki private
+            gt.post.json "/v5/user/repos" name has_issues has_wiki private 2>/dev/null
             code=$?
             if [ $code -ne 0 ]; then
                 echo "Creating repo failure: $name. Code is $code. " >&2
@@ -556,55 +609,6 @@ gt.param.normalize.repo(){
 
 ### Repo #1
 
-# shellcheck disable=SC2142
-alias gt.param.normalize.from_arg1_or_repo='
-    param '\''
-        #1      "Provide repo"
-        repo="" "Provide repo"
-    '\''
-
-    repo="$(gt.param.normalize.repo ${_rest_argv[0]:-$repo})"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-'
-
-### Repo
-
-# shellcheck disable=SC2142
-alias gt.param.repo.normalize.from_repo='
-    param '\''
-        repo="" "Provide repo"
-    '\''
-
-    repo="$(gt.param.normalize.repo $repo)"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-'
-
-# shellcheck disable=SC2142
-alias gt.param.repo.list='
-    param '\''
-        ... "Provide repo list"
-    '\''
-
-    if [ ${#_rest_argv[@]} -eq 0 ]; then
-        # Notice, $() should not quote!!!
-        _rest_argv=( "" )
-    fi
-
-    local repo_list
-    repo_list=( $(
-        for repo in "${_rest_argv[@]}"; do
-            repo="$(gt.param.normalize.repo "$repo")"
-            if [ $? -ne 0 ]; then
-                return 1
-            fi
-            printf "%s\n" "$repo"
-        done
-    ) )
-'
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPages
 gt.repo.page.info(){
@@ -926,6 +930,8 @@ gt.repo.pr.comment.list(){
     repo="$(gt.param.normalize.repo "$repo")" || return 1
 
 }
+
+
 
 if [ -z "$DO_NOT_INIT_GITEE_DEFAULT" ]; then
     gt.make "GITEE_DEFAULT"

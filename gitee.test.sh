@@ -1,7 +1,11 @@
+
+shopt -s expand_aliases
+
 . str
 . list
 . dict
-. gitee.sh
+. ./gitee.sh
+
 
 echo "set current owner"
 gt.current-owner.set x-bash
@@ -11,8 +15,6 @@ gt.org.repo.create --owner x-bash test123
 
 echo "list repo"
 gt.org.repo.list x-bash
-
-alias gt.param.repo.list
 
 echo "destroy repo"
 gt.repo.destroy x-bash/test123

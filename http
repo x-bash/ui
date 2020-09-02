@@ -266,7 +266,6 @@ http_.request(){
     header_filepath="$(http_.resp.latest.header.filepath)"
     data_filepath="$(http_.resp.latest.body.filepath)"
 
-    local data
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
         echo curl -D "$header_filepath" -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path" 1>$REDIRECT
         eval curl -D "$header_filepath"  -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path" 2>$REDIRECT 1>"$data_filepath"
@@ -287,8 +286,8 @@ http_.request(){
     read -r a b c <<<"$(cat "$header_filepath")"
     
     if [ -n "$b" ] && [ "$b" -ge 200 ] && [ "$b" -le 299 ]; then
-        printf "%s" "$data"
-        printf "HttpCode is %s, Code is 0\n" "$b" >&2
+        cat "$data_filepath"
+        # printf "HttpCode is %s, Code is 0\n" "$b" >&2
         return 0
     fi
 
