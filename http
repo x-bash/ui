@@ -225,15 +225,24 @@ http.body.dump.json(){
 # Section 5: Request & Response
 ############################
 http.resp.header.all(){
-    cat "${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}"
+    cat "$(http.resp.latest.header.filepath)"
 }
 
 http.resp.header(){
-    local filepath="${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}"
+    local filepath
+    filepath="$(http.resp.latest.header.filepath)"
     local filter=${1:?provide filter} A
     A="$(grep "$filter:" "$filepath")"
     A="${A##$filter: }"
     echo -n "${A%"${A##*[![:space:]]}"}"
+}
+
+http.resp.latest.header.filepath(){
+    echo "${TMPDIR}x-cmd-x-bash-std-http-header.${O:?Please provide O}"
+}
+
+http.resp.latest.body.filepath(){
+    echo "${TMPDIR}x-cmd-x-bash-std-http-body.${O:?Please provide O}"
 }
 
 http.request(){
@@ -255,28 +264,29 @@ http.request(){
     local REDIRECT=/dev/null
     [ -n "$DEBUG" ] && REDIRECT=/dev/stderr
 
-    local header_file="${TMPDIR}x-cmd-x-bash-std-http-$O"
+    local header_filepath data_filepath
+    header_filepath="$(http.resp.latest.header.filepath)"
+    data_filepath="$(http.resp.latest.body.filepath)"
 
     local data
-
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        echo curl -D "$header_file" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 1>$REDIRECT
-        data="$(eval curl -D "$header_file"  -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 2>$REDIRECT)"
+        echo curl -D "$header_filepath" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 1>$REDIRECT
+        eval curl -D "$header_filepath"  -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 2>$REDIRECT 1>"$data_filepath"
     else
-        echo curl -D "$header_file" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 1>$REDIRECT
-        data="$(eval curl -D "$header_file" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 2>$REDIRECT)"
+        echo curl -D "$header_filepath" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 1>$REDIRECT
+        eval curl -D "$header_filepath" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 2>$REDIRECT 1>"$data_filepath"
     fi
     rm "$tmp"
 
     [ -n "$DEBUG" ] && {
         echo -e "\n------------"
         echo "Response Header is:"
-        cat "$header_file"
+        cat "$header_filepath"
         echo -e "------------\n"
     } >&2
 
     local a b c
-    read -r a b c <<<"$(cat "$header_file")"
+    read -r a b c <<<"$(cat "$header_filepath")"
     
     if [ -n "$b" ] && [ "$b" -ge 200 ] && [ "$b" -le 299 ]; then
         printf "%s" "$data"
