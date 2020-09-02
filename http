@@ -21,12 +21,6 @@ http.make(){
     dict.put "url" "${2:?Provide url}"
 }
 
-http.eq_str_by_name(){
-    for i in "$@"; do
-        echo "$i=${!i}"
-    done
-}
-
 http.browse(){
     local BROWSER=${BROWSER:-$BROWSER}
     local website=${1:?Provide websites}
@@ -108,7 +102,7 @@ http.header.dump(){
     done
 }
 
-http.header.dump.curl(){
+http_.header.dump.curl_args(){
     local IFS=$'\n'
     local A=()
     for i in $(http.header.dump); do
@@ -225,23 +219,23 @@ http.body.dump.json(){
 # Section 5: Request & Response
 ############################
 http.resp.header.all(){
-    cat "$(http.resp.latest.header.filepath)"
+    cat "$(http_.resp.latest.header.filepath)"
 }
 
 http.resp.header(){
     local filepath
-    filepath="$(http.resp.latest.header.filepath)"
+    filepath="$(http_.resp.latest.header.filepath)"
     local filter=${1:?provide filter} A
     A="$(grep "$filter:" "$filepath")"
     A="${A##$filter: }"
     echo -n "${A%"${A##*[![:space:]]}"}"
 }
 
-http.resp.latest.header.filepath(){
+http_.resp.latest.header.filepath(){
     echo "${TMPDIR}x-cmd-x-bash-std-http-header.${O:?Please provide O}"
 }
 
-http.resp.latest.body.filepath(){
+http_.resp.latest.body.filepath(){
     echo "${TMPDIR}x-cmd-x-bash-std-http-body.${O:?Please provide O}"
 }
 
@@ -265,16 +259,16 @@ http.request(){
     [ -n "$DEBUG" ] && REDIRECT=/dev/stderr
 
     local header_filepath data_filepath
-    header_filepath="$(http.resp.latest.header.filepath)"
-    data_filepath="$(http.resp.latest.body.filepath)"
+    header_filepath="$(http_.resp.latest.header.filepath)"
+    data_filepath="$(http_.resp.latest.body.filepath)"
 
     local data
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        echo curl -D "$header_filepath" -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 1>$REDIRECT
-        eval curl -D "$header_filepath"  -X "$X" "$(http.qs.dump.curl)" "$(http.header.dump.curl)" "$path" 2>$REDIRECT 1>"$data_filepath"
+        echo curl -D "$header_filepath" -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path" 1>$REDIRECT
+        eval curl -D "$header_filepath"  -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path" 2>$REDIRECT 1>"$data_filepath"
     else
-        echo curl -D "$header_filepath" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 1>$REDIRECT
-        eval curl -D "$header_filepath" -X "$X" "$(http.header.dump.curl)" -d "@$tmp" "$path" 2>$REDIRECT 1>"$data_filepath"
+        echo curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path" 1>$REDIRECT
+        eval curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path" 2>$REDIRECT 1>"$data_filepath"
     fi
     rm "$tmp"
 
