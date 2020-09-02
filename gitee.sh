@@ -4,7 +4,19 @@
 . http
 . param
 
-# Introducing context
+
+############################
+# Section 1: Instantiation & Utilities
+# Section 2: Dict & Path
+# Section 3: Header
+# Section 4: QueryString & Body
+# Section 5: Request & Response
+# Section 6: CRUD -- post get put delete
+############################
+
+############################
+# Section 1: Instantiation & Utilities
+############################
 gt.make(){
     local O_ORIGINAL=${1:?Provide client name by O environment}
 
@@ -34,10 +46,42 @@ gt.make(){
     fi
 }
 
-gt.new(){
-    oo.create_new_function gt "$@"
+
+gt.token.set(){
+    local O="${O:-GITEE_DEFAULT}"
+    local GITEE_TOKEN=${1:?"Please provide gitee token"}
+
+    gt.dict.put "access_token" "$GITEE_TOKEN"
+
+    O="_x_cmd_x_bash_gitee_$O"
+    http.body.put access_token "$GITEE_TOKEN"
+    http.qs.put access_token "$GITEE_TOKEN"
+
+    # TODO: get user information, set current owner is user
 }
 
+gt.token.get(){
+    gt.dict.get "access_token"
+}
+
+gt.token.dump(){
+    local current_token="${1:-$(gt.token.get)}" # check GITEE_TOKEN ?
+    if [ -z "$current_token" ]; then
+        pritnf "Token NOT set. Please defined token using 'gt.token.set'."
+    fi
+
+    local name=${2:-"default"}
+    
+    local TOKEN_PATH="$HOME/.x-cmd.com/x-bash/gitee/TOKEN/$name"
+    mkdir -p "$(dirname $TOKEN_PATH)"
+
+    echo "dumping token to $name. Filepath is: $TOKEN_PATH" >&2
+    printf "%s" "$current_token" >"$TOKEN_PATH"
+}
+
+############################
+# Section 2: Wrapping http module
+############################
 gt.resp.header(){
     O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}" http.resp.header "$@"
 }
@@ -78,48 +122,42 @@ gt.dict.put(){
     O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}" http.dict.put "$@";
 }
 
+############################
+# Section 3: Parameter Utilities
+############################
 
-# gt.json(){
-#     json.generate "$@"
-# }
+### gt.param
 
-# gt.json+token() {
-#     gt.json access_token "$GITEE_TOKEN" "$@"
-# }
+gt.param.normalize.repo(){
+    case "$1" in
+    */*)    
+        printf "%s" "$1";;
+    "") 
+        local _owner _repo
+        _owner="$(gt.current-owner.get)"
+        if [ -z "$_owner" ]; then
+            printf "No owner provided. Default owner NOT set.\n" >&2
+            return 1
+        fi
 
-###########
-
-gt.token.set(){
-    local O="${O:-GITEE_DEFAULT}"
-    local GITEE_TOKEN=${1:?"Please provide gitee token"}
-
-    gt.dict.put "access_token" "$GITEE_TOKEN"
-
-    O="_x_cmd_x_bash_gitee_$O"
-    http.body.put access_token "$GITEE_TOKEN"
-    http.qs.put access_token "$GITEE_TOKEN"
-
-    # TODO: get user information, set current owner is user
+        _repo="$(gt.current-repo.get)"
+        if [ -z "$_repo" ]; then
+            printf "No repo provided. Default repo NOT set.\n" >&2
+            return 1
+        fi
+        
+        printf "%s/%s" "$_owner" "$_repo";;
+    *)     
+        local _owner
+        _owner="$(gt.current-owner.get)"
+        if [ -z "$_owner" ]; then
+            printf "No owner provided. Default owner not set.\n" >&2
+        fi
+        printf "%s" "$_owner/$1";;
+    esac
 }
 
-gt.token.get(){
-    gt.dict.get "access_token"
-}
-
-gt.token.dump(){
-    local current_token="${1:-$(gt.token.get)}" # check GITEE_TOKEN ?
-    if [ -z "$current_token" ]; then
-        pritnf "Token NOT set. Please defined token using 'gt.token.set'."
-    fi
-
-    local name=${2:-"default"}
-    
-    local TOKEN_PATH="$HOME/.x-cmd.com/x-bash/gitee/TOKEN/$name"
-    mkdir -p "$(dirname $TOKEN_PATH)"
-
-    echo "dumping token to $name. Filepath is: $TOKEN_PATH" >&2
-    printf "%s" "$current_token" >"$TOKEN_PATH"
-}
+### Repo #1
 
 gt.parse_owner_repo(){
     local O="${O:-GITEE_DEFAULT}"
@@ -171,6 +209,57 @@ gt.parse_env_owner_repo_type(){
         owner_type="$(gt.owner_type.query "$owner")"
     fi
 }
+
+
+# shellcheck disable=SC2142,SC2154
+alias gt.param.normalize.from_arg1_or_repo='
+    param '\''
+        #1      "Provide repo"
+        repo="" "Provide repo"
+    '\''
+
+    repo="$(gt.param.normalize.repo ${_rest_argv[0]:-$repo})"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+'
+
+### Repo
+
+# shellcheck disable=SC2142
+alias gt.param.repo.normalize.from_repo='
+    param '\''
+        repo="" "Provide repo"
+    '\''
+
+    repo="$(gt.param.normalize.repo $repo)"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+'
+
+# shellcheck disable=SC2142
+alias gt.param.repo.list='
+    param '\''
+        ... "Provide repo list"
+    '\''
+
+    if [ ${#_rest_argv[@]} -eq 0 ]; then
+        # Notice, $() should not quote!!!
+        _rest_argv=( "" )
+    fi
+
+    local repo_list
+    repo_list=( $(
+        for repo in "${_rest_argv[@]}"; do
+            repo="$(gt.param.normalize.repo "$repo")"
+            if [ $? -ne 0 ]; then
+                return 1
+            fi
+            printf "%s\n" "$repo"
+        done
+    ) )
+'
 
 # Providing owner/owner_type
 
@@ -233,56 +322,9 @@ gt.current-owner_type.get(){
 }
 
 
-# shellcheck disable=SC2142
-alias gt.param.normalize.from_arg1_or_repo='
-    param '\''
-        #1      "Provide repo"
-        repo="" "Provide repo"
-    '\''
-
-    repo="$(gt.param.normalize.repo ${_rest_argv[0]:-$repo})"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-'
-
-### Repo
-
-# shellcheck disable=SC2142
-alias gt.param.repo.normalize.from_repo='
-    param '\''
-        repo="" "Provide repo"
-    '\''
-
-    repo="$(gt.param.normalize.repo $repo)"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-'
-
-# shellcheck disable=SC2142
-alias gt.param.repo.list='
-    param '\''
-        ... "Provide repo list"
-    '\''
-
-    if [ ${#_rest_argv[@]} -eq 0 ]; then
-        # Notice, $() should not quote!!!
-        _rest_argv=( "" )
-    fi
-
-    local repo_list
-    repo_list=( $(
-        for repo in "${_rest_argv[@]}"; do
-            repo="$(gt.param.normalize.repo "$repo")"
-            if [ $? -ne 0 ]; then
-                return 1
-            fi
-            printf "%s\n" "$repo"
-        done
-    ) )
-'
-
+############################
+# Section 4: Org Creation & Info
+############################
 
 # It is very rare
 gt.org.create(){
@@ -318,6 +360,9 @@ gt.org.info(){
     gt.get "/v5/orgs/${1:?Provide organization}"
 }
 
+############################
+# Section 5: Repo List
+############################
 gt.repo.list(){
     param '
         #1  "Provide owner"
@@ -374,6 +419,9 @@ gt.user.repo.list(){
         | jq -r ".[] | .full_name"
 }
 
+############################
+# Section 6: Repo Path & Clone
+############################
 gt.repo.url.http(){
     gt.param.repo.list
     (
@@ -424,24 +472,14 @@ gt.repo.fork(){
     gt.post.json "https://gitee.com/api/v5/repos/${owner}/${repo}/forks" organization
 }
 
-gt.org.new(){
-    local owner="${1:?Provide organization name}"
-    local instance_name="${2:-$owner}"
-    eval "
-        $instance_name.info(){ gt.org.info $owner; }
-        $instance_name.repo.create(){ gt.org.repo.create --owner $owner \"\$@\"; }
-        $instance_name.repo.list(){ gt.org.repo.list --owner $owner \"\$@\"; }
-    "
-}
 
-gt.enterprise.new(){
-    local owner="${1:?Provide enterprise name}"
-    local instance_name="${2:-$owner}"
-    eval "
-        $instance_name.info(){ gt.enterprise.info $owner; }
-        $instance_name.repo.create(){ gt.enterprise.repo.create --owner $owner \"\$@\"; }
-        $instance_name.repo.list(){ gt.enterprise.repo.list  --owner $owner \"\$@\"; }
-    "
+############################
+# Section 7: Repo - Deletion & Info & Creation
+############################
+gt.repo.info(){
+    gt.param.normalize.from_arg1_or_repo
+    gt.get "/v5/repos/${repo}"
+    # gt.get "/v5/repos/${owner}/${repo}"
 }
 
 # https://gitee.com/api/v5/swagger#/deleteV5ReposOwnerRepo
@@ -560,70 +598,9 @@ gt.enterprise.repo.create(){
     return 0
 }
 
-#################
-# Repo Operators
-#################
-
-gt.repo.new(){
-    local owner repo="${1:?Provide enterprise name}"
-    gt.parse_owner_repo
-    local instance_name="${2:-$repo}"
-
-    eval "
-        $instance_name.member.list(){ gt.repo.member.list \"\$@\"; }
-        $instance_name.member.add(){ gt.repo.member.add \"\$@\"; }
-        $instance_name.member.remove(){ gt.repo.member.remove \"\$@\"; }
-    "
-}
-
-### gt.param
-
-gt.param.normalize.repo(){
-    case "$1" in
-    */*)    
-        printf "%s" "$1";;
-    "") 
-        local _owner _repo
-        _owner="$(gt.current-owner.get)"
-        if [ -z "$_owner" ]; then
-            printf "No owner provided. Default owner NOT set.\n" >&2
-            return 1
-        fi
-
-        _repo="$(gt.current-repo.get)"
-        if [ -z "$_repo" ]; then
-            printf "No repo provided. Default repo NOT set.\n" >&2
-            return 1
-        fi
-        
-        printf "%s/%s" "$_owner" "$_repo";;
-    *)     
-        local _owner
-        _owner="$(gt.current-owner.get)"
-        if [ -z "$_owner" ]; then
-            printf "No owner provided. Default owner not set.\n" >&2
-        fi
-        printf "%s" "$_owner/$1";;
-    esac
-}
-
-### Repo #1
-
-
-# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPages
-gt.repo.page.info(){
-    gt.param.normalize.from_arg1_or_repo # <user>/<repo>
-    gt.get "/v5/repos/${repo}/pages"
-}
-
-# https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPagesBuilds
-# Even we could use it
-# {"message":"非付费pages，不允许部署 pages"}
-gt.repo.page.build(){
-    gt.param.normalize.from_arg1_or_repo # <user>/<repo>
-    gt.post.json "/v5/repos/${repo}/pages/builds"
-}
-
+############################
+# Section 8: Repo Member
+############################
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoCollaborators
 gt.repo.member.list(){
     param.example \
@@ -672,14 +649,30 @@ gt.repo.member.remove(){
     done
 }
 
-gt.repo.info(){
-    gt.param.normalize.from_arg1_or_repo
-    gt.get "/v5/repos/${repo}"
-    # gt.get "/v5/repos/${owner}/${repo}"
+
+############################
+# Section 9: Repo Page Managment
+############################
+# https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPages
+gt.repo.page.info(){
+    gt.param.normalize.from_arg1_or_repo # <user>/<repo>
+    gt.get "/v5/repos/${repo}/pages"
 }
+
+# https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPagesBuilds
+# Even we could use it
+# {"message":"非付费pages，不允许部署 pages"}
+gt.repo.page.build(){
+    gt.param.normalize.from_arg1_or_repo # <user>/<repo>
+    gt.post.json "/v5/repos/${repo}/pages/builds"
+}
+
 
 ### gitee release infomation. Using this to optimize the integration action workflow
 
+############################
+# Section 10: Release
+############################
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoReleases
 gt.repo.release.list(){
     gt.param.normalize.from_arg1_or_repo
@@ -776,6 +769,9 @@ gt.repo.release.attachment.remove(){
 }
 
 
+############################
+# Section 10: Pull Request
+############################
 ### Pull Request Facility. It should fit it the pull request workflow.
 # https://gitee.com/api/v5/swagger#/postV5ReposOwnerRepoPulls
 gt.repo.pr.create(){
@@ -932,7 +928,48 @@ gt.repo.pr.comment.list(){
 }
 
 
+############################
+# Section 10: OO Style
+############################
+gt.new(){
+    oo.create_new_function gt "$@"
+}
 
+gt.repo.new(){
+    local owner repo="${1:?Provide enterprise name}"
+    gt.parse_owner_repo
+    local instance_name="${2:-$repo}"
+
+    eval "
+        $instance_name.member.list(){ gt.repo.member.list \"\$@\"; }
+        $instance_name.member.add(){ gt.repo.member.add \"\$@\"; }
+        $instance_name.member.remove(){ gt.repo.member.remove \"\$@\"; }
+    "
+}
+
+gt.org.new(){
+    local owner="${1:?Provide organization name}"
+    local instance_name="${2:-$owner}"
+    eval "
+        $instance_name.info(){ gt.org.info $owner; }
+        $instance_name.repo.create(){ gt.org.repo.create --owner $owner \"\$@\"; }
+        $instance_name.repo.list(){ gt.org.repo.list --owner $owner \"\$@\"; }
+    "
+}
+
+gt.enterprise.new(){
+    local owner="${1:?Provide enterprise name}"
+    local instance_name="${2:-$owner}"
+    eval "
+        $instance_name.info(){ gt.enterprise.info $owner; }
+        $instance_name.repo.create(){ gt.enterprise.repo.create --owner $owner \"\$@\"; }
+        $instance_name.repo.list(){ gt.enterprise.repo.list  --owner $owner \"\$@\"; }
+    "
+}
+
+############################
+# Section 11: Instantiation
+############################
 if [ -z "$DO_NOT_INIT_GITEE_DEFAULT" ]; then
     gt.make "GITEE_DEFAULT"
 fi
