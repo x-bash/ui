@@ -1,10 +1,19 @@
 # shellcheck shell=bash
-
 @src std/dict  # @src std/oo # std/dict -> std/list -> std/oo
 
-http.new(){
-    oo.create_new_function http "$@"
-}
+############################
+# Section 1: Instantiation & Utilities
+# Section 2: Dict & Path
+# Section 3: Header
+# Section 4: QueryString
+# Section 5: Request & Response
+# Section 6: CRUD -- post get put delete
+############################
+
+############################
+# Section 1: Instantiation & Utilities
+############################
+http.new(){  oo.create_new_function http "$@";  }
 
 http.make(){
     dict.make "${1:?Provide name}"
@@ -12,6 +21,70 @@ http.make(){
     dict.put "url" "${2:?Provide url}"
 }
 
+http.eq_str_by_name(){
+    for i in "$@"; do
+        echo "$i=${!i}"
+    done
+}
+
+http.browse(){
+    local BROWSER=${BROWSER:-$BROWSER}
+    local website=${1:?Provide websites}
+    if [ -n "$BROWSER" ]; then
+        $BROWSER "$website"
+    elif uname -a | grep -q Darwin; then
+        open -a "/Applications/Safari.app" "$website"
+    elif command -v xdg-open > /dev/null; then
+        xdg-open "$website"
+    elif command -v gnome-open > /dev/null; then
+        gnome-open "$website"
+    else
+        echo "Could not detect the web browser to use."
+        return 1
+    fi
+}
+
+############################
+# Section 2: Dict & Path
+############################
+http.dict.getput(){
+    local O="${O:?Provide Object name}"
+    case $# in
+        1) http.dict.get "$1";;
+        2) http.dict.put "$1" "$2";;
+        *) echo "More than 2 variable provided" >&1; return 2;
+    esac
+}
+
+http.dict.get(){
+    local O="${O:?Provide Object name}"
+    dict.get "${1:?Provide dict key}"
+}
+
+http.dict.put(){
+    local O="${O:?Provide Object name}"
+    dict.put "${1:?Provide dict key}" "${2:?Provide dict value}" 
+}
+
+http.cd(){
+    [ -z "$O" ] && return 1
+    local URL=${URL:-$(http.dict.get "url")}
+    dict.put "url" "$URL/${1:?Provide url}"
+}
+
+http.path(){   # TODO: how to cd back
+    local url
+    url="$(http.dict.get "url")"
+    if [ -z "$url" ]; then
+        echo "$1"
+    else
+        echo "$url$1" # TODO: it is ugly... Isn't it?
+    fi
+}
+
+############################
+# Section 3: Header
+############################
 http.header.put(){ 
     dict.put "header.${1:?header key}" "${2:?value}"; 
 }
@@ -68,41 +141,10 @@ http.header.agent.eq(){
     http.header.put "User-Agent" "${1:?User agent}"
 }
 
-http.dict.getput(){
-    local O="${O:?Provide Object name}"
-    case $# in
-        1) http.dict.get "$1";;
-        2) http.dict.put "$1" "$2";;
-        *) echo "More than 2 variable provided" >&1; return 2;
-    esac
-}
 
-http.dict.get(){
-    local O="${O:?Provide Object name}"
-    dict.get "${1:?Provide dict key}"
-}
-
-http.dict.put(){
-    local O="${O:?Provide Object name}"
-    dict.put "${1:?Provide dict key}" "${2:?Provide dict value}" 
-}
-
-http.cd(){
-    [ -z "$O" ] && return 1
-    local URL=${URL:-$(http.dict.get "url")}
-    dict.put "url" "$URL/${1:?Provide url}"
-}
-
-http.path(){   # TODO: how to cd back
-    local url
-    url="$(http.dict.get "url")"
-    if [ -z "$url" ]; then
-        echo "$1"
-    else
-        echo "$url$1" # TODO: it is ugly... Isn't it?
-    fi
-}
-
+############################
+# Section 4: QueryString
+############################
 # Notice: http.qs.put will put the empty value
 http.qs.put(){
     dict.put "qs.${1:?header key}" "${2:-${!1}}"
@@ -142,12 +184,6 @@ http.qs.dump.curl(){
     echo "-G ${A[*]}"
 }
 
-http.eq_str_by_name(){
-    for i in "$@"; do
-        echo "$i=${!i}"
-    done
-}
-
 # Just in case.
 http.body.put(){
     local value="${2:-${!1}}"
@@ -185,6 +221,9 @@ http.body.dump.json(){
     done | dict.__toJSON "$@"
 }
 
+############################
+# Section 5: Request & Response
+############################
 http.resp.header.all(){
     cat "${TMPDIR}x-cmd-x-bash-std-http-${O:?Please provide O}"
 }
@@ -256,6 +295,10 @@ http.request.json_body() (  # Notice: Using subshell
     http.request "$url" "$(http.body.dump.json "")"
 )
 
+############################
+# Section 6: CRUD -- post get put delete
+############################
+
 # crud
 http.post(){ X=POST http.request "$@"; }
 http.post.json(){ X=POST http.request.json_body "$@"; }
@@ -280,20 +323,3 @@ http.put.bin(){ X=PUT http.request.json_body "$@"; }
 http.delete(){ X=DELETE http.request "$@"; }
 
 http.head(){ X=HEAD http.request "$@"; }
-
-http.browse(){
-    local BROWSER=${BROWSER:-$BROWSER}
-    local website=${1:?Provide websites}
-    if [ -n "$BROWSER" ]; then
-        $BROWSER "$website"
-    elif uname -a | grep -q Darwin; then
-        open -a "/Applications/Safari.app" "$website"
-    elif command -v xdg-open > /dev/null; then
-        xdg-open "$website"
-    elif command -v gnome-open > /dev/null; then
-        gnome-open "$website"
-    else
-        echo "Could not detect the web browser to use."
-        return 1
-    fi
-}
