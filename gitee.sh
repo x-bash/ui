@@ -15,38 +15,8 @@
 ############################
 
 ############################
-# Section 1: Instantiation & Utilities
+# Section 1: Token management
 ############################
-gt.make(){
-    local O_ORIGINAL=${1:?Provide client name by O environment}
-
-    if [ -n "$GITEE_DEFAULT" ] && [ "$O_ORIGINAL" = "GITEE_DEFAULT" ]; then
-        echo "Name 'GITEE_DEFAULT' is reserved for internal use."
-        return 1
-    fi
-
-    local O="_x_cmd_x_bash_gitee_$O_ORIGINAL"
-
-    http.make "$O" 'https://gitee.com/api'
-    http.header.content-type.eq.json+utf8
-
-    local TOKEN=${2:-""}
-    if [ -n "$TOKEN" ]; then
-        printf "Init token by second parameter \n" >&2
-        O=$O_ORIGINAL gt.token.set "$TOKEN"
-    elif [ -n "$GITEE_TOKEN" ]; then
-        printf "Init token with env GITEE_TOKEN\n" >&2
-        O=$O_ORIGINAL gt.token.set "$GITEE_TOKEN"
-    else
-        local DEFAULT_TOKEN_PATH="$HOME/.x-cmd.com/x-bash/gitee/TOKEN/default"
-        if [ -f "$DEFAULT_TOKEN_PATH" ]; then
-            printf "Init token using config: $DEFAULT_TOKEN_PATH\n" >&2
-            O=$O_ORIGINAL gt.token.set $(cat "$DEFAULT_TOKEN_PATH")
-        fi
-    fi
-}
-
-
 gt.token.set(){
     local O="${O:-GITEE_DEFAULT}"
     local GITEE_TOKEN=${1:?"Please provide gitee token"}
@@ -79,8 +49,19 @@ gt.token.dump(){
     printf "%s" "$current_token" >"$TOKEN_PATH"
 }
 
+gt.token.load(){
+    local name=${1:-"default"}
+    local DEFAULT_TOKEN_PATH="$HOME/.x-cmd.com/x-bash/gitee/TOKEN/$name"
+    if [ -f "$DEFAULT_TOKEN_PATH" ]; then
+        printf "Init token using config: %s\n" "$DEFAULT_TOKEN_PATH">&2
+        O=$O_ORIGINAL gt.token.set $(cat "$DEFAULT_TOKEN_PATH")
+        return 0
+    fi
+    return 1
+}
+
 ############################
-# Section 2: Wrapping http module
+# Section 2: Wrapping std/http module with object naming changing
 ############################
 gt.resp.header(){
     O="_x_cmd_x_bash_gitee_${O:-GITEE_DEFAULT}" http.resp.header "$@"
@@ -125,9 +106,6 @@ gt.dict.put(){
 ############################
 # Section 3: Parameter Utilities
 ############################
-
-### gt.param
-
 gt.param.normalize.repo(){
     case "$1" in
     */*)    
@@ -224,8 +202,6 @@ alias gt.param.normalize.from_arg1_or_repo='
     fi
 '
 
-### Repo
-
 # shellcheck disable=SC2142
 alias gt.param.repo.normalize.from_repo='
     param '\''
@@ -321,22 +297,9 @@ gt.current-owner_type.get(){
     printf "%s" "$data"
 }
 
-
 ############################
-# Section 4: Org Creation & Info
+# Section 4: Info & Org Creation
 ############################
-
-# It is very rare
-gt.org.create(){
-    param '
-        ... "organization name" =str
-    '
-    local org
-    for org in "${_rest_argv[@]}"; do
-        gt.post "/v5/users/organization" name="$org" org="$org"
-    done
-}
-
 # TODO: better solution?
 gt.owner_type.query(){
     local owner="${1:?Provide owner name}"
@@ -360,8 +323,19 @@ gt.org.info(){
     gt.get "/v5/orgs/${1:?Provide organization}"
 }
 
+# It is very rare
+gt.org.create(){
+    param '
+        ... "organization name" =str
+    '
+    local org
+    for org in "${_rest_argv[@]}"; do
+        gt.post "/v5/users/organization" name="$org" org="$org"
+    done
+}
+
 ############################
-# Section 5: Repo List
+# Section 5: List Repos
 ############################
 gt.repo.list(){
     param '
@@ -570,8 +544,6 @@ gt.org.repo.create(){
     done
 }
 
-# ENTERPRISE NAME
-
 # https://gitee.com/api/v5/swagger#/postV5EnterprisesEnterpriseRepos
 # shellcheck disable=SC2154
 gt.enterprise.repo.create(){
@@ -648,7 +620,6 @@ gt.repo.member.remove(){
         gt.delete "/v5/repos/$owner/$repo/collaborators/$username"
     done
 }
-
 
 ############################
 # Section 9: Repo Page Managment
@@ -911,7 +882,6 @@ gt.repo.pr.issue.list(){
     '
 
     repo="$(gt.param.normalize.repo "$repo")" || return 1
-
 }
 
 # https://gitee.com/api/v5/swagger#/getV5ReposOwnerRepoPullsNumberComments
@@ -924,7 +894,6 @@ gt.repo.pr.comment.list(){
     '
 
     repo="$(gt.param.normalize.repo "$repo")" || return 1
-
 }
 
 
@@ -970,6 +939,32 @@ gt.enterprise.new(){
 ############################
 # Section 11: Instantiation
 ############################
+gt.make(){
+    local O_ORIGINAL=${1:?Provide client name by O environment}
+
+    if [ -n "$GITEE_DEFAULT" ] && [ "$O_ORIGINAL" = "GITEE_DEFAULT" ]; then
+        echo "Name 'GITEE_DEFAULT' is reserved for internal use."
+        return 1
+    fi
+
+    local O="_x_cmd_x_bash_gitee_$O_ORIGINAL"
+
+    http.make "$O" 'https://gitee.com/api'
+    http.header.content-type.eq.json+utf8
+
+    local TOKEN=${2:-""}
+    if [ -n "$TOKEN" ]; then
+        printf "Init token by second parameter \n" >&2
+        O=$O_ORIGINAL gt.token.set "$TOKEN"
+    elif [ -n "$GITEE_TOKEN" ]; then
+        printf "Init token with env GITEE_TOKEN\n" >&2
+        O=$O_ORIGINAL gt.token.set "$GITEE_TOKEN"
+    else
+        gt.token.load default
+    fi
+}
+
+
 if [ -z "$DO_NOT_INIT_GITEE_DEFAULT" ]; then
     gt.make "GITEE_DEFAULT"
 fi
