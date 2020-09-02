@@ -1,16 +1,7 @@
 # shellcheck shell=bash
 
-# Using object to make it right
-
-# Using curl
-# Using Object
-# Provide Github Object, to help automate the github
-
 @src std/dict
 # @src std/oo # std/dict -> std/list -> std/oo
-
-# . dict
-# . oo
 
 http.new(){
     oo.create_new_function http "$@"
@@ -22,25 +13,7 @@ http.make(){
     local O="$1"
 
     dict.put "url" "${2:?Provide url}"
-    # O="$1" dict.put "header" "${3:?Provide default header}"
-    # eval "export ${1:?Provide name}_header=()"
-
-    # dict.make "$(http._name.qs)"
-    # dict.make "$(http._name.body)"
-    # dict.make "$(http._name.header)"
 }
-
-# http._name.qs(){
-#     echo "${O:?Provide name}_x-bash_http_qs"
-# }
-
-# http._name.body(){
-#     echo "${O:?Provide name}_x-bash_http_body"
-# }
-
-# http._name.header(){
-#     echo "${O:?Provide name}_x-bash_http_header"
-# }
 
 http.header.put(){ 
     dict.put "header.${1:?header key}" "${2:?value}"; 
@@ -123,16 +96,13 @@ http.cd(){
     dict.put "url" "$URL/${1:?Provide url}"
 }
 
-# TODO: how to cd back
-
-http.path(){
+http.path(){   # TODO: how to cd back
     local url
     url="$(http.dict.get "url")"
     if [ -z "$url" ]; then
         echo "$1"
     else
-        # TODO: it is ugly... Isn't it?
-        echo "$url$1"
+        echo "$url$1" # TODO: it is ugly... Isn't it?
     fi
 }
 
@@ -224,7 +194,6 @@ http.resp.header(){
 
 http.request(){
     local IFS=$' '
-
     local O="${O:?Please provide O}"
 
     local X=${X:-get)} data=${2:-"$D"} path
@@ -236,10 +205,9 @@ http.request(){
 
     local tmp
     tmp=$(mktemp)
-    echo "body is: $data" > "$tmp"
+    echo "$data" > "$tmp"
     [ -n "$DEBUG" ] && echo "body is: $data" >&2
 
-    local code
     local REDIRECT=/dev/null
     [ -n "$DEBUG" ] && REDIRECT=/dev/stderr
 
@@ -267,22 +235,21 @@ http.request(){
     read -r a b c <<<"$(cat "$header_file")"
     
     if [ -n "$b" ] && [ "$b" -ge 200 ] && [ "$b" -le 299 ]; then
-        echo "$data"
+        printf "%s" "$data"
+        printf "HttpCode is %s, Code is 0\n" "$b" >&2
         return 0
     fi
 
     [ -n "$DEBUG" ] && echo "$data" >&2
+    printf "HttpCode is %s, Code is 1\n" "$b" >&2
     return 1
 }
 
-http.request.json_body(){
-    local url=$1
-    shift
-    (
-        http.body.mput "$@"
-        http.request "$url" "$(http.body.dump.json "")"
-    )
-}
+http.request.json_body() (  # Notice: Using subshell
+    url=$1;  shift
+    http.body.mput "$@"
+    http.request "$url" "$(http.body.dump.json "")"
+)
 
 # crud
 http.post(){ X=POST http.request "$@"; }
@@ -292,29 +259,11 @@ http.post.form(){ X=POST http.request.json_body "$@"; }
 http.post.text(){ X=POST http.request.json_body "$@"; }
 http.post.bin(){ X=POST http.request.json_body "$@"; }
 
-http.get(){
-    local url=$1 
-    # local key value
-    
-    shift
-    (
-        # for i in "$@"; do
-        #     if [[ "$i" = *=* ]]; then
-        #         key="${i%=*}";  value="${i##*=}"
-        #     else
-        #         key="$i";       value="${!i}"
-        #     fi
-
-        #     # Notice: It may be a bug
-        #     if [ -n "$value" ]; then
-        #         http.qs.add "$key" "$value"
-        #     fi
-        # done
+http.get() (    # Notice: Using subshell
+        url=$1;  shift
         http.qs.mput "$@"
-        
         X=GET http.request "$url"
-    )
-}
+)
 
 http.put(){ X=PUT http.request "$@"; }
 http.put.json(){ X=PUT http.request.json_body "$@"; }
