@@ -1,7 +1,6 @@
 # shellcheck shell=bash
 
-@src std/dict
-# @src std/oo # std/dict -> std/list -> std/oo
+@src std/dict  # @src std/oo # std/dict -> std/list -> std/oo
 
 http.new(){
     oo.create_new_function http "$@"
@@ -9,9 +8,7 @@ http.new(){
 
 http.make(){
     dict.make "${1:?Provide name}"
-
     local O="$1"
-
     dict.put "url" "${2:?Provide url}"
 }
 
@@ -106,16 +103,21 @@ http.path(){   # TODO: how to cd back
     fi
 }
 
+# Notice: http.qs.put will put the empty value
 http.qs.put(){
     dict.put "qs.${1:?header key}" "${2:-${!1}}"
 }
 
+# Notice 1: `http.qs.put abc=``  will put the entry { abc: "" }
+# Notice 2: `abc=; http.qs.put abc` will NOT put any entry
 http.qs.mput(){
+    local value
     for i in "$@"; do
         if [[ "$i" = *=* ]]; then
             http.qs.put "${i%=*}" "${i##*=}"
         else
-            http.qs.put "$i"
+            value=${!i}
+            [ -n "$value" ] && http.qs.put "$i" "$value"
         fi
     done;
 }
@@ -149,16 +151,19 @@ http.eq_str_by_name(){
 # Just in case.
 http.body.put(){
     local value="${2:-${!1}}"
-    [ -n "$value" ] && dict.put "body.${1:?header key}" "$value"
+    dict.put "body.${1:?header key}" "$value"
+    # [ -n "$value" ] && dict.put "body.${1:?header key}" "$value"
 }
 
 # Redis like naming
 http.body.mput(){
+    local value
     for i in "$@"; do
         if [[ "$i" = *=* ]]; then
             http.body.put "${i%=*}" "${i##*=}"
         else
-            http.body.put "$i"
+            value="${!i}"
+            [ -n "$value" ] && http.body.put "$i" "$value"
         fi
     done;
 }
