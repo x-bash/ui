@@ -25,22 +25,28 @@ str.md5(){
 # cache.cmd 3m filepath -- cmdline
 cache.cmd(){
     local HELP='
------------------
-cache.cmd [expiration, n[smhdw] ] [cache-filepath] -- <command> [...arguments]
+NAME
+    cache.cmd -- cache the command result
 
-About expiration, pattern like "n[smhdw]"
-    n is number, "smhdw" is unit.
-    s       second
-    m       minute (60 seconds)
-    h       hour (60 minutes)
-    d       day (24 hours)
-    w       week (7 days)
+SYNOPSIS
+    cache.cmd [expiration, n[smhdw] ] [cache-filepath] -- <command> [...arguments]
+
+DESCRIPTION
+    About expiration, pattern like "n[smhdw]"
+        n is number, "smhdw" is unit.
+        s       second
+        m       minute (60 seconds)
+        h       hour (60 minutes)
+        d       day (24 hours)
+        w       week (7 days)
 
     If no unit provided, the default unit is "d"
 
     Example:
-        cache.cmd 3m -- echo hi    # Cache the command result in future 3 minutes
+        cache.cmd -- echo hi       # Cache the command result in future 60 minutes (default)
         cache.cmd 3 -- echo hi     # Cache the command result in future 3 days
+        cache.cmd 3m -- echo hi    # Cache the command result in future 3 minutess
+        cache.cmd 3h ~/cache -- echo hi    # Cache the command result in the file "~/cache" in future 3 hours
 '
 
     local IFS=  ARGS=()
@@ -63,7 +69,7 @@ About expiration, pattern like "n[smhdw]"
     fi
 
     if [ -z "$filepath" ]; then
-        filepath="${CACHE_FOLDER:-${TMPDIR}x-cmd-path}"
+        filepath="${X_CMD_X_BASH_CACHE_CMD_FOLDER:-${TMPDIR}x-cmd-path}"
         mkdir -p "$filepath"
         filepath="$filepath/$(str.md5 "$*")"
     fi
@@ -80,20 +86,15 @@ About expiration, pattern like "n[smhdw]"
     fi
 }
 
-cache.clear(){
-    local FILEPATH="${CACHE_FOLDER:-${TMPDIR}x-cmd-path}"
-    rf "$FILEPATH/*"
-}
-
-cache.cmd.setup.folder(){
-    CACHE_FOLDER="${1:?Provide cache folder}"
+cache.cmd.clear(){
+    local FILEPATH="${X_CMD_X_BASH_CACHE_CMD_FOLDER:-${TMPDIR}x-cmd-path}"
+    rm -f "$FILEPATH/*"
 }
 
 # If you want a new environment for script
 cache.cmd.setup(){
-    X_CMD_X_BASH_CACHE_CMD_FOLDER="$(mktemp)"
+    X_CMD_X_BASH_CACHE_CMD_FOLDER="${1:-"$(mktemp)"}"
     export X_CMD_X_BASH_CACHE_CMD_FOLDER
-    export X_CMD_X_BASH_CACHE_CMD_FOLDER_INDEX=0
     mkdir -p "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
 }
 
@@ -108,5 +109,4 @@ cache.cmd.teardown(){
     esac
 
     unset X_CMD_X_BASH_CACHE_CMD_FOLDER
-    unset X_CMD_X_BASH_CACHE_CMD_FOLDER_INDEX
 }
