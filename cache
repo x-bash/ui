@@ -1,16 +1,7 @@
 # shellcheck shell=bash
 
-
-# TODO: using CACHE_CMD_FOLDER="". Calculate the md5 value of command, using the value as file name.
-
-# should we introduce the other library? Yes, we should.
-# We should introduce the @p library, also, we should introduce md5 code.
-
 # expiration=1 filepath="/tmp/a.txt" cache.cmd "cmd-path"
 # cache.cmd --filepath "" --expiration=60m "cmd-path"
-
-# @src std/str
-. str
 
 # expiration=1 cache.cmd curl www.github.com/v4/api
 # cache.cmd "curl www.github.com/v4/api" > a.txt
@@ -34,15 +25,28 @@ cache.cmd(){
     local CACHE_EXPIRATION_IN_MIN=${CACHE_EXPIRATION_IN_MIN:-${cache_expiration_in_min:-60}}
     local FILEPATH="${CACHE_FILE:-${cache_file:-""}}"
     if [ -z "$FILEPATH" ]; then
-        FILEPATH="${CACHE_FOLDER:$TMPDIR/x-cmd-path}"
+        FILEPATH="${CACHE_FOLDER:-${TMPDIR}x-cmd-path}"
         mkdir -p "$FILEPATH"
         FILEPATH="$FILEPATH/$(str.md5 "$*")"
     fi
-
-    ( find "$FILEPATH" -mmin "-${CACHE_EXPIRATION_IN_MIN}" | grep -q ^  ) || {
+    
+    if find "$FILEPATH" -mmin "-${CACHE_EXPIRATION_IN_MIN}" 2>/dev/null | grep -q ^; then
+        [[ "$STD_DEBUG" == *cache* ]] && echo "Using cache in Cache Path: $FILEPATH" >&2
+        cat "$FILEPATH"
+    else
         echo "FILEPATH does't exists or older than ${CACHE_EXPIRATION_IN_MIN} min. Update" >&2
-        eval "$@" | tee "$FILEPATH"
-    }
+        
+        local temp_filepath
+        temp_filepath=$(mktemp)
+
+        if eval "$@"; then
+            rm "$FILEPATH" 2>/dev/null
+        fi | tee "$temp_filepath"
+
+        if [ ! -f "$FILEPATH" ]; then
+            mv "$temp_filepath" "$FILEPATH"
+        fi
+    fi
 }
 
 cache.cmd.setup.folder(){
