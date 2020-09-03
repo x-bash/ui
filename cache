@@ -1,11 +1,5 @@
 # shellcheck shell=bash
 
-# expiration=1 cache_path="/tmp/a.txt" cache.cmd "cmd-path"
-# cache.cmd --filepath "" --expiration=60m "cmd-path"
-
-# expiration=1 cache.cmd curl www.github.com/v4/api
-# cache.cmd "curl www.github.com/v4/api" > a.txt
-
 str.md5(){
     local cmd
     if command -v md5 >/dev/null 2>&1; then
@@ -45,10 +39,14 @@ DESCRIPTION
     If no unit provided, the default unit is "d"
 
     Example:
-        cache.cmd -- echo hi       # Cache the command result in future 60 minutes (default)
-        cache.cmd 3 -- echo hi     # Cache the command result in future 3 days
-        cache.cmd 3m -- echo hi    # Cache the command result in future 3 minutess
-        cache.cmd 3h ~/cache -- echo hi    # Cache the command result in the file "~/cache" in future 3 hours
+        Cache the command result in future 60 minutes (default)
+            > cache.cmd -- curl https://x-bash.gitee.io/boot       
+        Cache the command result in future 3 days
+            > cache.cmd 3 -- curl https://x-bash.gitee.io/boot     
+        Cache the command result in future 3 minutess
+            > cache.cmd 3m -- curl https://x-bash.gitee.io/boot
+        Cache the command result in the file "~/cache" in future 3 hours
+            > cache.cmd 3h ~/cache -- curl https://x-bash.gitee.io/boot
 '
 }
 
