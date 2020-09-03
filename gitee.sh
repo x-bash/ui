@@ -239,6 +239,14 @@ alias gt.param.repo.list='
 
 # Providing owner/owner_type
 
+gt.current-repo(){
+    if [ "$#" -eq 0 ]; then
+        gt.current-repo.get
+    else
+        gt.current-repo.set "$@"
+    fi
+}
+
 # shellcheck disable=SC2120
 gt.current-repo.set(){
     local O="${O:-GITEE_DEFAULT}"
@@ -256,6 +264,14 @@ gt.current-repo.set(){
 
 gt.current-repo.get(){
     gt.dict.get "current-repo"
+}
+
+gt.current-owner(){
+    if [ "$#" -eq 0 ]; then
+        gt.current-owner.get
+    else
+        gt.current-owner.set "$@"
+    fi
 }
 
 gt.current-owner.set(){ 
