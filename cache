@@ -49,11 +49,16 @@ cache.cmd(){
     fi
 }
 
+cache.clear(){
+    local FILEPATH="${CACHE_FOLDER:-${TMPDIR}x-cmd-path}"
+    rf "$FILEPATH/*"
+}
+
 cache.cmd.setup.folder(){
     CACHE_FOLDER="${1:?Provide cache folder}"
 }
 
-# consider temp using the local disk?
+# If you want a new environment for script
 cache.cmd.setup(){
     X_CMD_X_BASH_CACHE_CMD_FOLDER="$(mktemp)"
     export X_CMD_X_BASH_CACHE_CMD_FOLDER
@@ -61,12 +66,13 @@ cache.cmd.setup(){
     mkdir -p "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
 }
 
+# Remember teardown if you have setup
 cache.cmd.teardown(){
     case "$X_CMD_X_BASH_CACHE_CMD_FOLDER" in
         /);;
         /bin*);;
         /home*);;
-        # Do more work to protect. Checking the temp folder
+        # Do more work to protect the critical facility.
         *) rm -rf "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
     esac
 
