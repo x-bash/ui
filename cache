@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-# expiration=1 filepath="/tmp/a.txt" cache.cmd "cmd-path"
+# expiration=1 cache_path="/tmp/a.txt" cache.cmd "cmd-path"
 # cache.cmd --filepath "" --expiration=60m "cmd-path"
 
 # expiration=1 cache.cmd curl www.github.com/v4/api
@@ -20,32 +20,43 @@ str.md5(){
     fi
 }
 
+# cache.cmd -- cmd
+# cache.cmd filepath -- cmdline
+# cache.cmd 3m filepath -- cmdline
 cache.cmd(){
-    local IFS=
-    local CACHE_EXPIRATION_IN_MIN=${CACHE_EXPIRATION_IN_MIN:-${cache_expiration_in_min:-60}}
-    local FILEPATH="${CACHE_FILE:-${cache_file:-""}}"
-    if [ -z "$FILEPATH" ]; then
-        FILEPATH="${CACHE_FOLDER:-${TMPDIR}x-cmd-path}"
-        mkdir -p "$FILEPATH"
-        FILEPATH="$FILEPATH/$(str.md5 "$*")"
+    local IFS=  ARGS=()
+    while [ ! "$1" == "--" ]; do
+        ARGS+=("$1"); shift
+    done
+    shift
+
+    local expiration=60m filepath
+    case "${#ARGS[@]}" in
+        0) ;;
+        1) expiration=${ARGS[0]};;
+        *) expiration=${ARGS[0]}; filepath=${ARGS[1]};;
+    esac
+
+    if [[ ! "$expiration" =~ ^[0-9]+[dmwsh]?$ ]]; then
+        printf "PANIC: Expiration should match pattern n[dmwsh].\n"
+        return 1
+    fi
+
+    if [ -z "$filepath" ]; then
+        filepath="${CACHE_FOLDER:-${TMPDIR}x-cmd-path}"
+        mkdir -p "$filepath"
+        filepath="$filepath/$(str.md5 "$*")"
     fi
     
-    if find "$FILEPATH" -mmin "-${CACHE_EXPIRATION_IN_MIN}" 2>/dev/null | grep -q ^; then
-        [[ "$STD_DEBUG" == *cache* ]] && echo "Using cache in Cache Path: $FILEPATH" >&2
-        cat "$FILEPATH"
+    if find "$filepath" -mtime "-${expiration}" 2>/dev/null | grep -q ^; then
+        [[ "$STD_DEBUG" == *cache* ]] && echo "Using cache in Cache Path: $filepath" >&2
+        cat "$filepath"
     else
-        echo "FILEPATH does't exists or older than ${CACHE_EXPIRATION_IN_MIN} min. Update" >&2
+        [[ "$STD_DEBUG" == *cache* ]] && echo "FILEPATH does't exists or older than ${expiration} second. Update" >&2
         
-        local temp_filepath
-        temp_filepath=$(mktemp)
-
-        if eval "$@"; then
-            rm "$FILEPATH" 2>/dev/null
-        fi | tee "$temp_filepath"
-
-        if [ ! -f "$FILEPATH" ]; then
-            mv "$temp_filepath" "$FILEPATH"
-        fi
+        local temp_filepath; temp_filepath=$(mktemp)
+        { eval "$@" && rm "$filepath" 2>/dev/null; } | tee "$temp_filepath"
+        [ ! -f "$filepath" ] && mv "$temp_filepath" "$filepath"
     fi
 }
 
