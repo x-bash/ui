@@ -20,13 +20,15 @@ str.md5(){
     fi
 }
 
-# cache.cmd -- cmd
-# cache.cmd filepath -- cmdline
-# cache.cmd 3m filepath -- cmdline
-cache.cmd(){
-    local HELP='
+cache.cmd.help(){
+    local IFS=
+    printf "%s\n" "$@"
+
+    printf '
+------------------
 NAME
-    cache.cmd -- cache the command result
+    cache.cmd -- cache the command result. 
+    From std/cache: https://github.com/x-bash/std/blob/master/cache Or https://gitee.com/x-bash/std/blob/master/cache
 
 SYNOPSIS
     cache.cmd [expiration, n[smhdw] ] [cache-filepath] -- <command> [...arguments]
@@ -48,12 +50,20 @@ DESCRIPTION
         cache.cmd 3m -- echo hi    # Cache the command result in future 3 minutess
         cache.cmd 3h ~/cache -- echo hi    # Cache the command result in the file "~/cache" in future 3 hours
 '
+}
 
+# cache.cmd -- cmd
+# cache.cmd filepath -- cmdline
+# cache.cmd 3m filepath -- cmdline
+cache.cmd(){
     local IFS=  ARGS=()
     while [ ! "$1" == "--" ]; do
+        if [ "$#" -eq 0 ]; then
+            cache.cmd.help "PANIC: Expect -- and its following command\n" >&2
+            return 1
+        fi
         ARGS+=("$1"); shift
     done
-    shift
 
     local expiration=60m filepath
     case "${#ARGS[@]}" in
@@ -63,8 +73,7 @@ DESCRIPTION
     esac
 
     if [[ ! "$expiration" =~ ^[0-9]+[dmwsh]?$ ]]; then
-        printf "PANIC: Expiration should match pattern n[dmwsh].\n"
-        printf "%s\n" "$HELP"
+        cache.cmd.help "PANIC: Expiration should match pattern n[dmwsh]." >&2
         return 1
     fi
 
