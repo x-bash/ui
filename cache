@@ -24,6 +24,25 @@ str.md5(){
 # cache.cmd filepath -- cmdline
 # cache.cmd 3m filepath -- cmdline
 cache.cmd(){
+    local HELP='
+-----------------
+cache.cmd [expiration, n[smhdw] ] [cache-filepath] -- <command> [...arguments]
+
+About expiration, pattern like "n[smhdw]"
+    n is number, "smhdw" is unit.
+    s       second
+    m       minute (60 seconds)
+    h       hour (60 minutes)
+    d       day (24 hours)
+    w       week (7 days)
+
+    If no unit provided, the default unit is "d"
+
+    Example:
+        cache.cmd 3m -- echo hi    # Cache the command result in future 3 minutes
+        cache.cmd 3 -- echo hi     # Cache the command result in future 3 days
+'
+
     local IFS=  ARGS=()
     while [ ! "$1" == "--" ]; do
         ARGS+=("$1"); shift
@@ -39,6 +58,7 @@ cache.cmd(){
 
     if [[ ! "$expiration" =~ ^[0-9]+[dmwsh]?$ ]]; then
         printf "PANIC: Expiration should match pattern n[dmwsh].\n"
+        printf "%s\n" "$HELP"
         return 1
     fi
 
