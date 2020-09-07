@@ -32,6 +32,11 @@ line.to_array.trim.ignore_empty(){
     eval "$name"'=("${arr[@]}")'
 }
 
+param.debug(){
+    local IFS=
+    [[ "$X_BASH_DEUBG" =~ (^|,)param($|,) ]] && printf "DBG: %s" "$@" >&2
+}
+
 # shellcheck disable=SC2142
 # alias param='if ! eval "$(param.__parse "${FUNCNAME[0]}" "$@")"; then param.help.show; return $? 2>/dev/null || exit $?; fi <<<'
 # alias param='eval "$(param.__parse "${FUNCNAME[0]}" "$@")" <<<'

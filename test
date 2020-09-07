@@ -92,7 +92,10 @@ test.doctest(){
     mkfifo "$test_script_fifo" "$out_fifo"
 
     export test_script_fifo out_fifo
-    test.doctest.exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" 1>/dev/null 2>&1 &
+    (
+        source "$1";
+        test.doctest.exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" 1>/dev/null 2>&1
+    ) &
 
     local PROCESS_ID="$!"
     local return_code=0

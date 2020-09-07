@@ -14,6 +14,11 @@ str.md5(){
     fi
 }
 
+cache.debug(){
+    local IFS=
+    [[ "$X_BASH_DEUBG" =~ (^|,)(std/)*cache($|,) ]] && printf "DBG: %s\n" "$@" >&2
+}
+
 cache.cmd.help(){
     local IFS=
     printf "%s\n" "$@"
@@ -50,9 +55,6 @@ DESCRIPTION
 '
 }
 
-# cache.cmd -- cmd
-# cache.cmd filepath -- cmdline
-# cache.cmd 3m filepath -- cmdline
 cache.cmd(){
     local IFS=  ARGS=()
     while [ ! "$1" == "--" ]; do

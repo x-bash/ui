@@ -1,0 +1,21 @@
+
+# name=a; folder=a; work=3
+# docker run --name a --folder a --work 3
+# docker run "$(args name folder work)"
+
+args(){
+    local i k v
+    for i in "$@"; do
+        case "$i" in
+        *=*)
+            k=${i%%=*}
+            v=${i#*=}
+            printf " --%s %s " "$k" "$v"
+            ;;
+        *)
+            k=$i; v="${!i}"
+            [ -n "$v" ] && printf " --%s %s " "$k" "$v"
+        ;;
+        esac
+    done
+}

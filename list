@@ -13,6 +13,11 @@ list.free(){
     eval "unset $O"
 }
 
+list.debug(){
+    local IFS=
+    [[ "$X_BASH_DEUBG" =~ (^|,)(std/)*list($|,) ]] && printf "DBG: %s\n" "$@" >&2
+}
+
 list.size(){
     local code="echo \${#${O:?Require Object Name}[@]}"
     eval "$code"

@@ -38,6 +38,11 @@ http.browse(){
     fi
 }
 
+http.debug(){
+    local IFS=
+    [[ "$X_BASH_DEUBG" =~ (^|,)(std/)*http($|,) ]] && printf "DBG: %s\n" "$@" >&2
+}
+
 ############################
 # Section 2: Dict & Path
 ############################
