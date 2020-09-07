@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 
 # name=a; folder=a; work=3
 # docker run --name a --folder a --work 3
