@@ -51,7 +51,7 @@ shopt -s expand_aliases
 }
 
 # rename to @defer.return
-# shellcheck disable=SC2142
+# shellcheck disable=SC2142,SC2154
 alias @trap.return='
 if local _X_CMD_RETURN_STACK 2>/dev/null; then
 
