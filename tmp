@@ -25,14 +25,16 @@ tmp.auto(){
     @defer tmp.end
 }
 
+# Add timestamp
 _X_CMD_X_BASH_FILE_TMP_GLOBAL=
 tmp.begin(){
-    _X_CMD_X_BASH_FILE_TMP_GLOBAL="$(mktemp)"
+    # _X_CMD_X_BASH_FILE_TMP_GLOBAL="$(mktemp)"
+    _X_CMD_X_BASH_FILE_TMP_GLOBAL="${TMPDIR}$(date +%Y%m%d%H%M%S)_${RANDOM}/"
     mkdir -p "$_X_CMD_X_BASH_FILE_TMP_GLOBAL"
 }
 
 tmp.get_path(){
-    echo "$_X_CMD_X_BASH_FILE_TMP_GLOBAL/${1:-$RANDOM}"
+    echo "$_X_CMD_X_BASH_FILE_TMP_GLOBAL$(date +%Y%m%d%H%M%S)_${RANDOM}"
 }
 
 tmp.end(){
