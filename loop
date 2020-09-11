@@ -9,12 +9,13 @@ loop.until.success(){ while :; do "$@" && return; sleep "${INTERVAL:-3}"; done }
 
 
 # loop 3 cat ~/process_result
-<<DOCTEST
+: <<DOCTEST
 > time=3 INTERVAL=1 loop echo hi
 hi
 hi
 hi
 DOCTEST
+
 loop(){
     local i IFS
     for i in $(seq "${time:-100}"); do

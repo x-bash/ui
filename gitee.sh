@@ -108,9 +108,9 @@ gt.dict.put(){
 ############################
 gt.param.normalize.repo(){
     case "$1" in
-    */*)    
+    */*)
         printf "%s" "$1";;
-    "") 
+    "")
         local _owner _repo
         _owner="$(gt.current-owner.get)"
         if [ -z "$_owner" ]; then

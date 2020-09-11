@@ -1,9 +1,15 @@
 # shellcheck shell=bash
-# Hashset
 
-# using declared set
+: <<COMMENT
+1. If bash 4, using bash 4 associate arary
+2. If not bash 4, using variable definition for implementation
 
-# Using 
+if [[ "${BASH_VERSION}" == 3* ]]; then
+    # Using Self defined dict
+else
+    # Using Associative Array
+fi
+COMMENT
 
 @src std/list
 @src std/str

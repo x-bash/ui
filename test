@@ -85,6 +85,8 @@ test.doctest.run_code(){
     fi
 }
 
+test.doc(){ test.doctest "$@"; }
+
 test.doctest(){
     local test_script_fifo="doctest.tmp.input.fifo" out_fifo="doctest.tmp.output.fifo"
 
@@ -93,6 +95,7 @@ test.doctest(){
 
     export test_script_fifo out_fifo
     (
+        #shellcheck disable=SC1090
         source "$1";
         test.doctest.exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" 1>/dev/null 2>&1
     ) &
@@ -140,7 +143,7 @@ $cl"
 
         # Must start with doctest
         # [[ "$line" =~ ^\<\<([[:alnum:]]+)$ ]] && {
-        [[ "$line" =~ ^\<\<((doctest|DOCTEST)[A-Za-z0-9-]*)$ ]] && {
+        [[ "$line" =~ ^\ *\:*\ *\<\<((doctest|DOCTEST)[A-Za-z0-9-]*)$ ]] && {
             start="${BASH_REMATCH[1]}"
             block=()
         }
