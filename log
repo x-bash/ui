@@ -28,7 +28,7 @@ log.make(){
         }
         alias $name.panic='
             log.panic.color \"\$@\";
-            return \$1 2>/dev/null || exit 1 
+            return \$1 2>/dev/null || exit 1
         '
     "
 }

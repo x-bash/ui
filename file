@@ -23,5 +23,3 @@ file.to_array(){
     shift
   done
 }
-
-

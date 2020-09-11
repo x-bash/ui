@@ -24,8 +24,8 @@ path.filename(){
 
 path.abs(){
     local p=${1:-.}
-    if [ -f $p ]; then
-        echo "$(cd "$(dirname $p)" && pwd)/$(basename $p)"
+    if [ -f "$p" ]; then
+        echo "$(cd "$(dirname "$p")" && pwd)/$(basename "$p")"
     else
         (cd "${1:-.}" && pwd)
     fi

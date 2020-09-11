@@ -1,4 +1,4 @@
-# shellcheck 
+# shellcheck shell=bash
 
 : <<REQUIREMENT
 
