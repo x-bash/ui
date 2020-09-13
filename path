@@ -1,25 +1,36 @@
 # shellcheck shell=bash
-# path
 
-shopt -s expand_aliases
-
-alias path.dirname=dirname
-alias path.basename=basename
-
-path.extension(){
-    local filepath
-    filepath=$(basename "${1:?Provide file path}")
-    local ret
-    ret=${filepath##*.}
-    # ret=$(cut -d '.')
-    # to handle the situation: `path.extensions abc`, ret="abc", should return ""
-    [ "$ret" == "$filepath" ] || echo "$ret"
+path.ext(){
+    local i ret filepath
+    for i in "$@"; do
+        filepath=$(basename "${i}")
+        ret=${filepath##*.}
+        # ret=$(cut -d '.')
+        # to handle the situation: `path.extensions abc`, ret="abc", should return ""
+        [ "$ret" == "$filepath" ] || printf "%s" "$ret"
+    done
 }
 
 path.filename(){
-    local filepath
-    filepath=$(basename "${1:?Provide file path}")
-    echo "${filepath%.*}"
+    local filepath i
+    for i in "$@"; do
+        filepath=$(basename "$i")
+        printf "%s" "${filepath%.*}"
+    done
+}
+
+path.dirname(){
+    local i
+    for i in "$@"; do
+        dirname "$i"
+    done
+}
+
+path.basename(){
+    local i
+    for i in "$@"; do
+        basename "$i"
+    done
 }
 
 path.abs(){
@@ -48,7 +59,7 @@ path.common(){
     done
 }
 
-# path variable operations
+# PATH environment variable operations
 # code from el-logic
 
 path.display(){
@@ -64,6 +75,10 @@ path.append(){
 
 path.prepend(){
     PATH="${1:?"Provide new path"}:$PATH"
+}
+
+path.remove(){
+    :
 }
 
 # fp

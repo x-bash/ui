@@ -29,6 +29,11 @@ Python Function
 
 REQUIREMENT
 
+fset.debug(){
+    local IFS=
+    [[ "$X_BASH_DEUBG" =~ (^|,)(std/)*fset($|,) ]] && printf "DBG: %s\n" "$@" >&2
+}
+
 fset.new(){
     @src oo
     oo.create_new_function fset "$@"  
@@ -40,7 +45,14 @@ fset.make() {
 } # Add files to set
 
 fset.add() { 
-    local O="${O:?Provide Object name}"
+    local O="${O:?Provide Object name}" f
+    for f in "$@"; do
+        # What if it is a softlink? What if it is a folder?
+        if [ ! -f "$f" ]; then
+            fset.debug "$f is not a regular file."
+            return 1
+        fi
+    done
     eval "$O+=( "$@" )"
 } # Add files to set
 

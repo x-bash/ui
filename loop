@@ -4,7 +4,16 @@
 # Cookbook 1.15
 # like watch command
 # interval=3 loop.until.success cat ~/process_result
-loop.until.success(){ while :; do "$@" && return; sleep "${INTERVAL:-3}"; done }
+# example: loop 3 3s -- ping bing.com
+# example: loop 3s -- ping bing.com
+# example: loop ping bing.com
+# more catchy name: keeptry
+loop.until.success(){ 
+    while :; do
+        eval "$@" && return; 
+        sleep "${INTERVAL:-3}"; 
+    done 
+}
 
 
 
