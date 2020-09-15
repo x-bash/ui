@@ -66,12 +66,14 @@ assert.within_regex(){
 }
 
 assert.eq(){
-    local s1=${1:?Real}
-    local s2=${2:?Expect}
-    if [ "$s1" != "$2" ]; then
-        echo "Failed. Expect '$s1' to be '$s2'" >&2
-        return 1
-    fi
+    local real=${1:?Real value}
+    while [ $# -gt 1 ]; do
+        shift
+        if [ "$real" != "$1" ]; then
+            echo "Failed. Expect '$real' equals to '$1'" >&2
+            return 1
+        fi
+    done
 }
 
 assert.t(){
@@ -94,8 +96,7 @@ assert.f(){
 # assert.grep hi <<<"hello hi"
 # assert.grep hi <README.md
 assert.grep(){
-    grep "${1:?Please provide grep pattern}"
-    if [ $? -eq 0 ]; then
+    if grep "${1:?Please provide grep pattern}"; then
         return 0
     else
         echo "${MSG:-Grep Pattern Failed matching: $1}"
@@ -104,11 +105,24 @@ assert.grep(){
 }
 
 assert.float(){
-    [[ "$1" =~ ^[\ \t]+[0-9]+(.[0-9]+)?[\ \t]+$ ]]
+    while [ $# -gt 0 ]; do
+        [[ "$1" =~ ^[\ \t]+[0-9]+(.[0-9]+)?[\ \t]+$ ]]
+        shift
+    done
 }
 
 assert.int(){
-    [[ "$1" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]
+    while [ $# -gt 0 ]; do
+        [[ "$1" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]
+        shift
+    done
+}
+
+assert.array(){
+    while [ $# -gt 0 ]; do
+        declare -p "${1:?Please provide variable name}" 2> /dev/null | grep -q '^declare \-a'
+        shift
+    done
 }
 
 testFun(){
@@ -137,41 +151,6 @@ testFun(){
 # TIMEOUT=3 MSGURE="Fail if wrong" @ts "work1" testFun1
 # TIMEOUT=3 MSGURE="Fail if wrong" @testsuite "work1" testFun1
 # TIMEOUT=5 @ts "work2" testFun2
-
-# shellcheck shell=bash
-
-assert.is_array(){
-    declare -p ${1:?Please provide variable name} 2> /dev/null | grep -q '^declare \-a'
-}
-
-
-assert.is_int(){
-    [[ "${1:?Please provide variable name}" =~ ^[1-9]+([0-9])*$ ]]
-}
-
-# .1 or 1. considered to be invalid
-assert.is_float(){
-    [[ "${1:?Please provide variable name}" =~ ^[0-9]+(.[0-9]+)?$ ]]
-}
-
-
-assert.int(){
-    for i in "$@"; do
-        assert.is_int "${!i}" || return 1
-    done
-}
-
-assert.float(){
-    for i in "$@"; do
-        assert.is_float "${!i}" || return 1
-    done
-}
-
-assert.array(){
-    for i in "$@"; do
-        assert.is_array "${!i}" || return 1
-    done
-}
 
 assert.not_empty(){
     for i in "$@"; do
@@ -214,5 +193,3 @@ assert.str_match_regex(){
         fi
     done
 }
-
-
