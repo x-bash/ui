@@ -3,11 +3,12 @@
 # fn.map "echo hi" 1 2 3
 # I=? fn.map "echo ? hi" 1 2 3
 fn.map(){
-    local cmd="$1" I=${I="%"}
+    local i cmd="$1" I="${I:-%}"
     shift
-    if [ -n "$I" ] && [[ "$cmd" =~ ^[[:alnum:]-_:+]+$ ]]; then
+    # if [ -n "$I" ] && [[ "$cmd" =~ ^[[:alnum:][:space:]-_:+]+$ ]]; then
+    if [ -n "$I" ]; then
         for i in "$@"; do
-            eval "${cmd/$"$I"/$i}";
+            eval "${cmd/$"$I"/$i}"
         done
         return 0
     fi

@@ -19,8 +19,6 @@
 # assert "$org" =~ [\d]{2} [\d]{4}
 # assert "$repo" = gitee
 
-# @assert org =~ [\d]{2} [\d]{4}
-# @assert repo = gitee github gitlab
 
 @assert(){
     local value=${!1}

@@ -168,7 +168,7 @@ fset.sort.by.name(){
     local O="${O:?Provide Object name}"
     local c=( "$(fset.ls | sort)" )
     eval "$O=( \"\${c[@]}\" )"
-    [ "$1" == "-v"] && fset.ls
+    [ "$1" == "-v" ] && fset.ls
 }
 
 fset.sort.by.mtime() {
