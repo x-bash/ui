@@ -15,7 +15,7 @@ list.free(){
 
 list.debug(){
     local IFS=
-    [[ "$X_BASH_DEUBG" =~ (^|,)(std/)*list($|,) ]] && printf "DBG: %s\n" "$@" >&2
+    [[ "$X_BASH_DEBUG" =~ (^|,)(std/)*list($|,) ]] && printf "DBG: %s\n" "$@" >&2
 }
 
 list.size(){

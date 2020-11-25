@@ -20,6 +20,11 @@ tmp.auto
 a="$(tmp.get_path "/var/tcd")"
 A
 
+: <<A
+Usage 3:
+a="$(tmp.get_path "/var/tcd")"
+A
+
 tmp.auto(){
     tmp.begin
     @src std/@

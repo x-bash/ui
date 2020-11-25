@@ -1,0 +1,6 @@
+alias ppp='
+    abc="$(echo www; echo hi >&2; exit 19)"
+    echo $?
+'
+
+ppp

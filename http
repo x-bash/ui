@@ -40,7 +40,7 @@ http.browse(){
 
 http.debug(){
     local IFS=
-    [[ "$X_BASH_DEUBG" =~ (^|,)(std/)*http($|,) ]] && printf "DBG: %s\n" "$@" >&2
+    [[ "$X_BASH_DEBUG" =~ (^|,)(std/)*http($|,) ]] && printf "DBG: %s\n" "$@" >&2
 }
 
 ############################

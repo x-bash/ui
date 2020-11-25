@@ -37,6 +37,7 @@
 # '
 ## 
 
+
 param.example "Rebuild the page in sort order 'repo,time,update'" \
     "gt.repo.page.build --org x-bash --repo std --sort repo,time,update" \
     "Retrieve the page info" \
@@ -58,15 +59,15 @@ param '
 '
 
 
-echo.name(){
-    for i in "$@"; do
-        echo "$i: ${!i}"
-    done
-}
+# echo.name(){
+#     for i in "$@"; do
+#         echo "$i: ${!i}"
+#     done
+# }
 
-echo.name org repo access sort show
+# echo.name org repo access sort show
 
-echo "${_varlist[@]}"
+# echo "${_varlist[@]}"
 
 
 

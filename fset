@@ -31,7 +31,7 @@ REQUIREMENT
 
 fset.debug(){
     local IFS=
-    [[ "$X_BASH_DEUBG" =~ (^|,)(std/)*fset($|,) ]] && printf "DBG: %s\n" "$@" >&2
+    [[ "$X_BASH_DEBUG" =~ (^|,)(std/)*fset($|,) ]] && printf "DBG: %s\n" "$@" >&2
 }
 
 fset.new(){

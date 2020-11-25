@@ -57,7 +57,7 @@ path.rmrf.safe(){
 
 cache.debug(){
     local IFS=
-    [[ "$X_BASH_DEUBG" =~ (^|,)(std/)*cache($|,) ]] && printf "DBG: %s\n" "$@" >&2
+    [[ "$X_BASH_DEBUG" =~ (^|,)(std/)*cache($|,) ]] && printf "DBG: %s\n" "$@" >&2
 }
 
 cache.cmd.help(){

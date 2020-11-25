@@ -34,7 +34,7 @@ line.to_array.trim.ignore_empty(){
 
 param.debug(){
     local IFS=
-    [[ "$X_BASH_DEUBG" =~ (^|,)param($|,) ]] && printf "DBG: %s" "$@" >&2
+    [[ "$X_BASH_DEBUG" =~ (^|,)param($|,) ]] && printf "DBG: %s" "$@" >&2
 }
 
 # shellcheck disable=SC2142
@@ -64,6 +64,7 @@ alias param='
         esac
     } <<<'
 
+alias param='param.__parse "${FUNCNAME[0]:-$0}" "$@" <<<'
 
 alias show_help_then_return_or_exit="param.help.show; return 1 2>/dev/null || exit 1; "
 
