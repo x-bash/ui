@@ -21,3 +21,16 @@ fn.map(){
     done
 }
 
+
+# fn.filter "filter_fun" 1 2 3
+# fn.filter "[ ((? / 2)) -eq 0 ]" 1 2 3
+fn.filter(){
+    :
+}
+
+# fn.filtermap "filter_fun" "map_fun" 1 2 3
+# fn.filtermap "[ ((? / 2)) -eq 0 ]" "echo " 1 2 3
+fn.filtermap(){
+    :
+}
+
