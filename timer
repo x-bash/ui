@@ -44,9 +44,10 @@ timer.new(){
     oo.create_new_function timer "$@"
 }
 
-# testcase: REPEAT=3 timer.measure "sleep 3s"
-#> REPEAT=3 timer.measure "sleep 3s"
-#3 3 3
+: <<DOCTEST
+> REPEAT=3 timer.measure "sleep 1s"
+1 1 1
+DOCTEST
 timer.measure(){
     # shellcheck disable=SC2034
     local start i
