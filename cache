@@ -17,47 +17,6 @@ str.md5(){
     fi
 }
 
-# TODO: check this function
-path.rmrf.safe(){
-    local i sw=0 filepath pattern pattern_list=() path_list=() hyphen2=0
-
-    for i in "$@"; do
-        if [ "$i" == -- ]; then
-            hyphen2=1
-        fi
-        if [ $hyphen2 -eq 0 ]; then
-            pattern_list+=("$i")
-        else
-            path_list+=("$i")
-        fi
-    done
-
-    if [ $hyphen2 -eq 0 ]; then
-        path_list=("${pattern_list[@]}")
-        pattern_list=()
-    fi
-
-    for filepath in "${path_list[@]}"; do
-        case "$filepath" in
-            /)      sw=1; printf "Detect rm -rf /" >&2      ;;
-            /bin*)  sw=1; printf "Detect rm -rf /bin" >&2   ;;
-            /home)  sw=1; printf "Detect rm -rf /home" >&2  ;;
-            *)      for pattern in "${pattern_list[@]}"; do
-                        sw=1
-                        [[ "$filepath" =~ $pattern ]]
-                        printf "Detect violation of RULES: %s" "$pattern" >&2
-                    done;;
-        esac
-    done
-
-    if [ "$sw" -eq 1 ]; then
-        printf "file.rm.safe cannot remove the critical files. If you insists, please directly using rm command." >&2
-        return 1
-    fi
-
-    rm -rf "$@"
-}
-
 cache.debug(){
     local IFS=
     [[ "$X_BASH_DEBUG" =~ (^|,)(std/)*cache($|,) ]] && printf "DBG: %s\n" "$@" >&2
@@ -155,6 +114,7 @@ cache.cmd.setup(){
 
 # Remember teardown if you have setup
 cache.cmd.teardown(){
+    @src path
     path.rmrf.safe "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
     unset X_CMD_X_BASH_CACHE_CMD_FOLDER
 }
