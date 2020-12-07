@@ -5,9 +5,10 @@
 # maintainer:   Li Junhao     
 
 timer.make(){
+    local t
+    t=$(date +%s)
     while [ $# -gt 0 ]; do
-        local timer=$1
-        eval "export $timer=$(date +%s)"
+        eval "export $1=$t"
         shift
     done
 }
