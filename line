@@ -1,5 +1,8 @@
 #! /usr/bin/env bash
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
 line.map(){
     local line
     while read -rd $'\n' line; do

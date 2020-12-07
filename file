@@ -1,6 +1,9 @@
 # shellcheck shell=bash
 # Doesn't work on some occations.
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
 file.exist_or_append() {
   local filename="$1"
   local string_to_append="$2"

@@ -1,5 +1,7 @@
 # shellcheck shell=bash
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
 
 # Cookbook 1.15
 # like watch command

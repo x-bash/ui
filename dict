@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
 : <<COMMENT
 1. If bash 4, using bash 4 associate arary
 2. If not bash 4, using variable definition for implementation

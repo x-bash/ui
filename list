@@ -1,4 +1,8 @@
 # shellcheck shell=bash
+
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
 @src std/oo
 
 list.make(){

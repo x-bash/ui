@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao      
+
 # TODO: we should only check status
 test.run.all() {
     local i

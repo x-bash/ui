@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
 # @final(){
 #     local latest_code=$(trap -p return)
 #     # Smart as I, using eval to avoid the real return statement being invoked when this function ends.

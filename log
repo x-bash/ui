@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
 ## Features:
 ## 1. Color text: 采用Formatter分离的方式
 ## 2. 

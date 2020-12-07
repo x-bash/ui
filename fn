@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
 # fn.map "echo hi" 1 2 3
 # I=? fn.map "echo ? hi" 1 2 3
 fn.map(){

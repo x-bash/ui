@@ -1,6 +1,9 @@
 # shellcheck shell=bash
 @src std/oo
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao     
+
 timer.make(){
     while [ $# -gt 0 ]; do
         local timer=$1
