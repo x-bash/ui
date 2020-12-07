@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Zhuang Linxiong        
+
 # https://stackoverflow.com/questions/1527049/how-can-i-join-elements-of-an-array-in-bash
 # join_ws also works
 
@@ -7,6 +10,10 @@
 # a=(1 2 3)
 # IFS=$'\n'; echo "${a[*]}"
 
+: <<DOCTEST
+> str.join "++" 1 2 3
+1++2++3
+DOCTEST
 str.join(){
     local sep=$1
     shift 1
@@ -52,16 +59,39 @@ str.trim_right(){
     echo -n "$var"
 }
 
-
+: <<DOCTEST
+> str.split : 1:2:3 a; echo $a
+1
+> str.split : 1:2:3
+1
+2
+3
+> result_list=($(str.split : 1:2:3)); echo "${#result_list[@]}" "${result_list[1]}"
+3 2
+DOCTEST
 # According to str.split
+
 str.split(){
-    if [ $# -eq 1 ]; then
-        tr "${1:?split char}" '\n'
-    else
-        echo "${2:?source string}" | tr "${1:?split char}" '\n'
-    fi
+    case $# in
+    0)  echo "help" >&2; return 1 ;;
+    1)  tr "${1:?split char}" '\n';;
+    2)  echo "${2:?source string}" | tr "${1:?split char}" '\n';;
+    *)
+        local split="$1"
+        local str="$2"
+        shift 2
+        for i in $(echo -e "${str//$split/\n}"); do
+            [ $# -eq 0 ] && break
+            eval "$1=\"$i\""
+            shift
+        done ;;
+    esac
 }
 
+: <<DOCTEST
+> str.upper "3abcDEF9"
+3ABCDEF9
+DOCTEST
 str.upper(){
     if [ "$#" -eq 0 ]; then
         tr "[:lower:]" "[:upper:]"
@@ -70,6 +100,10 @@ str.upper(){
     fi
 }
 
+: <<DOCTEST
+> str.lower "3abcDEF9"
+3abcdef9
+DOCTEST
 str.lower(){
     if [ "$#" -eq 0 ]; then
         tr "[:upper:]" "[:lower:]"
@@ -80,14 +114,26 @@ str.lower(){
 
 # other format using library
 
+: <<DOCTEST
+> str.starts_with "hi world" hi && echo yes
+yes
+DOCTEST
 str.starts_with(){
     [[ ${1:?Provide string} == ${2:?Provide prefix}* ]]
 }
 
+: <<DOCTEST
+> str.starts_with_regex "hi world" [a\-z]i && echo yes
+yes
+DOCTEST
 str.starts_with_regex(){
     [[ ${1:?Provide string} =~ ^${2:?Provide prefix in regex form} ]]
 }
 
+: <<DOCTEST
+> str.ends_with "hi world" ld && echo yes
+yes
+DOCTEST
 str.ends_with(){
     [[ ${1?:Provide string} == *${2:?Provide suffix} ]]
 }
@@ -96,63 +142,41 @@ str.ends_with_regex(){
     [[ ${1?:Provide string} =~ ${2:?Provide suffix}$ ]]
 }
 
+: <<DOCTEST
+> str.slice "hi world" 3:
+world
+> str.slice "hi world" 3:-1
+worl
+DOCTEST
 str.slice(){    
     local srcStr=${1:?Please input a string to slice}
-    local start=0, end=0
+    local start end
     
     case $# in
-        1) echo "$srcStr"; return 0;;
-        2) end=$2;;
-        3) start=$2; end=$3;;
-        *) echo "Too many parameters" 1>&2;;
+        1)  echo "$srcStr"; return 0;;
+        2)
+            if [[ "$2" == *:* ]]; then
+                start=${2%:*}
+                end=${2#*:}
+            else
+                start=$2
+                (( end=$2+1 ))
+            fi ;;
+        *)  echo "Too many parameters" 1>&2;;
     esac
-    
-    if [ "$end" -lt 0 ]; then
-        echo "${srcStr: -end}"
-    else
-        echo "${srcStr:start:end}"
-    fi
+
+    start=${start:-0}
+    end=${end:-${#srcStr}}
+    [ "$end" -lt 0 ] && (( end = ${#srcStr} + end )) 
+
+    # echo $start $end (( end - start )) >&2
+    echo "${srcStr:start:(( end - start ))}"
 }
 
-
-str.indexof(){
-    stra=$1
-    strb=$2
-    echo "stra=$stra"
-    echo "strb=$strb"
-    result=false
-    
-    lena=${#stra}
-    lenb=${#strb}
-    
-    if [ "$lena" -lt "$lenb" ]; then
-        echo "error lenb > lena" 1>&2
-        return 1
-    fi
-    
-    fora=$(( lena / lenb ))
-    
-    if [ $(( lena % lenb )) -ne 0 ]; then
-        ((fora++))
-    fi
-    
-    for (( i=0; $(( i + lenb <= lena ));i++ ))
-    do
-        res=$(str.slice "$stra" i $lenb)
-        echo "i=$i, "
-        echo "res=$res"
-        echo "lenb=$strb"
-        if [ "$res" = $strb ]; then
-            result=true
-            echo "result=$result, index=$i"
-            break
-        fi
-    done
-    if [ $result = false ]; then
-        echo "result=false"
-    fi
-}
-
+: <<DOCTEST
+> str.indexof "hi world" "world"
+3
+DOCTEST
 str.indexof(){
     local src=${1:?Provide src string}, tgt=${2:?Provide target str}
     local after_tgt_in_src=${src#*${tgt}}
@@ -270,7 +294,7 @@ str.md5(){
     local cmd
     if command -v md5 >/dev/null 2>&1; then
         cmd=md5
-    else
+    elif command -v md5sum >/dev/null 2>&1; then
         cmd=md5sum
     fi
     if [ -z "$1" ]; then
@@ -280,6 +304,10 @@ str.md5(){
     fi
 }
 
+: <<DOCTEST
+> str.sha "hi x-bash"
+b595755ac2c4a251bef3187cda6550e25e72752a
+DOCTEST
 str.sha(){
     local ALGOR=${ALGOR:-1}
     if command -v shasum >/dev/null 2>&1; then
@@ -295,6 +323,10 @@ str.sha(){
     
     # TODO: Install x and provide encryption
 }
+
+str.sha1(){     ALGOR=1 str.sha "$@"; }
+str.sha256(){   ALGOR=256 str.sha "$@"; }
+str.sha512(){   ALGOR=512 str.sha "$@"; }
 
 str.repr(){
     # echo "\"$(echo "$1" | sed s/\"/\\\\\"/g)\""
