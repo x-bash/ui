@@ -67,7 +67,7 @@ assert(){
         }
     '
 
-    local IFS=$'\n'
+    local IFS=$'\n' datum
 
     local val="$1" op="$2"; shift 2
     case "$op" in
@@ -111,33 +111,30 @@ assert(){
     =\[?\] | =?)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        local sep=${op:1:1}
-        [[ "$op" == '=['?']' ]] &&  sep=${op:2:1}
-        # shellcheck disable=SC2207
-        local data=( $(echo "$val" | tr "$sep" '\n') ) # should not quote '$(...)'
-        [ ${#data[@]} -eq 0 ] && data=("")
+        if [[ "$op" == '=['?']' ]]; then
+            IFS=${op:2:1}
+        else
+            IFS=${op:1:1}
+        fi
 
-        local datum
-        for datum in "${data[@]}"; do
-            if ! assert.within "$datum" "$@"; then
-                echo "ERROR: ['$val'] After splited with \'$sep\', element '$datum' does NOT match the string set" >&2
-                # param.help.show
-                return 1
-            fi
+        for datum in $val; do
+            assert.within "$datum" "$@" && continue
+            echo "ERROR: ['$val'] After splited with \'$IFS\', element '$datum' does NOT match the string set" >&2
+            # param.help.show
+            return 1
         done ;;
     =~\[?\] | =~? )
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        local sep=${op:2:1}
-        [[ "$op" == '=~['?']' ]] && sep=${op:3:1}
-        # shellcheck disable=SC2207
-        local data=( $(echo "$val" | tr "$sep" '\n') ) # should not quote '$(...)'
-        [ ${#data[@]} -eq 0 ] && data=("")
+        if [[ "$op" == '=~['?']' ]]; then
+            IFS=${op:3:1}
+        else
+            IFS=${op:2:1}
+        fi
 
-        local datum
-        for datum in "${data[@]}"; do
+        for datum in $val; do
             assert.within_regex "$datum" "$@" && continue
-            echo "ERROR: ['$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set." >&2
+            echo "ERROR: ['$val']. After splited with \'$IFS\', element '$datum' does NOT match the regex set." >&2
             # param.help.show
             return 1
         done ;;
@@ -145,28 +142,6 @@ assert(){
     esac
 
     return 0
-
-    # if [[ "$op" == '=~['?']' ]]; then
-    #     [[ ! "$name" == \\\$* ]] && {
-    #         echo "local $name 2>/dev/null"
-    #         echo "$name=$(list.repr "${data[@]}")"
-    #     }
-    #     return 0 # continue
-    # fi ;;
-
-    # if [[ "$op" == '=['?']' ]]; then
-    #     [[ ! "$name" == \\\$* ]] && {
-    #         echo "local $name 2>/dev/null"
-    #         echo "$name=$(list.repr "${data[@]}")"
-    #     }
-    #     return 0 # continue
-    # fi ;;
-
-    # [[ ! "$name" == \\\$* ]] && {
-    #     echo "local $name 2>/dev/null"
-    #     echo "$name=$(str.repr "$val")"
-    # }
-    # return 0
 }
 
 # assert(){
