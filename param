@@ -3,6 +3,8 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
+@src std/assert
+
 str.repr(){
     printf '"%s"' "${1//\"/\\\"}"
 }
@@ -76,29 +78,7 @@ param.help.show(){
     param.example.show >&2
 }
 
-param._type.regex(){
-    local c val="$1" # val="${1:?Provide value}"
-    shift
-    for c in "$@"; do
-        # echo "!!! $c" >&2
-        if [[ "$val" =~ ^($c)$ ]]; then
-            # echo "success: $val" >&2
-            return 0
-        fi
-    done
-    return 1
-}
 
-param._type.streq(){
-    local c val="$1" # val="${1:?Provide value}"
-    shift
-    for c in "$@"; do
-        if [ "$val" = "$c" ]; then
-            return 0
-        fi
-    done
-    return 1
-}
 
 param._type.check(){
     # shellcheck disable=SC2016
@@ -116,14 +96,14 @@ param._type.check(){
     case "$op" in
     =~)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-        if ! param._type.regex "$val" "$@"; then
+        if ! assert.within_regex "$val" "$@"; then
             echo "ERROR:  $name='$val' NOT match any regex defined" >&2
             param.help.show
             return 1
         fi;;
     =)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-        if ! param._type.streq "$val" "$@"; then
+        if ! assert.within "$val" "$@"; then
             # echo "$val" "$@" >&2
             echo "ERROR: $name='$val' Not one of the candidate set." >&2
             param.help.show
@@ -145,7 +125,7 @@ param._type.check(){
         fi
 
         [ "${#@}" -ne 0 ] && {
-            if ! param._type.streq "$val" "$@"; then
+            if ! assert.within "$val" "$@"; then
                 echo "ERROR: $name='$val' Not inside the $op set." >&2
                 param.help.show
                 return 1
@@ -162,7 +142,7 @@ param._type.check(){
 
         local datum
         for datum in "${data[@]}"; do
-            if ! param._type.streq "$datum" "$@"; then
+            if ! assert.within "$datum" "$@"; then
                 echo "ERROR: [$name='$val'] After splited with \'$sep\', element '$datum' does NOT match the string set" >&2
                 param.help.show
                 return 1
@@ -187,7 +167,7 @@ param._type.check(){
 
         local datum
         for datum in "${data[@]}"; do
-            param._type.regex "$datum" "$@" && continue
+            assert.within_regex "$datum" "$@" && continue
             echo "ERROR: [$name='$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set." >&2
             param.help.show
             return 1
@@ -370,7 +350,6 @@ param.__parse(){
     done
 
     # Step 1c: Setupt _varlist
-
     IFS=$'\n'
     echo "local _varlist 2>/dev/null"
     echo "_varlist=$(list.repr "${varlist[@]}")"
