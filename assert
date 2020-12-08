@@ -45,6 +45,11 @@ assert(){
     esac
 }
 
+: <<DOCTEST
+> assert.within 1abc 1abc1 1abc2 && echo yes
+> assert.within 1abc 1abc1 1abc2 1abc abc3 && echo yes
+yes
+DOCTEST
 assert.within(){
     local c value="$1"
     shift
@@ -56,18 +61,31 @@ assert.within(){
     return 1
 }
 
+
+: <<DOCTEST
+> assert.within_regex 1abc 1abc1 1abc2 && echo yes
+> assert.within_regex 1abc 1abc1 1abc2 1abc abc3 && echo yes
+yes
+> assert.within_regex 1abc 1abc1 1abc2 [0-9][a-z]+ abc3 && echo yes
+yes
+DOCTEST
 assert.within_regex(){
     local c value="$1"
     shift
     for c in "$@"; do
-        if [[ "$val" =~ ^($c)$ ]]; then
-        # if [[ "$value" =~ $c ]]; then
+        # echo "--- $value" "^($c)$" >&2
+        if [[ "$value" =~ ^($c)$ ]]; then
             return 0
         fi
     done
     return 1
 }
 
+: <<DOCTEST
+> assert.eq 1abc 1abc1 1abc2 2>/dev/null && echo yes
+> assert.eq 1abc 1abc 1abc && echo yes
+yes
+DOCTEST
 assert.eq(){
     local real=${1:?Real value}
     while [ $# -gt 1 ]; do
@@ -80,53 +98,101 @@ assert.eq(){
     return 0
 }
 
+
+: <<DOCTEST
+> assert.t "sleep 1s" 2>/dev/null && echo yes
+yes
+> assert.t "[ 5 -eq 3 ]" 2>/dev/null && echo yes
+> assert.t "[ 3 -eq 3 ]" 2>/dev/null && echo yes
+yes
+DOCTEST
 assert.t(){
     if eval "$*"; then
-        :
-    else
-        echo "${MSG:-"Expect command execution to be true: $*"}" >&2
-    fi
-}
-
-assert.f(){
-    if eval "$*"; then
-        echo "${MSG:-"Expect command execution to be false: $*"}" >&2
-    else
-        :
-    fi
-}
-
-# Two ways
-# assert.grep hi <<<"hello hi"
-# assert.grep hi <README.md
-assert.grep(){
-    if grep "${1:?Please provide grep pattern}"; then
         return 0
     else
-        echo "${MSG:-Grep Pattern Failed matching: $1}"
+        echo "${MSG:-"Expect command execution to be true: $*"}" >&2
         return 1
     fi
 }
 
+: <<DOCTEST
+> assert.f "sleep 1s" 2>/dev/null && echo yes
+> assert.f "[ 5 -eq 3 ]" 2>/dev/null && echo yes
+yes
+> assert.f "[ 3 -eq 3 ]" 2>/dev/null && echo yes
+DOCTEST
+assert.f(){
+    if eval "$*"; then
+        echo "${MSG:-"Expect command execution to be false: $*"}" >&2
+        return 1
+    else
+        return 0
+    fi
+}
+
+# There is two ways to use assert.grep
+: <<DOCTEST
+> assert.grep hi <<<"hello hi" 1>/dev/null && echo yes
+yes
+> assert.grep "test.doctest" 2>/dev/null <"${BASH_SOURCE[0]}" && echo yes
+yes
+DOCTEST
+assert.grep(){
+    if grep "${1:?Please provide grep pattern}" 1>/dev/null; then
+        return 0
+    else
+        echo "${MSG:-Grep Pattern Failed matching: $1}" >&2
+        return 1
+    fi
+}
+
+: <<DOCTEST
+> assert.float 1.2 1.0 1.1 34.1 && echo yes
+yes
+> assert.float 1.2 1.0 1.- 34 2>/dev/null && echo yes
+DOCTEST
 assert.float(){
     while [ $# -gt 0 ]; do
-        [[ "$1" =~ ^[\ \t]+[0-9]+(.[0-9]+)?[\ \t]+$ ]]
+        [[ "$1" =~ ^[\ \t]?[0-9]+(.[0-9]+)?[\ \t]?$ ]] || {
+            echo "${MSG:-"Expect var to be of float type: $*"}" >&2
+            return 1
+        }
         shift
     done
+    return 0
 }
 
+: <<DOCTEST
+> assert.int 1 2 3 " 5 " && echo yes
+yes
+> assert.int 1 2 1.2 3 2>/dev/null && echo yes
+DOCTEST
 assert.int(){
     while [ $# -gt 0 ]; do
-        [[ "$1" =~ ^[\ \t]+[0-9]+[\ \t]+$ ]]
+        [[ "$1" =~ ^[\ \t]?[0-9]+[\ \t]?$ ]] || {
+            echo "${MSG:-"Expect var to be of int type: $*"}" >&2
+            return 1
+        }
         shift
     done
+    return 0
 }
 
-assert.array(){
+: <<DOCTEST
+> a=3; b=(1 2 3); c=8; d=(3 8)
+> assert.var.is_array a b c 2>/dev/null && echo yes
+> assert.var.is_array b d && echo yes
+yes
+DOCTEST
+assert.var.is_array(){
     while [ $# -gt 0 ]; do
-        declare -p "${1:?Please provide variable name}" 2> /dev/null | grep -q '^declare \-a'
+        if ! declare -p "${1:?Please provide variable name}" 2> /dev/null | grep -q '^declare \-a'; then
+            echo "${MSG:-"Expect var to be of array type: $*"}" >&2
+            return 1
+        fi
         shift
     done
+    return 0
 }
 
 testFun(){
@@ -156,44 +222,52 @@ testFun(){
 # TIMEOUT=3 MSGURE="Fail if wrong" @testsuite "work1" testFun1
 # TIMEOUT=5 @ts "work2" testFun2
 
-assert.not_empty(){
+
+: <<DOCTEST
+> a=3; b=(1 2 3); c=
+> assert.var.not_empty a b c && echo yes
+> assert.var.not_empty a b && echo yes
+yes
+DOCTEST
+assert.var.not_empty(){
     for i in "$@"; do
         [ -n "${!i}" ] || return 1
     done
 }
 
-assert.str_length(){
-    local varname=${1:?Please provide variable name}
-    local val=${!$varname}
-    local len=${#val}
-    local expected_len=${2:?Expected length}
-    if [ "$len" -eq "$expected_len" ]; then
-        return 0
-    else
-        return 1
-    fi
-}
+# assert.strlen(){
+#     local varname=${1:?Please provide variable name}
+#     local val=${!$varname}
+#     local len=${#val}
+#     local expected_len=${2:?Expected length}
+#     if [ "$len" -eq "$expected_len" ]; then
+#         return 0
+#     else
+#         return 1
+#     fi
+# }
 
-assert.str_eq(){
-    local val=${!1:?Please provide variable name}
-    shift
-    for i in "$@"; do
-        if [ "$val" = "$i" ]; then
-            return 0
-        else
-            return 1
-        fi
-    done
-}
+# The following code is ridiculously wrong ...
+# assert.str_eq(){
+#     local val=${!1:?Please provide variable name}
+#     shift
+#     for i in "$@"; do
+#         if [ "$val" = "$i" ]; then
+#             return 0
+#         else
+#             return 1
+#         fi
+#     done
+# }
 
-assert.str_match_regex(){
-    local val=${!1:?Please provide variable name}
-    shift
-    for i in "$@"; do
-        if [[ "$val" =~ ^$i$ ]]; then
-            return 0
-        else
-            return 1
-        fi
-    done
-}
+# assert.str_match_regex(){
+#     local val=${!1:?Please provide variable name}
+#     shift
+#     for i in "$@"; do
+#         if [[ "$val" =~ ^$i$ ]]; then
+#             return 0
+#         else
+#             return 1
+#         fi
+#     done
+# }
