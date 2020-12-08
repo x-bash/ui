@@ -29,67 +29,85 @@ assert.selftest(){
 # assert "$repo" = gitee
 
 
-@assert(){
-    local value=${!1}
-    shift
-    assert "$value" "$@"
-}
+# @assert(){
+#     local value=${!1}
+#     shift
+#     assert "$value" "$@"
+# }
 
 # design principle:
 # when to use name evaluation?
 # 
 
-param._type.check(){
+: <<DOCTEST
+> assert "a1b2c" =~ [0-9]+ [a-z0-9]+ && echo yes
+yes
+> assert "a1b2c" = 123 a1b2 1b2c 2>/dev/null && echo yes
+> assert "a1b2c" = 123 a1b2 a1b2c 1b2c && echo yes
+yes
+> assert 123 =int && echo yes
+yes
+> assert a123 =int 2>/dev/null && echo yes
+> assert a1,a6,a3 =[,] a1 a2 a3 a4 a5 a6 2>/dev/null && echo yes
+yes
+> assert a1,a6,a3 =[,] a1 a2 a3 a4 a5 2>/dev/null && echo yes
+> assert a1,a6,a3 =, a1 a2 a3 a4 a5 a6 2>/dev/null && echo yes
+yes
+> assert a1,a6,a3 =, a1 a2 a3 a4 a5 2>/dev/null && echo yes
+> assert a1,a6,a3 =~[,] a[1-6] 2>/dev/null && echo yes
+yes
+> assert a1,a6,a3 =~[,] a[1-3] 2>/dev/null && echo yes
+DOCTEST
+assert(){
     # shellcheck disable=SC2016
     local CHOICE_LIST_MUST_NOT_BE_EMTPY='
         [ "${#@}" -eq 0 ] && {
             echo "ERROR: Please provide candidate list right after $op for parameter[$name]" >&2
-            param.help.show
             return 0
         }
     '
 
     local IFS=$'\n'
 
-    local name="$1" val="$2" op="$3"; shift 3
+    local val="$1" op="$2"; shift 2
     case "$op" in
     =~)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
         if ! assert.within_regex "$val" "$@"; then
-            echo "ERROR:  $name='$val' NOT match any regex defined" >&2
-            param.help.show
+            echo "ERROR: '$val' NOT match any regex defined" >&2
+            # param.help.show
             return 1
         fi;;
     =)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
         if ! assert.within "$val" "$@"; then
             # echo "$val" "$@" >&2
-            echo "ERROR: $name='$val' Not one of the candidate set." >&2
-            param.help.show
+            echo "ERROR: '$val' Not one of the candidate set." >&2
+            # param.help.show
             return 1
         fi ;;
     =str | =int)
         if [ -z "${val}" ]; then
-            echo "ERROR: A non-null value is expected for parameter: $name" >&2
-            param.help.show
+            echo "ERROR: A non-null value is expected for parameter" >&2
+            # param.help.show
             return 1
         fi
 
         if [ "$op" = "=int" ]; then
             if  [[ ! "$val" =~ ^[\ \t]*[0-9]+[\ \t]*$ ]]; then
-                echo "ERROR: $name='$val' An integer expected." >&2
-                param.help.show
+                echo "ERROR: '$val' An integer expected." >&2
+                # param.help.show
                 return 1
             fi
         fi
 
         [ "${#@}" -ne 0 ] && {
             if ! assert.within "$val" "$@"; then
-                echo "ERROR: $name='$val' Not inside the $op set." >&2
-                param.help.show
+                echo "ERROR: '$val' Not inside the $op set." >&2
+                # param.help.show
                 return 1
             fi 
-        };;
+        } ;;
     =\[?\] | =?)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
@@ -102,19 +120,11 @@ param._type.check(){
         local datum
         for datum in "${data[@]}"; do
             if ! assert.within "$datum" "$@"; then
-                echo "ERROR: [$name='$val'] After splited with \'$sep\', element '$datum' does NOT match the string set" >&2
-                param.help.show
+                echo "ERROR: ['$val'] After splited with \'$sep\', element '$datum' does NOT match the string set" >&2
+                # param.help.show
                 return 1
             fi
-        done
-
-        if [[ "$op" == '=['?']' ]]; then
-            [[ ! "$name" == \\\$* ]] && {
-                echo "local $name 2>/dev/null"
-                echo "$name=$(list.repr "${data[@]}")"
-            }
-            return 0 # continue
-        fi ;;
+        done ;;
     =~\[?\] | =~? )
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
@@ -127,38 +137,48 @@ param._type.check(){
         local datum
         for datum in "${data[@]}"; do
             assert.within_regex "$datum" "$@" && continue
-            echo "ERROR: [$name='$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set." >&2
-            param.help.show
+            echo "ERROR: ['$val']. After splited with \'$sep\', element '$datum' does NOT match the regex set." >&2
+            # param.help.show
             return 1
-        done
-
-        if [[ "$op" == '=~['?']' ]]; then
-            [[ ! "$name" == \\\$* ]] && {
-                echo "local $name 2>/dev/null"
-                echo "$name=$(list.repr "${data[@]}")"
-            }
-            return 0 # continue
-        fi ;;
+        done ;;
     *)  [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
     esac
 
-    [[ ! "$name" == \\\$* ]] && {
-        echo "local $name 2>/dev/null"
-        echo "$name=$(str.repr "$val")"
-    }
     return 0
+
+    # if [[ "$op" == '=~['?']' ]]; then
+    #     [[ ! "$name" == \\\$* ]] && {
+    #         echo "local $name 2>/dev/null"
+    #         echo "$name=$(list.repr "${data[@]}")"
+    #     }
+    #     return 0 # continue
+    # fi ;;
+
+    # if [[ "$op" == '=['?']' ]]; then
+    #     [[ ! "$name" == \\\$* ]] && {
+    #         echo "local $name 2>/dev/null"
+    #         echo "$name=$(list.repr "${data[@]}")"
+    #     }
+    #     return 0 # continue
+    # fi ;;
+
+    # [[ ! "$name" == \\\$* ]] && {
+    #     echo "local $name 2>/dev/null"
+    #     echo "$name=$(str.repr "$val")"
+    # }
+    # return 0
 }
 
-assert(){
-    local value="$1"
-    local op="$2"
-    shift 2
-    case "$op" in
-    =) assert.within "$value" "$@";;
-    =~) assert.within_regex "$value" "$@";;
-    *) return 1;;
-    esac
-}
+# assert(){
+#     local value="$1"
+#     local op="$2"
+#     shift 2
+#     case "$op" in
+#     =) assert.within "$value" "$@";;
+#     =~) assert.within_regex "$value" "$@";;
+#     *) return 1;;
+#     esac
+# }
 
 : <<DOCTEST
 > assert.within 1abc 1abc1 1abc2 && echo yes
