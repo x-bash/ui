@@ -56,7 +56,7 @@ fset.add() {
             return 1
         fi
     done
-    eval "$O+=( "$@" )"
+    eval "$O"'+=( "$@" )'
 } # Add files to set
 
 path.abs(){
@@ -178,26 +178,26 @@ fset.sort.by.mtime() {
     local O="${O:?Provide Object name}"
     local c=( "$(fset.ls | xargs ls -t)" )
     eval "$O=( \"\${c[@]}\" )"
-    [ "$1" == "-v"] && fset.ls
+    [ "$1" == "-v" ] && fset.ls
 }
 
 fset.sort.by.atime() {
     local O="${O:?Provide Object name}"
     local c=( "$(fset.ls | xargs ls -u)" )
     eval "$O=( \"\${c[@]}\" )"
-    [ "$1" == "-v"] && fset.ls
+    [ "$1" == "-v" ] && fset.ls
 }
 
 fset.sort.by.ctime() {
     local O="${O:?Provide Object name}"
     local c=( "$(fset.ls | xargs ls -U)" )
     eval "$O=( \"\${c[@]}\" )"
-    [ "$1" == "-v"] && fset.ls
+    [ "$1" == "-v" ] && fset.ls
 }
 
 fset.sort.by.size() {
     local O="${O:?Provide Object name}"
     local c=( "$(fset.ls | xargs ls -S)" )
     eval "$O=( \"\${c[@]}\" )"
-    [ "$1" == "-v"] && fset.ls
+    [ "$1" == "-v" ] && fset.ls
 }
