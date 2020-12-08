@@ -62,8 +62,8 @@ assert(){
     # shellcheck disable=SC2016
     local CHOICE_LIST_MUST_NOT_BE_EMTPY='
         [ "${#@}" -eq 0 ] && {
-            echo "ERROR: Please provide candidate list right after $op for parameter[$name]" >&2
-            return 0
+            echo "ERROR: Please provide candidate list right after $op" >&2
+            return 1
         }
     '
 
@@ -111,7 +111,7 @@ assert(){
     =\[?\] | =?)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        local sep=${op:1:1};
+        local sep=${op:1:1}
         [[ "$op" == '=['?']' ]] &&  sep=${op:2:1}
         # shellcheck disable=SC2207
         local data=( $(echo "$val" | tr "$sep" '\n') ) # should not quote '$(...)'
@@ -128,7 +128,7 @@ assert(){
     =~\[?\] | =~? )
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        local sep=${op:2:1};    
+        local sep=${op:2:1}
         [[ "$op" == '=~['?']' ]] && sep=${op:3:1}
         # shellcheck disable=SC2207
         local data=( $(echo "$val" | tr "$sep" '\n') ) # should not quote '$(...)'
