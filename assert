@@ -3,6 +3,11 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
+assert.selftest(){
+    @src std/test
+    test.doctest "${BASH_SOURCE[0]}"
+}
+
 # assert(){
 #     if [ $# -ne 0 ]; then
 #         eval "$*"
