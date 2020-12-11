@@ -50,7 +50,7 @@ kvcache.vkey2key(){
     esac
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > kvcache.make abc; O=abc
 > kvcache.get a; echo $?
 1

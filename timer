@@ -45,7 +45,7 @@ timer.new(){
     oo.create_new_function timer "$@"
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > REPEAT=3 timer.measure "sleep 1s"
 1 1 1
 DOCTEST

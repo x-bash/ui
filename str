@@ -15,7 +15,7 @@ str.selftest(){
     test.doctest "${BASH_SOURCE[0]}"
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.join "++" 1 2 3
 1++2++3
 DOCTEST
@@ -93,7 +93,7 @@ str.split(){
     esac
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.upper "3abcDEF9"
 3ABCDEF9
 DOCTEST
@@ -105,7 +105,7 @@ str.upper(){
     fi
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.lower "3abcDEF9"
 3abcdef9
 DOCTEST
@@ -119,7 +119,7 @@ str.lower(){
 
 # other format using library
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.starts_with "hi world" hi && echo yes
 yes
 DOCTEST
@@ -127,7 +127,7 @@ str.starts_with(){
     [[ ${1:?Provide string} == ${2:?Provide prefix}* ]]
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.starts_with_regex "hi world" [a\-z]i && echo yes
 yes
 DOCTEST
@@ -135,7 +135,7 @@ str.starts_with_regex(){
     [[ ${1:?Provide string} =~ ^${2:?Provide prefix in regex form} ]]
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.ends_with "hi world" ld && echo yes
 yes
 DOCTEST
@@ -147,7 +147,7 @@ str.ends_with_regex(){
     [[ ${1?:Provide string} =~ ${2:?Provide suffix}$ ]]
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.slice "hi world" 3:
 world
 > str.slice "hi world" 3:-1
@@ -178,7 +178,7 @@ str.slice(){
     echo "${srcStr:start:(( end - start ))}"
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.indexof "hi world" "world"
 3
 DOCTEST
@@ -309,7 +309,7 @@ str.md5(){
     fi
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.sha "hi x-bash"
 b595755ac2c4a251bef3187cda6550e25e72752a
 DOCTEST

@@ -39,7 +39,7 @@ assert.selftest(){
 # when to use name evaluation?
 # 
 
-: <<DOCTEST
+: <<'DOCTEST'
 > assert "a1b2c" =~ [0-9]+ [a-z0-9]+ && echo yes
 yes
 > assert "a1b2c" = 123 a1b2 1b2c 2>/dev/null && echo yes
@@ -155,7 +155,7 @@ assert(){
 #     esac
 # }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > assert.within 1abc 1abc1 1abc2 && echo yes
 > assert.within 1abc 1abc1 1abc2 1abc abc3 && echo yes
 yes
@@ -172,7 +172,7 @@ assert.within(){
 }
 
 
-: <<DOCTEST
+: <<'DOCTEST'
 > assert.within_regex 1abc 1abc1 1abc2 && echo yes
 > assert.within_regex 1abc 1abc1 1abc2 1abc abc3 && echo yes
 yes
@@ -191,7 +191,7 @@ assert.within_regex(){
     return 1
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > assert.eq 1abc 1abc1 1abc2 2>/dev/null && echo yes
 > assert.eq 1abc 1abc 1abc && echo yes
 yes
@@ -209,7 +209,7 @@ assert.eq(){
 }
 
 
-: <<DOCTEST
+: <<'DOCTEST'
 > assert.t "sleep 1s" 2>/dev/null && echo yes
 yes
 > assert.t "[ 5 -eq 3 ]" 2>/dev/null && echo yes
@@ -225,7 +225,7 @@ assert.t(){
     fi
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > assert.f "sleep 1s" 2>/dev/null && echo yes
 > assert.f "[ 5 -eq 3 ]" 2>/dev/null && echo yes
 yes
@@ -241,7 +241,7 @@ assert.f(){
 }
 
 # There is two ways to use assert.grep
-: <<DOCTEST
+: <<'DOCTEST'
 > assert.grep hi <<<"hello hi" 1>/dev/null && echo yes
 yes
 > assert.grep "test.doctest" 2>/dev/null <"${BASH_SOURCE[0]}" && echo yes
@@ -256,7 +256,7 @@ assert.grep(){
     fi
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > assert.float 1.2 1.0 1.1 34.1 && echo yes
 yes
 > assert.float 1.2 1.0 1.- 34 2>/dev/null && echo yes
@@ -272,7 +272,7 @@ assert.float(){
     return 0
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > assert.int 1 2 3 " 5 " && echo yes
 yes
 > assert.int 1 2 1.2 3 2>/dev/null && echo yes
@@ -288,7 +288,7 @@ assert.int(){
     return 0
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > a=3; b=(1 2 3); c=8; d=(3 8)
 > assert.var.is_array a b c 2>/dev/null && echo yes
 > assert.var.is_array b d && echo yes
@@ -333,7 +333,7 @@ testFun(){
 # TIMEOUT=5 @ts "work2" testFun2
 
 
-: <<DOCTEST
+: <<'DOCTEST'
 > a=3; b=(1 2 3); c=
 > assert.var.not_empty a b c && echo yes
 > assert.var.not_empty a b && echo yes
