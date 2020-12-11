@@ -523,7 +523,7 @@ gt.repo.create(){
 gt.org.repo.create(){
     # TODO: I don't know what does path means for an organization repo
     param '
-        owner   "organization name"
+        owner   "organization name" =~ [A-Za-z][A-Za-z0-9-]+
         path "provide path"
         description "repo description"
         homepage "repo home page"
