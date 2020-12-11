@@ -64,6 +64,8 @@ testsuite(){
 # Move doctest here
 # shellcheck shell=bash
 
+x-bash.debug.init doctest
+
 test.doctest.run_code(){
     local test_script_fifo=${test_script_fifo:?Provide test script fifo}
     local out_fifo=${out_fifo:?Provide out fifo}
@@ -115,6 +117,8 @@ test.doctest(){
                 continue
             fi
 
+            doctest.debug "starting running"
+
             start="" # clear out
             local cl
             block+=("> ")
@@ -146,8 +150,9 @@ $cl"
 
         # Must start with doctest
         # [[ "$line" =~ ^\<\<([[:alnum:]]+)$ ]] && {
-        [[ "$line" =~ ^\ *\:*\ *\<\<((doctest|DOCTEST)[A-Za-z0-9-]*)$ ]] && {
+        [[ "$line" =~ ^\ *\:*\ *\<\<\'((doctest|DOCTEST)[A-Za-z0-9-]*)\'$ ]] && {
             start="${BASH_REMATCH[1]}"
+            doctest.debug "Token FOUND: $start"
             block=()
         }
     done <"$1"

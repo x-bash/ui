@@ -64,7 +64,7 @@ str.trim_right(){
     echo -n "$var"
 }
 
-: <<DOCTEST
+: <<'DOCTEST'
 > str.split : 1:2:3 a; echo $a
 1
 > str.split : 1:2:3
