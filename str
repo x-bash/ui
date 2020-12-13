@@ -216,6 +216,16 @@ str.unix2dos(){
     fi
 }
 
+# Reference: https://stackoverflow.com/questions/5349718/how-can-i-repeat-a-character-in-bash
+str.repeat(){
+    local t character="${1:?Charactor}" number="${2:?Number of characters}"
+    case "${#character}" in
+    0) echo "Wrong" >&2;;
+    1) seq -f $character -s '' $number ;;
+    *) t="$(seq -f 1 -s '' $number)"; echo "${t//1/$character}" ;;
+    esac
+}
+
 # USAGE 1, remove in file: remove_eol_space filepath
 # USAGE 2, remove in file and backup with BAK as extensions: BAK='.bak' remove_eol_space filepath
 # USAGE 3, remove and output to stdout: cat filepath | remove_eol_space
@@ -343,6 +353,15 @@ str.repr(){
 # str.parse_arg_list(){
 
 # }
+
+# 无转义
+# <h> Show <h+></h+> </h>
+# $(bold "echo hi")
+
+str.xmltag(){
+    [[ aaa =~ <h>[:print:]+</h> ]]
+
+}
 
 
 ## Regular Expression design
