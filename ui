@@ -62,14 +62,27 @@ ui.banner() {
   cat
 }
 
-export UI_BLACK=0
-export UI_RED=1
-export UI_GREEN=2
-export UI_YELLOW=3
-export UI_BLUE=4
-export UI_MAGNETA=5
-export UI_CYAN=6
-export UI_BLACK=7
+# ui green bold -- 
+# $(ui green/bold -- "hello world")
+# $(ui green/bold -- "design")
+# $(ui :a1)
+# $(ui :a2)
+# $(ui :a3)
+
+# w_a1=$(tput)
+# w_a2=
+
+# ui
+{
+  export UI_BLACK=0
+  export UI_RED=1
+  export UI_GREEN=2
+  export UI_YELLOW=3
+  export UI_BLUE=4
+  export UI_MAGNETA=5
+  export UI_CYAN=6
+  export UI_BLACK=7
+}
 
 # shellcheck disable=SC2155
 {
@@ -77,6 +90,67 @@ export UI_BLACK=7
   export UI_BG_BLACK="$(tput setab 0)"
   export UI_FG_GREEN="$(tput setaf 2)"
   export UI_FG_WHITE="$(tput setaf 7)"
+}
+
+ui(){
+  local f=$1
+  case "$f" in
+    http://* | https://* | ftp://* |ftps://* | git://* ) ui.url "$f";;
+    :) ui.print_var "$@" ;;
+    *) ui.style "$@" ;;
+  esac
+}
+
+ui.url(){
+  echo "$(tput smul)${1:?Provide URL}$(tput rmul)"
+}
+
+ui.style(){
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      dim|debug) tput dim;;
+      info) tput setaf 4; tput bold;;
+      bold) tput bold ;;
+      white) tput setaf 0;;
+      red) tput setaf 1;;
+      green) tput setaf 2;;
+      warn|yellow) tput setaf 3;;
+      blue) tput setaf 4;;
+      purple|magneta) tput setaf 5;;
+      lightblue|cyan) tput setaf 6;;
+      black) tput setaf 7;;
+      reset) tput reset ;;
+      --) 
+        shift; 
+        echo -n "$@"
+        tput sgr0;
+        return 0
+    esac
+    shift
+  done
+}
+
+# ui 最好的设计，就是在tputs上面做扩展，但增加更丰富的功能
+
+ui.progress(){
+    local maxw number=80 stars space percent=$1
+    maxw="$(tput cols)"
+    [ "$maxw" -lt $number ] && number=$maxw
+    stars="$(seq -f "${2:-#}" -s '' "$number")"
+    space="$(seq -f " " -s '' "$number")"
+    local v=$(( ${#stars} * percent / 100 ))
+    local v100=$((100 - v))
+    echo -e "($percent %)|${stars:0:$v}${space:v:$v100}|"
+}
+
+ui.cursor.save(){
+    tput sc # save the cursor postition
+}
+
+ui.cursor.restore(){ 
+    tput rc # restore to the last cursor position
+    tput sc # save the cursor postition
+    tput ed # clr_eos: clear the characters until the end of screen
 }
 
 RUN_CMD_WITH_INFO() {
