@@ -109,7 +109,7 @@ ui.style(){
     while [ $# -gt 0 ]; do
         case "$1" in
             dim|debug)      tput dim;;
-            info)           tput setaf 4; tput bold;;
+            info)           tput setaf 6; tput bold;;
             bold)           tput bold;;
             white)          tput setaf 0;;
             red)            tput setaf 1;;
@@ -132,15 +132,70 @@ ui.style(){
 
 # ui 最好的设计，就是在tputs上面做扩展，但增加更丰富的功能
 
+ui.seperator(){
+    local sep maxw
+    maxw="$(tput cols)"
+    sep="$(seq -f "${1:-—}" -s '' "$maxw")"
+    echo "$sep"
+}
+
+# https://serverfault.com/questions/93407/what-command-prints-a-string-as-big-ascii-text-art-in-bash
+ui.cowsay(){
+    local IFS
+    cat <<-A
+ ______________________
+< ${*:-$text} >
+ ----------------------
+A
+
+    cat <<-'A'
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+A
+}
+
+# https://serverfault.com/questions/93407/what-command-prints-a-string-as-big-ascii-text-art-in-bash
+ui.cowsay.tux(){
+    local IFS
+    cat <<-A
+ ______________________
+< ${*:-$text} >
+ ----------------------
+A
+
+    cat <<-'A'
+   \
+    \
+        .--.
+       |o_o |
+       |:_/ |
+      //   \ \
+     (|     | )
+    /'\_   _/`\
+    \___)=(___/
+A
+}
+
 ui.progress(){
     local maxw number=80 stars space percent=$1
     maxw="$(tput cols)"
     [ "$maxw" -lt $number ] && number=$maxw
-    stars="$(seq -f "${2:-#}" -s '' "$number")"
+    stars="$(seq -f "${2:-$(printf "*")}" -s '' "$number")"
     space="$(seq -f " " -s '' "$number")"
     local v=$(( ${#stars} * percent / 100 ))
     local v100=$((100 - v))
-    echo -e "($percent %)|${stars:0:$v}${space:v:$v100}|"
+    printf "(%3d %%)|%s%s|" "$percent" "${stars:0:$v}" "${space:v:$v100}"
+}
+
+ui.cursor.hide(){
+    tput civis
+}
+
+ui.cursor.show(){
+    tput cvvis
 }
 
 ui.cursor.save(){
@@ -148,9 +203,82 @@ ui.cursor.save(){
 }
 
 ui.cursor.restore(){ 
+    tput.rc
+}
+
+ui.region.start(){
+    ui.cursor.save
+}
+
+# reference: https://unix.stackexchange.com/questions/88296/get-vertical-cursor-position/183121#183121
+ui.cursor.read(){
+    local cv ch IFS
+    # tput u7                  # Inquire for cursor position
+    # read -sdR CURPOS         # Read cursor position
+    # IFS=\; read cv ch <<<"${CURPOS#$'\e['}" # split $CURPOS
+
+    IFS=';' read -sdR -p $'\E[6n' cv ch
+    cv="${cv#*[}"
+
+    case $# in
+        0) echo "$cv $ch";;
+        1) eval "$1=$cv";;
+        *) 
+            eval "$1=$cv"; 
+            eval "$2=$ch";;
+    esac
+}
+
+ui.region.clear(){
     tput rc # restore to the last cursor position
-    tput sc # save the cursor postition
     tput ed # clr_eos: clear the characters until the end of screen
+}
+
+
+ui.region.clear.1(){
+    local end_row begin_row maxw space
+
+    maxw="$(tput cols)"
+    space="$(seq -f " " -s '' "$maxw")"
+
+    ui.cursor.read end_row
+    tput rc # restore to the last cursor position
+    # tput ed # clr_eos: clear the characters until the end of screen
+    ui.cursor.read begin_row
+    echo "$end_row $begin_row" >./debug.txt
+
+    for i in $(seq $(( end_row - begin_row )) ); do
+        echo "$space"
+    done
+    
+    tput rc
+}
+
+ui.region.reset(){
+    tput civis # hide cursor
+
+    local maxw end1_row end2_row
+    maxw="$(tput cols)"
+
+    ui.cursor.read end1_row
+    ui.region.clear
+
+    eval "$@" | while read n; do
+        printf "%s\n" "$n"
+        tput el
+        # printf "%-${maxw}s\n" "$n"
+        # echo "${n}" | wc  >>./debug.txt
+    done
+
+    ui.cursor.read end2_row
+
+    if [ "$end2_row" -lt "$end1_row" ]; then
+        for i in $( seq $(( end1_row - end2_row )) ); do
+            printf "%${maxw}s\n" " "
+        done
+    fi
+
+    tput cvvis
 }
 
 RUN_CMD_WITH_INFO() {

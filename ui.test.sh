@@ -1,31 +1,53 @@
-source ./ui
+#! /usr/bin/env bash
+
+# xrc ./ui
+. ./ui
+
+# $(ui.cowsay "$(ui.style info -- "$text")")
+# $(ui.cowsay "$text")
 
 update_ui(){
+    cat <<A
+$(ui.seperator)
+$(ui.style info -- Prepare the UI "$percentage")
+$(ui.progress "$percentage" "$symbol")
 
-    cat <<-A
-$(ui.style info -- Prepare the UI "$1")
-# $(ui.progress "$1")
 $(ui.style bold black -- Initializing the storage)
+$(ui.style info -- "$text")
+$(ui.seperator)
 A
 }
 
-i=-1
-ui.cursor.save
+main(){
 
-while true; do
+    local percentage text
+    ui.region.start
 
-    # Do the logic
-    (( i++ ))
-    
-    # Update the UI
-    ui.cursor.restore
-    update_ui $(( i * 10 ))
+    for ((percentage=0; percentage+=10; percentage < 100)); do
 
-    if [ "$i" -ge 10 ]; then
-        break
-    fi
+        # Do the logic
+        case $(( percentage / 10 % 2 )) in
+            0) text="Important to say: Percentage is even.
+1
+2"
+;;
+            1) text="Hia hia. Percentage is odd.
+hi";;
+        esac
 
-    sleep 1s
-done
+        # Update the UI
+        ui.region.reset \
+            symbol="*" update_ui
+
+        if [ "$percentage" -ge 100 ]; then
+            break
+        fi
+
+        sleep 1s
+    done
+
+}
+
+main
 
 
