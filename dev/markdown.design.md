@@ -38,4 +38,23 @@ markdown.loop "$s"
 1. 通过改变state来渲染
 2. 如果值改变，那么采用高亮，并高亮diff部分
 
+```bash
+s=`
+$(ui.command-line '$ gh pr checks')
+$(ui '$ gh pr checks')
+
+All checks were successful
+1 failing, 3 successful, and 1 pending checks
+
+- CodeQL 3m43s $(ui.url https://github.com/cli/cli/runs/123)
+
+$(ui.status a1) build (macos-latest) 4m18s      $(ui.url https://github.com/cli/cli/*)
+$(ui.status a2) build (macos-latest) 4m18s      $(ui.url https://github.com/cli/cli/*)
+$(ui.status a3) build (ubuntu-latest) 1m23s     $(ui.url https://github.com/cli/cli/*)
+$(ui.status a4) build (windows-latest) 4m43s    $(ui.url https://github.com/cli/cli/*)
+$(ui.status a5) lint 47s https://github.com/cli/cli/runs/123
+$(ui.status a6) lint 47s https://github.com/cli/cli/runs/123
+
+```
+
 
