@@ -64,7 +64,7 @@ testsuite(){
 # Move doctest here
 # shellcheck shell=bash
 
-x-bash.debug.init doctest
+x.debug.init doctest
 
 test.doctest.run_code(){
     local test_script_fifo=${test_script_fifo:?Provide test script fifo}
