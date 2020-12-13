@@ -25,7 +25,7 @@ http.make(){
     dict.put "url" "${2:?Provide url}"
 }
 
-x-bash.debug.init http
+x.debug.init http
 
 http.browse(){
     local BROWSER=${BROWSER:-$BROWSER}
