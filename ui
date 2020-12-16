@@ -177,7 +177,23 @@ ui.cursor.read(){
 
 ui.region.clear(){
     tput rc # restore to the last cursor position
-    tput ed # clr_eos: clear the characters until the end of screen
+    # tput ed # clr_eos: clear the characters until the end of screen
+}
+
+ui.debug(){
+    :
+}
+
+ui.debug.enable(){
+    ui.debug(){
+        echo "$@" >>./debug.txt
+    }
+}
+
+ui.debug.disable(){
+    ui.debug(){
+        :
+    }
 }
 
 
@@ -200,20 +216,49 @@ ui.region.clear.1(){
     tput rc
 }
 
+ui.debug.enable
 ui.region.reset(){
     tput civis # hide cursor
 
-    local maxw end1_row end2_row
+    local maxw maxr end1_row end2_row str linenum=0 IFS
     maxw="$(tput cols)"
+    maxr="$(tput lines)" # rows is wrong.
 
-    ui.cursor.read end1_row
+    str="$(eval "$@")"
+    while read n; do
+        (( linenum+=$(( ( ${#n} + maxw - 1 ) / maxw )) ))
+    done <<<"$str"
+
     ui.region.clear
+    ui.cursor.read end1_row
 
-    eval "$@" | while read n; do
+    ui.debug end1_row "$end1_row"
+    ui.debug linenum "$linenum"
+    ui.debug maxr "$maxr"
+
+    if (( end1_row + linenum > maxr )); then
+        ui.debug "Go up"
+        tput rc
+
+        # local diff=$(( (end1_row + linenum + 1) - maxr )) # $linenum + 1
+        local diff=$((linenum + 3))
+        for i in $(seq $diff); do
+            ui.cursor.read end1_row
+            printf "\n"
+        done
+
+        # tput cud $diff
+        tput cuu $diff
+        tput sc
+
+        ui.cursor.read end1_row
+        # ui.region.clear
+    fi
+
+    IFS='' # Important
+    echo "$str" |  while read -r n; do
         printf "%s\n" "$n"
         tput el
-        # printf "%-${maxw}s\n" "$n"
-        # echo "${n}" | wc  >>./debug.txt
     done
 
     ui.cursor.read end2_row
