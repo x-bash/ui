@@ -354,15 +354,6 @@ str.repr(){
 
 # }
 
-# 无转义
-# <h> Show <h+></h+> </h>
-# $(bold "echo hi")
-
-str.xmltag(){
-    [[ aaa =~ <h>[:print:]+</h> ]]
-
-}
-
 
 ## Regular Expression design
 
