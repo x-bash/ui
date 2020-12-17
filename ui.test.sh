@@ -27,7 +27,7 @@ A
 main(){
 
     local percentage text
-    ui.region.start
+    ui.region.init
 
     for ((percentage=0; percentage+=10; percentage < 100)); do
 
@@ -42,7 +42,7 @@ hi";;
         esac
 
         # Update the UI
-        ui.region.reset \
+        ui.region.update \
             symbol="*" update_ui
 
         if [ "$percentage" -ge 100 ]; then

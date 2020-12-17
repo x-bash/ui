@@ -152,10 +152,6 @@ ui.cursor.restore(){
     tput.rc
 }
 
-ui.region.start(){
-    ui.cursor.save
-}
-
 # reference: https://unix.stackexchange.com/questions/88296/get-vertical-cursor-position/183121#183121
 ui.cursor.read(){
     local cv ch IFS
@@ -196,11 +192,15 @@ ui.debug.disable(){
     }
 }
 
+ui.region.init(){
+    ui.cursor.save
+}
+
 # TODO: What if the text lines is more than the screen lines?
-# Preserve Top N lines?
+# Preserve Top N lines? -- This is out choice.
 # Provide the scroll design?
 # Using the screen design. Clear the screen. Put the codes in the screen. Refresh, then output the final snapshot.
-ui.region.reset(){
+ui.region.update(){
     tput civis # hide cursor
 
     local maxw maxr end1_row end2_row str linenum=0 IFS
