@@ -4,6 +4,7 @@
 . ./ui
 
 # $(ui.cowsay "$(ui.style info -- "$text")")
+# $(ui.cowsay "$(ui.style info -- "Hi Good work")" )
 # $(ui.cowsay "$text")
 
 update_ui(){
@@ -15,6 +16,9 @@ $(ui.progress "$percentage" "$symbol")
 $(ui.style bold black -- Initializing the storage)
 $(ui.style info -- "$text")
 $(ui.cowsay Hi Good work)
+$(ui.cowsay "$(ui.style info -- "Hi Good work")" )
+$(ui.cowsay "$(ui.style info -- "Hi Good work")" )
+$(ui.cowsay "$(ui.style info -- "Hi Good work")" )
 $(ui.seperator)
 A
 }

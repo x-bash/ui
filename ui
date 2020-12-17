@@ -186,7 +186,7 @@ ui.debug(){
 
 ui.debug.enable(){
     ui.debug(){
-        echo "$@" >>./debug.txt
+        echo "$@" >>./ui.debug.log
     }
 }
 
@@ -217,6 +217,11 @@ ui.region.clear.1(){
 }
 
 ui.debug.enable
+
+# TODO: What if the text lines is more than the screen lines?
+# Preserve Top N lines?
+# Provide the scroll design?
+# Using the screen design. Clear the screen. Put the codes in the screen. Refresh, then output the final snapshot.
 ui.region.reset(){
     tput civis # hide cursor
 
@@ -225,7 +230,7 @@ ui.region.reset(){
     maxr="$(tput lines)" # rows is wrong.
 
     str="$(eval "$@")"
-    while read n; do
+    while read -r n; do
         (( linenum+=$(( ( ${#n} + maxw - 1 ) / maxw )) ))
     done <<<"$str"
 
@@ -241,7 +246,7 @@ ui.region.reset(){
         tput rc
 
         # local diff=$(( (end1_row + linenum + 1) - maxr )) # $linenum + 1
-        local diff=$((linenum + 3))
+        local diff=$((linenum + 2)) # Experiment result
         for i in $(seq $diff); do
             ui.cursor.read end1_row
             printf "\n"
