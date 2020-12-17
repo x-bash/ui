@@ -234,9 +234,11 @@ ui.region.reset(){
         (( linenum+=$(( ( ${#n} + maxw - 1 ) / maxw )) ))
     done <<<"$str"
 
-    # if [ "$linenum" -gt "$maxr" ]; then
-
-    # fi
+    # Cut down the lines
+    if [ "$linenum" -ge "$maxr" ]; then
+        ui.debug linenum!!! "$linenum"
+        linenum=$(( maxr - 1 )) # Important Parameter Adjustment
+    fi
 
     ui.region.clear
     ui.cursor.read end1_row
@@ -248,9 +250,7 @@ ui.region.reset(){
     if (( end1_row + linenum > maxr )); then
         ui.debug "Go up"
         tput rc
-
-        # local diff=$(( (end1_row + linenum + 1) - maxr )) # $linenum + 1
-        local diff=$((linenum + 2)) # Experiment result
+        local diff=$((linenum)) # Important Parameter Adjustment
         for i in $(seq $diff); do
             ui.cursor.read end1_row
             printf "\n"
@@ -265,9 +265,14 @@ ui.region.reset(){
     fi
 
     IFS='' # Important
+    local l=0
     echo "$str" |  while read -r n; do
-        printf "%s\n" "$n"
-        tput el
+        # Important Parameter Adjustment
+        if (( l++ < "$linenum" )); then
+            printf "%s\n" "$n"
+            tput el
+        fi
+        
     done
 
     ui.cursor.read end2_row

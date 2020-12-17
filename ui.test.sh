@@ -6,6 +6,9 @@
 # $(ui.cowsay "$(ui.style info -- "$text")")
 # $(ui.cowsay "$(ui.style info -- "Hi Good work")" )
 # $(ui.cowsay "$text")
+# $(ui.cowsay "$(ui.style info -- "Hi Good work")" )
+# $(ui.cowsay "$(ui.style info -- "Hi Good work")" )
+
 
 update_ui(){
     cat <<A
