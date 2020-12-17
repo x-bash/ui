@@ -5,38 +5,23 @@
 
 # For some advancing usage. Refer to http://linuxcommand.org/lc3_adv_tput.php
 
+############################
+# Section 1: ui major function and facilities
+# Section 2: ui simple components
+# Section 3: ui style
+# Section 4: ui art
+# Section 5: tput facility
+# Section 6: region design
+# Section 7: screen design
+# Section 8: page design
+# Section 9: interative components
+############################
+
 # relis on tput command
-## tput screen facility
 
-ui.save_screen() { tput smcup; }
-ui.restore_screen() { tput rmcup; }
-ui.screen() {
-    ui.save_screen
-    eval "$@"
-    ui.restore_screen
-}
-
-@screen() { ui.screen "$@"; }
-
-ui.banner() {
-    # echo -n ${BG:-$UI_BG_BLUE}${FG:-$UI_FG_WHITE}
-    local FG BG
-    FG=$(tput setaf "${1:-$UI_WHITE}")
-    BG=$(tput setab "${2:-$UI_BLUE}")
-    echo "$FG$BG"
-    clear
-    cat
-}
-
-# ui green bold -- 
-# $(ui green/bold -- "hello world")
-# $(ui green/bold -- "design")
-# $(ui :a1)
-# $(ui :a2)
-# $(ui :a3)
-
-# w_a1=$(tput)
-# w_a2=
+############################
+# Section 1: ui major function and facilities
+############################
 
 ui(){
     local f=$1
@@ -47,10 +32,25 @@ ui(){
     esac
 }
 
-ui.url(){
-    echo "$(tput smul)${1:?Provide URL}$(tput rmul)"
+ui.debug(){
+    :
 }
 
+ui.debug.enable(){
+    ui.debug(){
+        echo "$@" >>./ui.debug.log
+    }
+}
+
+ui.debug.disable(){
+    ui.debug(){
+        :
+    }
+}
+
+############################
+# Section 1: ui style
+############################
 ui.style(){
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -76,7 +76,13 @@ ui.style(){
     done
 }
 
-# ui 最好的设计，就是在tputs上面做扩展，但增加更丰富的功能
+############################
+# Section 1: ui simple components
+############################
+
+ui.url(){
+    echo "$(tput smul)${1:?Provide URL}$(tput rmul)"
+}
 
 ui.seperator(){
     local sep maxw
@@ -84,6 +90,21 @@ ui.seperator(){
     sep="$(seq -f "${1:-—}" -s '' "$maxw")"
     echo "$sep"
 }
+
+ui.progress(){
+    local maxw number=80 stars space percent=$1
+    maxw="$(tput cols)"
+    [ "$maxw" -lt $number ] && number=$maxw
+    stars="$(seq -f "${2:-$(printf "*")}" -s '' "$number")"
+    space="$(seq -f " " -s '' "$number")"
+    local v=$(( ${#stars} * percent / 100 ))
+    local v100=$((100 - v))
+    printf "(%3d %%)|%s%s|" "$percent" "${stars:0:$v}" "${space:v:$v100}"
+}
+
+############################
+# Section 2: ui art
+############################
 
 # https://serverfault.com/questions/93407/what-command-prints-a-string-as-big-ascii-text-art-in-bash
 ui.cowsay(){
@@ -125,16 +146,11 @@ A
 A
 }
 
-ui.progress(){
-    local maxw number=80 stars space percent=$1
-    maxw="$(tput cols)"
-    [ "$maxw" -lt $number ] && number=$maxw
-    stars="$(seq -f "${2:-$(printf "*")}" -s '' "$number")"
-    space="$(seq -f " " -s '' "$number")"
-    local v=$(( ${#stars} * percent / 100 ))
-    local v100=$((100 - v))
-    printf "(%3d %%)|%s%s|" "$percent" "${stars:0:$v}" "${space:v:$v100}"
-}
+
+
+############################
+# Section 2: tput facility
+############################
 
 ui.cursor.hide(){
     tput civis
@@ -171,29 +187,17 @@ ui.cursor.read(){
     esac
 }
 
-ui.region.clear(){
-    tput rc # restore to the last cursor position
-    # tput ed # clr_eos: clear the characters until the end of screen
-}
-
-ui.debug(){
-    :
-}
-
-ui.debug.enable(){
-    ui.debug(){
-        echo "$@" >>./ui.debug.log
-    }
-}
-
-ui.debug.disable(){
-    ui.debug(){
-        :
-    }
-}
+############################
+# Section 2: region design
+############################
 
 ui.region.init(){
     ui.cursor.save
+}
+
+ui.region.clear(){
+    tput rc # restore to the last cursor position
+    # tput ed # clr_eos: clear the characters until the end of screen
 }
 
 # TODO: What if the text lines is more than the screen lines?
@@ -264,6 +268,45 @@ ui.region.update(){
     tput cvvis
 }
 
+
+############################
+# Section 2: screen design
+############################
+
+## tput screen facility
+
+ui.save_screen() { tput smcup; }
+ui.restore_screen() { tput rmcup; }
+ui.screen() {
+    ui.save_screen
+    eval "$@"
+    ui.restore_screen
+}
+
+@screen() { ui.screen "$@"; }
+
+ui.banner() {
+    # echo -n ${BG:-$UI_BG_BLUE}${FG:-$UI_FG_WHITE}
+    local FG BG
+    FG=$(tput setaf "${1:-$UI_WHITE}")
+    BG=$(tput setab "${2:-$UI_BLUE}")
+    echo "$FG$BG"
+    clear
+    cat
+}
+
+# ui green bold -- 
+# $(ui green/bold -- "hello world")
+# $(ui green/bold -- "design")
+# $(ui :a1)
+# $(ui :a2)
+# $(ui :a3)
+
+# w_a1=$(tput)
+# w_a2=
+
+
+
 RUN_CMD_WITH_INFO() {
     local INFO=$1
     shift 1
@@ -285,6 +328,11 @@ RUN_CMD_WITH_STEP() {
 # x con "**hello**"
 # x con "~hello~"
 # x con ""
+
+
+############################
+# Section 9: interactive component
+############################
 
 @src str # Rely on @src str, consider remove this dependency
 ui.yesno() {
