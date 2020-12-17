@@ -234,6 +234,10 @@ ui.region.reset(){
         (( linenum+=$(( ( ${#n} + maxw - 1 ) / maxw )) ))
     done <<<"$str"
 
+    # if [ "$linenum" -gt "$maxr" ]; then
+
+    # fi
+
     ui.region.clear
     ui.cursor.read end1_row
 
