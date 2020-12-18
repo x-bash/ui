@@ -8,6 +8,14 @@
 
 # One bash only have one queue?
 
+: <<'DOCTEST'
+> job.put 3 sleep 3s
+> job.put 3 sleep 3s
+> job.put 3 sleep 3s
+> job.get_active_size
+2
+DOCTEST
+
 job.get_active_size(){
     jobs -r | wc -l | tr -d ' '
 }
@@ -17,10 +25,8 @@ job.offer(){
     shift
     local cur
     cur=$(job.get_active_size)
-    # echo "size: $cur"
     if [ "$cur" -lt "${MAX:-3}" ]; then
-        # (eval "$@") 1>&1 2>&2 &
-        (eval "$@") 1>&1 2>&2
+        ( eval "$@" ) 1>&1 2>&2 &   # 1>&1 2>&2 works
         return 0
     fi
     return 1
