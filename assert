@@ -244,7 +244,7 @@ assert.f(){
 : <<'DOCTEST'
 > assert.grep hi <<<"hello hi" 1>/dev/null && echo yes
 yes
-> assert.grep "test.doctest" 2>/dev/null <"${BASH_SOURCE[0]}" && echo yes
+> assert.grep "test.doctest" 2>/dev/null <"$(xrc.which test)" && echo yes
 yes
 DOCTEST
 assert.grep(){
