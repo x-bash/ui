@@ -57,14 +57,14 @@ ui.style(){
             dim|debug)      tput dim;;
             info)           tput setaf 6; tput bold;;
             bold)           tput bold;;
-            white)          tput setaf 0;;
+            black)          tput setaf 0;;
             red)            tput setaf 1;;
             green)          tput setaf 2;;
             warn|yellow)    tput setaf 3;;
             blue)           tput setaf 4;;
             purple|magneta) tput setaf 5;;
             lightblue|cyan) tput setaf 6;;
-            black)          tput setaf 7;;
+            white)          tput setaf 7;;
             reset)          tput reset ;;
             --) 
                 shift; 
