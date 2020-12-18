@@ -5,54 +5,99 @@
 
 # @src std/@
 # shellcheck disable=SC2154
-alias tmp='__file_tmp_filepath="${TMPDIR}tmpfile.$RANDOM"; echo $__file_tmp_filepath; @defer "rm -f $__file_tmp_filepath"'
 
+# TODOC: Why NOT alias tmp="tmp.auto; tmp.get_path". Because it will encourage problematic usage.
+# a="$(tmp)" # tmp will clear the folder after subshell ends. Not our intention.
 
-: <<A
-Usage 1:
-tmp.setup
-@defer tmp.end
+# : <<A
+# Usage 0:
+# a="$(tmp /var/tcd)"
+# A
 
-a="$(tmp.get_path "/var/tcd")"
-A
+# : <<A
+# Usage 1:
+# tmp.init
+# @defer tmp.finalize
 
-: <<A
-Usage 2:
-tmp.auto
+# a="$(tmp "/var/tcd")"
+# A
 
-a="$(tmp.get_path "/var/tcd")"
-A
+# : <<A
+# Usage 2:
+# tmp.auto
 
-: <<A
-Usage 3:
-a="$(tmp.get_path "/var/tcd")"
-A
+# a="$(tmp "/var/tcd")"
+# A
 
-tmp.auto(){
-    tmp.begin
-    @src std/@
-    @defer tmp.end
-}
+alias tmp.auto="tmp.init; xrc std/@; @defer tmp.finalize"
 
-# Add timestamp
-_X_CMD_X_BASH_FILE_TMP_GLOBAL=
-tmp.begin(){
+# _X_CMD_X_BASH_FILE_TMP_GLOBAL=
+tmp.init(){
     # _X_CMD_X_BASH_FILE_TMP_GLOBAL="$(mktemp)"
     _X_CMD_X_BASH_FILE_TMP_GLOBAL="${TMPDIR}$(date +%Y%m%d%H%M%S)_${RANDOM}/"
     mkdir -p "$_X_CMD_X_BASH_FILE_TMP_GLOBAL"
 }
 
-tmp.get_path(){
+tmp_.folder(){
+    local res
+    if [ -z "$_X_CMD_X_BASH_FILE_TMP_GLOBAL" ]; then
+        res="${TMPDIR}_X_BASH_DEFAULT_TMP/"
+        [ -d "$res" ] || mkdir -p "$res"
+        echo "$res"
+    fi
+
+    echo "${_X_CMD_X_BASH_FILE_TMP_GLOBAL}"
+}
+
+tmp(){
+    local FOLDER_PATH
+    FOLDER_PATH="$(tmp_.folder)"
+
     local key="$1"
     if [ -z "$key" ]; then
-        printf "%s" "$_X_CMD_X_BASH_FILE_TMP_GLOBAL$(date +%Y%m%d%H%M%S)_${RANDOM}"
+        printf "%s" "${FOLDER_PATH}_UNNAMED_$(date +%Y%m%d%H%M%S)_${RANDOM}"
     else
         local vkey
-        vkey=$(printf "%s" "$vkey" | base64 | tr "=" _)
-        printf "%s" "${_X_CMD_X_BASH_FILE_TMP_GLOBAL}${vkey}"
+        vkey=$(printf "%s" "$key" | base64 | tr "=" _)
+        printf "%s" "${FOLDER_PATH}_NAMED_${vkey}"
     fi
 }
 
-tmp.end(){
-    rm -rf "$_X_CMD_X_BASH_FILE_TMP_GLOBAL"
+tmp.list()(         # Notice, using subshell
+    local FOLDER_PATH
+    FOLDER_PATH="$(tmp_.folder)"
+
+    shopt -s nullglob
+    cd "$FOLDER_PATH" || return 1
+    local i
+    for i in *; do
+        echo "$FOLDER_PATH$i"
+    done
+)
+
+tmp.list.named()(   # Notice, using subshell
+    FOLDER_PATH="$(tmp_.folder)"
+    shopt -s nullglob
+    cd "$FOLDER_PATH" || return 1
+    for i in _NAMED_*; do
+        echo "$FOLDER_PATH$i"
+    done
+)
+
+tmp.list.unnamed()( # Notice, using subshell
+    FOLDER_PATH="$(tmp_.folder)"
+    shopt -s nullglob
+    cd "$FOLDER_PATH" || return 1
+    local i
+    for i in _UNNAMED_*; do
+        echo "$FOLDER_PATH$i"
+    done
+)
+
+# better name? deinit? clear?
+# Please refer the following site before discussion:
+# https://softwareengineering.stackexchange.com/questions/163004/what-is-the-opposite-of-initialize-or-init
+tmp.finalize(){
+    FOLDER_PATH="$(tmp_.folder)"
+    rm -rf "$FOLDER_PATH"
 }
