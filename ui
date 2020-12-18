@@ -56,11 +56,13 @@ ui.style(){
         case "$1" in
             dim|debug)      tput dim;;
             info)           tput setaf 6; tput bold;;
+            error)          tput bold; tput setaf 1;;
+            warn)           tput bold; tput setaf 3;;
             bold)           tput bold;;
             black)          tput setaf 0;;
             red)            tput setaf 1;;
             green)          tput setaf 2;;
-            warn|yellow)    tput setaf 3;;
+            yellow)         tput setaf 3;;
             blue)           tput setaf 4;;
             purple|magneta) tput setaf 5;;
             lightblue|cyan) tput setaf 6;;
