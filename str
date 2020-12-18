@@ -65,29 +65,34 @@ str.trim_right(){
 }
 
 : <<'DOCTEST'
-> str.split : 1:2:3 a; echo $a
-1
 > str.split : 1:2:3
 1
 2
 3
+> str.split : 1:2:3:4:5 a b c - d; echo $a $b $c $d
+1 2 3 5
 > result_list=($(str.split : 1:2:3)); echo "${#result_list[@]}" "${result_list[1]}"
 3 2
 DOCTEST
 # According to str.split
+str_.split(){
+    # tr "${1:?split char}" '\n'
+    echo -e "${2//$1/\n}"
+}
 
 str.split(){
+    local IFS
     case $# in
     0)  echo "help" >&2; return 1 ;;
-    1)  tr "${1:?split char}" '\n';;
-    2)  echo "${2:?source string}" | tr "${1:?split char}" '\n';;
+    1)  str_.split "$1" "$(cat)";;
+    2)  str_.split "$1" "$2";;
     *)
         local split="$1"
         local str="$2"
         shift 2
-        for i in $(echo -e "${str//$split/\n}"); do
+        for i in $(str_.split "$split" "$str"); do
             [ $# -eq 0 ] && break
-            eval "$1=\"$i\""
+            [ "$1" != "-" ] && eval "$1=\"$i\""
             shift
         done ;;
     esac
