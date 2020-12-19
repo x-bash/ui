@@ -27,6 +27,21 @@ alias param='
         esac
     } <<<'
 
+# param_.gen_code(){
+#     local _param_code
+#     _param_code="$(param_.parse "$@")"
+#     case "$?" in
+#         0)  echo "_param_help_docs=();"
+#             echo "$_param_code" ;;
+#         1) echo "return 1 2>/dev/null || exit 1;" ;;
+#         *) echo "return 0 2>/dev/null || exit 0;" ;;
+#     esac
+# }
+
+# # shellcheck disable=SC2142
+# # shellcheck disable=SC2154
+# alias param='eval "$(param_.gen_code "${FUNCNAME[0]:-$0}" "$@")"'
+
 # alias param='param_.parse "${FUNCNAME[0]:-$0}" "$@" <<<'
 
 alias show_help_then_return_or_exit="param.help.show; return 1 2>/dev/null || exit 1; "
@@ -184,15 +199,13 @@ param_.parse(){
         if [[ "$varname" == *=* ]]; then
             default="${varname#*=}"
             varname="${varname%%=*}"
-            varlist+=("$varname")
-            vallist+=("$default") # Default value
             deflist+=("$default")
         else
             default=""
-            varlist+=("$varname")
-            vallist+=("")
             deflist+=("")
         fi
+        varlist+=("$varname")
+        vallist+=("")
         
         IFS=$'\n'
         local description op
@@ -288,9 +301,9 @@ param_.parse(){
     # Step 4: If value is NULL, use the default value. Then, Type-CHECK
     for i in "${!varlist[@]}"; do
         # For some starnge case, it might not be redundant.
-        # if [ "${vallist[i]}" == "" ]; then
-        #     vallist[i]=${deflist[i]}
-        # fi
+        if [ "${vallist[i]}" == "" ]; then
+            vallist[i]="${deflist[i]}"
+        fi
 
         # shellcheck disable=SC2206
         local choices=( ${choicelist[i]} )  # should not quote '$(...)'
@@ -302,7 +315,7 @@ param_.parse(){
         }
     done
 
-    # Step 5: Handle the parameter number
+    # Step 5: Handle the positional parameter
     local max_i=-1
     for i in "${!arg_deslist[@]}"; do
         [ $max_i -lt "$i" ] && max_i=$i
