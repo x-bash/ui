@@ -5,10 +5,7 @@
 
 xrc std/assert std/list std/dict std/str std/line
 
-param.debug(){
-    local IFS=
-    [[ "$X_BASH_DEBUG" =~ (^|,)param($|,) ]] && printf "DBG: %s" "$@" >&2
-}
+xrc.debug.init param
 
 # shellcheck disable=SC2142
 # shellcheck disable=SC2154
@@ -34,8 +31,6 @@ alias param='
 #     esac
 # }
 
-# # shellcheck disable=SC2142
-# # shellcheck disable=SC2154
 # alias param='eval "$(param_.gen_code "${FUNCNAME[0]:-$0}" "$@")"'
 
 # alias param='param_.parse "${FUNCNAME[0]:-$0}" "$@" <<<'
