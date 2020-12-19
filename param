@@ -3,11 +3,7 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-xrc std/assert
-xrc std/list
-xrc std/dict
-xrc std/str
-xrc std/line
+xrc std/assert std/list std/dict std/str std/line
 
 param.debug(){
     local IFS=
