@@ -19,7 +19,7 @@ param.debug(){
 alias param='
     local _param_code _param_help_docs=() 2>/dev/null; 
     { 
-        _param_code="$(param.__parse "${FUNCNAME[0]:-$0}" "$@")"; 
+        _param_code="$(param_.parse "${FUNCNAME[0]:-$0}" "$@")"; 
         case "$?" in
             0) eval "$_param_code" ;;
             1) return 1 2>/dev/null || exit 1 ;;
@@ -27,16 +27,16 @@ alias param='
         esac
     } <<<'
 
-# alias param='param.__parse "${FUNCNAME[0]:-$0}" "$@" <<<'
+# alias param='param_.parse "${FUNCNAME[0]:-$0}" "$@" <<<'
 
 alias show_help_then_return_or_exit="param.help.show; return 1 2>/dev/null || exit 1; "
 
 param.help.show(){
-    param.help "$funcname" "${_param_help_docs[@]}" >&2
-    param.example.show >&2
+    param_.param.show "$funcname" "${_param_help_docs[@]}" >&2
+    param_.example.show >&2
 }
 
-param._type.check(){
+param_.type.check(){
     local code name="$1" val="$2" op="$3"; shift 3;
     assert "$val" "$op" "$@"
     code=$?
@@ -66,7 +66,7 @@ param._type.check(){
     return 0
 }
 
-param.__parse.add_help_doc_item(){
+param_.parse.add_help_doc_item(){
     local IFS
 
     local name="${1}" # $1
@@ -96,7 +96,7 @@ param.__parse.add_help_doc_item(){
     _param_help_docs+=( "$name" "$default" "$type_desc" "$desc")
 }
 
-param.__parse(){
+param_.parse(){
     local i IFS=$'\n'
     local funcname="$1"; shift
 
@@ -137,13 +137,13 @@ param.__parse(){
                 arg_description=""
                 arg_oplist+=( "${all_arg_arr[1]}" )
                 arg_choicelist+=( "${all_arg_arr[*]:2}" ) 
-                param.__parse.add_help_doc_item "$varname" "$arg_description" "${all_arg_arr[1]}" "" "${all_arg_arr[@]:2}"
+                param_.parse.add_help_doc_item "$varname" "$arg_description" "${all_arg_arr[1]}" "" "${all_arg_arr[@]:2}"
                 ;;
             *)
                 arg_description="${all_arg_arr[1]}"
                 arg_oplist+=( "${all_arg_arr[2]}" )
                 arg_choicelist+=( "${all_arg_arr[*]:3}" ) 
-                param.__parse.add_help_doc_item "$varname" "$arg_description" "${all_arg_arr[2]}" "" "${all_arg_arr[@]:3}"
+                param_.parse.add_help_doc_item "$varname" "$arg_description" "${all_arg_arr[2]}" "" "${all_arg_arr[@]:3}"
                 ;;
             esac
             arg_deslist+=("$arg_description")
@@ -158,14 +158,14 @@ param.__parse(){
             = | =~ | =str | =str? | =float | =int | =\[?\] | =? | =~\[?\] | =~? )
                 rest_argv_op="${all_arg_arr[1]}"
                 rest_argv_choices=( "${all_arg_arr[@]:2}" )
-                param.__parse.add_help_doc_item "$varname" "" "${all_arg_arr[1]}" "" "${all_arg_arr[@]:2}"
+                param_.parse.add_help_doc_item "$varname" "" "${all_arg_arr[1]}" "" "${all_arg_arr[@]:2}"
                 ;;
             *)
                 rest_argv_des="${all_arg_arr[1]}"
                 rest_argv_op="${all_arg_arr[2]}"
                 rest_argv_choices=( "${all_arg_arr[@]:3}" )
 
-                param.__parse.add_help_doc_item "$varname" "$rest_argv_des" "${all_arg_arr[2]}" "" "${all_arg_arr[@]:3}"
+                param_.parse.add_help_doc_item "$varname" "$rest_argv_des" "${all_arg_arr[2]}" "" "${all_arg_arr[@]:3}"
                 ;;
             esac
             IFS=$'\n'
@@ -201,14 +201,14 @@ param.__parse(){
             description=""
             op="${all_arg_arr[1]}"
             choicelist+=( "${all_arg_arr[*]:2}" ) 
-            param.__parse.add_help_doc_item "$varname" "$description" "$op" "$default" "${all_arg_arr[@]:2}"
+            param_.parse.add_help_doc_item "$varname" "$description" "$op" "$default" "${all_arg_arr[@]:2}"
             ;;
             
         *)
             description="${all_arg_arr[1]}"
             op="${all_arg_arr[2]}"
             choicelist+=( "${all_arg_arr[*]:3}" )
-            param.__parse.add_help_doc_item "$varname" "$description" "$op" "$default" "${all_arg_arr[@]:3}"
+            param_.parse.add_help_doc_item "$varname" "$description" "$op" "$default" "${all_arg_arr[@]:3}"
             ;;
         esac
 
@@ -295,7 +295,7 @@ param.__parse(){
         # shellcheck disable=SC2206
         local choices=( ${choicelist[i]} )  # should not quote '$(...)'
 
-        param._type.check "${varlist[i]}" "${vallist[i]}" "${oplist[$i]}" "${choices[@]}"
+        param_.type.check "${varlist[i]}" "${vallist[i]}" "${oplist[$i]}" "${choices[@]}"
         [ $? -eq 1 ] && {
             param.help.show
             return 1
@@ -309,7 +309,7 @@ param.__parse(){
 
         # shellcheck disable=SC2206
         local choices=( ${arg_choicelist[i]} )  # should not quote '$(...)'
-        param._type.check "\\\$$i" "${rest_argv[i]}" "${arg_oplist[i]}" "${choices[@]}"
+        param_.type.check "\\\$$i" "${rest_argv[i]}" "${arg_oplist[i]}" "${choices[@]}"
         [ $? -eq 1 ] && return 1
     done
 
@@ -318,7 +318,7 @@ param.__parse(){
         for i in "${!rest_argv[@]}"; do
             [ "$i" -le "$max_i" ] && continue
             
-            param._type.check "\\\$$((i+1))" "${rest_argv[i]}" "$rest_argv_op" "${rest_argv_choices[@]}"
+            param_.type.check "\\\$$((i+1))" "${rest_argv[i]}" "$rest_argv_op" "${rest_argv_choices[@]}"
             [ $? -eq 1 ] && return 1
         done
     fi
@@ -329,7 +329,7 @@ param.__parse(){
 
 shopt -s expand_aliases
 
-param.help(){
+param_.param.show(){
     echo
     echo "----------------"
     local i funcname="${1#*/}"
@@ -337,12 +337,12 @@ param.help(){
     printf "%s:\n" "${funcname}" # "${FUNCNAME[0]}"
     while [ $# -gt 0 ]; do
         # echo "fff"
-        param_.help.item "$1" "$2" "$3" "$4"
+        param_.param.item "$1" "$2" "$3" "$4"
         shift 1; shift 1; shift 1; shift 1; # Not equal shift 4
     done
 }
 
-param_.help.item(){
+param_.param.item(){
     local varname="$1"
     local default="$2"
     local typedef="$3"
@@ -380,7 +380,7 @@ param_.help.item(){
 
 alias param.example='local _param_example 2>/dev/null; param_.__example _param_example'
 
-param.example.show(){
+param_.example.show(){
     # shellcheck disable=SC2154
     echo "$_param_example"
 }
