@@ -3,39 +3,11 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-@src std/assert
-
-str.repr(){
-    printf '"%s"' "${1//\"/\\\"}"
-}
-
-list.repr(){
-    printf "( "
-    for i in "$@"; do
-        printf '"%s" ' "${i//\"/\\\"}"
-    done
-    printf ")"
-}
-
-str.trim(){
-    local var="$*"
-    # remove leading whitespace characters
-    var="${var#"${var%%[![:space:]]*}"}"
-    # remove trailing whitespace characters
-    var="${var%"${var##*[![:space:]]}"}"
-    echo -n "$var"
-}
-
-line.to_array.trim.ignore_empty(){
-    local name=${1:?Array name}
-    local line arr=() IFS=
-    while read -r line; do
-        line="$(str.trim "$line")"
-        [ "$line" = "" ] && continue
-        arr+=("$line")
-    done <<< "$(cat -)"
-    eval "$name"'=("${arr[@]}")'
-}
+xrc std/assert
+xrc std/list
+xrc std/dict
+xrc std/str
+xrc std/line
 
 param.debug(){
     local IFS=
@@ -43,20 +15,6 @@ param.debug(){
 }
 
 # shellcheck disable=SC2142
-# alias param='if ! eval "$(param.__parse "${FUNCNAME[0]}" "$@")"; then param.help.show; return $? 2>/dev/null || exit $?; fi <<<'
-# alias param='eval "$(param.__parse "${FUNCNAME[0]}" "$@")" <<<'
-# alias param='{ eval "$(param.__parse "${FUNCNAME[0]:-$0}" "$@")"; } <<<'
-
-# alias param='
-#     local _param_code 2>/dev/null; 
-#     _param_code="$(param.__parse "${FUNCNAME[0]:-$0}" "$@")"
-#     if [ $? -eq 0 ]; then 
-#         eval "${_param_code}"
-#     else
-#         return $? 2>/dev/null || exit $?; 
-#     fi <<<'
-
-
 # shellcheck disable=SC2154
 alias param='
     local _param_code _param_help_docs=() 2>/dev/null; 
@@ -69,7 +27,7 @@ alias param='
         esac
     } <<<'
 
-alias param='param.__parse "${FUNCNAME[0]:-$0}" "$@" <<<'
+# alias param='param.__parse "${FUNCNAME[0]:-$0}" "$@" <<<'
 
 alias show_help_then_return_or_exit="param.help.show; return 1 2>/dev/null || exit 1; "
 
@@ -136,7 +94,6 @@ param.__parse.add_help_doc_item(){
     esac
 
     _param_help_docs+=( "$name" "$default" "$type_desc" "$desc")
-
 }
 
 param.__parse(){
@@ -380,12 +337,12 @@ param.help(){
     printf "%s:\n" "${funcname}" # "${FUNCNAME[0]}"
     while [ $# -gt 0 ]; do
         # echo "fff"
-        param.help.item "$1" "$2" "$3" "$4"
+        param_.help.item "$1" "$2" "$3" "$4"
         shift 1; shift 1; shift 1; shift 1; # Not equal shift 4
     done
 }
 
-param.help.item(){
+param_.help.item(){
     local varname="$1"
     local default="$2"
     local typedef="$3"
@@ -421,22 +378,22 @@ param.help.item(){
     printf "\n"
 }
 
-alias param.example='local _param_example 2>/dev/null; param.__example _param_example'
+alias param.example='local _param_example 2>/dev/null; param_.__example _param_example'
 
 param.example.show(){
     # shellcheck disable=SC2154
     echo "$_param_example"
 }
 
-param.__example(){
+param_.__example(){
     local name=$1 s
     shift
     # shellcheck disable=SC2034
-    s="$(param.__example.cat "$@")"
+    s="$(param_.__example.cat "$@")"
     eval "$name=\"\$s\""
 }
 
-param.__example.cat(){
+param_.__example.cat(){
     local i
     echo "----------------"
     printf "Example:\n"
