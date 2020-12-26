@@ -1,0 +1,27 @@
+# shellcheck shell=bash
+
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
+xrc list dict str
+
+
+
+redis.base64(){
+    # \r => \n fix bug for base64 command append \r in string.
+    echo -n "$1" | base64 | tr '=' '_' | tr -d '\r\n'
+}
+
+redis.unbase64(){
+    # \r => \n fix bug for base64 command append \r in string.
+    echo -n "$1" | tr '_' '=' | base64 --decode | tr -d '\r\n'
+}
+
+redis.hmset(){
+    local hashname="${1:?hash-name}"
+    shift
+    while [ "$#" -gt 1 ]; do
+        O="REDIS_$(redis.base64 "$hashname")" dict.put "${2:?key}" "${2:?value}"
+        shift 2
+    done
+}

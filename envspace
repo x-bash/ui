@@ -1,0 +1,68 @@
+
+scope.make(){
+    :
+}
+
+scope(){
+    :
+}
+
+# 环境变量乱入
+# envspace name token=121231 work=123123 url=""
+# envspace name -- ding.sendMsg "Ding ding"
+# envspace name -- ding.sendMsg "Ding ding"
+
+# envspace name -- ding.sendmsg "Dingding"
+
+
+# Just using argument
+
+# ding.token.load
+# ding.token.save
+# ding.token.show
+# ding.token.set
+# ding.sendmsg
+
+# gitee.default.user
+# gitee.default.config
+# gitee.default.save
+
+param.flags
+param.parse
+
+
+param.default std/gitee user edwinjhlee
+param.default std/gitee worker edwinjhlee
+param.default.load std/gitee
+
+O=std/gitee
+
+param.default 
+
+param '
+    scope std/gitee
+    user "Provider user info" =~ []
+    repo "Provide repo info"  =~ []
+'
+
+alias work='cat <<<'
+
+work "
+    scope std/$O
+"'
+    echo hi
+'
+
+scope.begin
+
+scope.end
+
+
+
+# scope a b -- dingding work abc cde
+# a=123 b=123 scope dingtalk
+
+# scope a a=3 b=3
+# O=a scope dingding work abc cde
+
+

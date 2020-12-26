@@ -1,0 +1,28 @@
+
+f(){
+    echo $a
+    echo $b
+}
+
+O=gitee config.type repo =~ work
+O=gitee config.type user =~ work
+O=gitee config.type work =~ work
+
+alias config.code='eval config.arg '
+
+create_repo(){
+    O=gitee eval "$(
+        config.arg name:repo user work
+    )"
+
+    O=gitee config.code
+}
+
+
+create_repo(){
+    create
+}
+
+gitee.param.load
+gitee.param.save
+

@@ -1,0 +1,26 @@
+# shellcheck shell=bash
+
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
+
+env.load(){
+    local IFS
+    while read -r line; do
+        eval "$line"
+        shift
+    done <"${1:?Please Provide Filepath}"
+}
+
+env.save(){
+    while [ $# -ge 2 ]; do
+        if [[ "$2" = *=* ]]; then
+            echo "$2"
+        else
+            echo "$2=${!2}"
+        fi
+        shift
+    done >"${1:?Please Provide Filepath}"
+}
+
+
