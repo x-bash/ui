@@ -1,43 +1,5 @@
 . param
 
-# help documentation
-# param '
-#     org "org name"
-#         :str
-#     repo "repo name" argENV
-#         :str
-#     access "repo work"
-#         [public] := public private all
-#     sort "sort order"
-#         [repo,time] :=[,] repo time update
-#     show "show order"
-#         [repo,time] :=~[,] (repo)|(time)|(update)    
-# '
-
-# param.example "org" "bash param.test.1 --repo hi"
-
-# param '
-#     org "org-name" 
-#         =str
-#     repo=hi "repo-name"
-#     access
-#         = public private all
-#     sort        
-#         =[,] repo time update
-#     show        
-#         =~[,] (repo)|(time)|(update)
-# '
-
-# param '
-#     org "org-name"              argenv    =str
-#     repo=hi "repo-name"         
-#     access                      arg       = public private all
-#     sort                        argENV    =[,] repo time update
-#     show                        arg       =~[,] (repo)|(time)|(update)
-# '
-## 
-
-
 param.example "Rebuild the page in sort order 'repo,time,update'" \
     "gt.repo.page.build --org x-bash --repo std --sort repo,time,update" \
     "Retrieve the page info" \
@@ -59,13 +21,13 @@ param '
 '
 
 
-# echo.name(){
-#     for i in "$@"; do
-#         echo "$i: ${!i}"
-#     done
-# }
+echo.name(){
+    for i in "$@"; do
+        echo "$i: ${!i}"
+    done
+}
 
-# echo.name org repo access sort show
+echo.name org repo access sort show
 
 # echo "${_varlist[@]}"
 

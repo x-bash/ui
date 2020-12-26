@@ -5,6 +5,8 @@
 
 xrc std/assert std/list std/dict std/str std/line
 
+source assert
+
 x.debug.init param
 
 X_BASH_PARAM_PREFIX_="X_BASH_STD_PARAM_DEFAULT_LIST_PREFIX_"
@@ -95,25 +97,18 @@ alias param='
         esac
     } <<<'
 
-param_.gen_code(){
-    local _param_code
-    _param_code="$(param_.parse "$@")"
-    case "$?" in
-        0)  echo "local _param_help_docs;"
-            echo "_param_help_docs=()"
-            echo "$_param_code" ;;
-        1) echo "return 1 2>/dev/null || exit 1;" ;;
-        *) echo "return 0 2>/dev/null || exit 0;" ;;
-    esac
-}
+# alias param='
+#     local _param_code _param_help_docs=() 2>/dev/null; 
+#     { 
+#         _param_code="$(param_.parse "${FUNCNAME[0]:-$0}" "$@")";
+#         echo "$_param_code" >>test.debug
+#         case "$?" in
+#             0) eval "$_param_code" ;;
+#             1) return 1 2>/dev/null || exit 1 ;;
+#             *) return 0 ;;
+#         esac
+#     } <<<'
 
-
-# shellcheck disable=SC2142
-# shellcheck disable=SC2154
-# alias param='eval "$(param_.gen_code "${FUNCNAME[0]:-$0}" "$@")" <<< '
-# alias param='param_.gen_code "${FUNCNAME[0]:-$0}" "$@" <<< '
-
-# alias param='param_.parse "${FUNCNAME[0]:-$0}" "$@" <<<'
 
 alias show_help_then_return_or_exit="param.help.show; return 1 2>/dev/null || exit 1; "
 
@@ -124,9 +119,19 @@ param.help.show(){
 
 param_.type.check(){
     local code name="$1" val="$2" op="$3"; shift 3;
-    assert "$val" "$op" "$@"
+
+    if [ -z "$op" ]; then
+        if [ -z "$val" ]; then
+            echo "Value should not be null. Parameter check ERROR: $name" >&2
+            param.help.show
+            return 1
+        fi
+    else
+        assert "$val" "$op" "$@"
+    fi
+
     code=$?
-    if [ $code -eq 1 ]; then
+    if [ "$code" -eq 1 ]; then
         echo "Parameter check ERROR: $name" >&2
         param.help.show
         return 1
@@ -363,6 +368,9 @@ param_.parse(){
     
     echo "$rest_argv_str ) 2>/dev/null"
 
+    echo "${varlist[@]}" >>test.debug
+    echo "${vallist[@]}" >>test.debug
+
     # Step 2b: Init the values with the enviroment
     for (( i=0; i < ${#varlist[@]}; ++i )); do
         [ -n "${vallist[i]}" ] && continue
@@ -377,6 +385,9 @@ param_.parse(){
         local value=${!name}
         [ -n "$value" ] && vallist[i]=$value
     done
+
+    echo "${varlist[@]}" >>test.debug
+    echo "${vallist[@]}" >>test.debug
 
     # Step 2c: Init the values with the default scope.
     if [[ -n "$scope" ]]; then
@@ -403,6 +414,9 @@ param_.parse(){
             return 1
         }
     done
+
+    echo "${varlist[@]}" >>test.debug
+    echo "${vallist[@]}" >>test.debug
 
     # Step 5: Handle the positional parameter
     local max_i=-1

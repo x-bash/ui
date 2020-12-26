@@ -183,7 +183,6 @@ assert.within_regex(){
     local c value="$1"
     shift
     for c in "$@"; do
-        # echo "--- $value" "^($c)$" >&2
         if [[ "$value" =~ ^($c)$ ]]; then
             return 0
         fi

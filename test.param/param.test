@@ -6,41 +6,36 @@
 work(){
 
     param '
+        default-scope el/work
         org     "Provide organization"
         repo    "Provide work"
         direction=abc "" == abc dec a
-        meter=333   ""   =~ [0-9]{1,3}
+        meter=333   ""   =~ [0-9]{1,5}
     '
 
-    echo "$org" "$repo" "$direction" "$meter" 
+    echo "-------begin--------"
+
+    local i
+
+    for i in org repo direction meter; do
+        echo "$i=${!i}"
+    done
+
     echo "rest args: ${_rest_argv[@]}"
+    echo "args: $@"
 
-    # @argenv org     "Provide organization"
-    # @argenv repo    "Provide work"
-    # @arg    direction=abc "" == abc dec a
-    # @arg    meter=cde   ""   =~ [0-9]{1,3}
-    
-    # support environment variable
-    # major variable could be in arguments
-
-    # org=edwinjhlee name=worker gt.repo.create
-
-    # local org=edwinjhlee
-    # name=worker gt.repo.create
-    
-    # # design code
-    # # if passing value, we should use environment variable, because it is more accurate
-    # # if flag, we should use argument, like --latest
-    # gt.repo.create --org=edwinjhlee --name=worker
-    
+    echo "--------end---------"
 }
+
+param.default el/work repo default-scope-repo
 
 work --org dyi --repo aircraft 1 2 3
 
-org=dyi repo=aircraft work 1 2 3
+# org=dyi repo=aircraft work 1 2 3
+work --org dyi  1 2 3
 
-work -h
+# work -h
 
-org=dyi repo=aircraft meter=6e work --meter 6e 1 2 3
+# org=dyi repo=aircraft meter=6e work --meter 6e 1 2 3
 
-declare -f work
+# declare -f work
