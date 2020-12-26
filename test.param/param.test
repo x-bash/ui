@@ -27,7 +27,11 @@ work(){
     echo "--------end---------"
 }
 
-param.default el/work repo default-scope-repo
+(
+    # work.repo default-scope-repo
+    param.default el/work repo default-scope-repo
+    work --org dyi  1 2 3
+)
 
 work --org dyi --repo aircraft 1 2 3
 

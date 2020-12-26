@@ -5,8 +5,6 @@
 
 xrc std/assert std/list std/dict std/str std/line
 
-source assert
-
 x.debug.init param
 
 X_BASH_PARAM_PREFIX_="X_BASH_STD_PARAM_DEFAULT_LIST_PREFIX_"
@@ -21,6 +19,7 @@ param.unbase64(){
     echo -n "$1" | tr '_' '=' | base64 --decode | tr -d '\r\n'
 }
 
+# Notice: scope and key should NEVER contains character '|'
 param.default(){
     case $# in
     0)
@@ -50,8 +49,8 @@ param.default(){
         local scope=$1 key=$2 val=$3 code
         code="$(param.base64 "${scope}|${key}")"
         local name="${X_BASH_PARAM_PREFIX_}${code}"
-        echo "$name"
-        eval "${name}=\"$val\"" ;;
+        # echo "$name"
+        eval "${name}=$(str.repr "$val")" ;;
     esac
 }
 
