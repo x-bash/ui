@@ -5,14 +5,89 @@
 
 xrc std/assert std/list std/dict std/str std/line
 
-xrc.debug.init param
+x.debug.init param
+
+X_BASH_PARAM_PREFIX_="X_BASH_STD_PARAM_DEFAULT_LIST_PREFIX_"
+
+param.base64(){
+    # \r => \n fix bug for base64 command append \r in string.
+    echo -n "$1" | base64 | tr '=' '_' | tr -d '\r\n'
+}
+
+param.unbase64(){
+    # \r => \n fix bug for base64 command append \r in string.
+    echo -n "$1" | tr '_' '=' | base64 --decode | tr -d '\r\n'
+}
+
+param.default(){
+    case $# in
+    0)
+        echo "At least provide scope." >&2 ;;
+        # local name="${X_BASH_PARAM_PREFIX}_"
+        # local i
+        # for i in "${!${name}@}"; do
+        #     echo "${!i}"
+        # done ;;
+    1)
+        local scope="$1"
+        local i fff a b
+        # ${!${X_BASH_PARAM_PREFIX}@}: bad substitution
+        for i in $(eval "echo \${!${X_BASH_PARAM_PREFIX_}@}"); do
+            fff="$(param.unbase64 "${i:${#X_BASH_PARAM_PREFIX_}}")"
+            a="$(echo "$fff" | cut -d '|' -f 1)"
+            [ ! "$scope" = "$a" ] && continue
+            b="$(echo "$fff" | cut -d '|' -f 2-)"
+            echo "${b}" "${!i}"
+        done ;;
+    2)  
+        local scope=$1 key=$2 code
+        code="$(param.base64 "${scope}|${key}")"
+        local name="${X_BASH_PARAM_PREFIX_}${code}"
+        echo "${!name}" ;;
+    3)  
+        local scope=$1 key=$2 val=$3 code
+        code="$(param.base64 "${scope}|${key}")"
+        local name="${X_BASH_PARAM_PREFIX_}${code}"
+        echo "$name"
+        eval "${name}=\"$val\"" ;;
+    esac
+}
+
+param.default.clear(){
+    local scope="${1:?Provide scope}"
+    local i fff a b
+    # ${!${X_BASH_PARAM_PREFIX}@}: bad substitution
+    for i in $(eval "echo \${!${X_BASH_PARAM_PREFIX_}@}"); do
+        fff="$(param.unbase64 "${i:${#X_BASH_PARAM_PREFIX_}}")"
+        a="$(echo "$fff" | cut -d '|' -f 1)"
+        [ ! "$scope" = "$a" ] && continue
+        unset "$i"
+    done
+}
+
+param.default.load(){
+    local scope="${1:?Provide scope}"
+    local fp="${2:?Provide File path}" 
+    local line key value
+    while read -r line; do
+        key="$(echo "$line" | cut -d ' ' -f 1)"
+        value="$(echo "$line" | cut -d ' ' -f 2-)"
+        param.default "$scope" "$key" "$value"
+    done < "$fp"
+}
+
+param.default.save(){
+    local scope="${1:?Provide scope}"
+    local fp="${2:?Provide File path}"
+    param.default "$scope" > "$fp"
+}
 
 # shellcheck disable=SC2142
 # shellcheck disable=SC2154
 alias param='
     local _param_code _param_help_docs=() 2>/dev/null; 
     { 
-        _param_code="$(param_.parse "${FUNCNAME[0]:-$0}" "$@")"; 
+        _param_code="$(param_.parse "${FUNCNAME[0]:-$0}" "$@")";
         case "$?" in
             0) eval "$_param_code" ;;
             1) return 1 2>/dev/null || exit 1 ;;
@@ -20,18 +95,23 @@ alias param='
         esac
     } <<<'
 
-# param_.gen_code(){
-#     local _param_code
-#     _param_code="$(param_.parse "$@")"
-#     case "$?" in
-#         0)  echo "_param_help_docs=();"
-#             echo "$_param_code" ;;
-#         1) echo "return 1 2>/dev/null || exit 1;" ;;
-#         *) echo "return 0 2>/dev/null || exit 0;" ;;
-#     esac
-# }
+param_.gen_code(){
+    local _param_code
+    _param_code="$(param_.parse "$@")"
+    case "$?" in
+        0)  echo "local _param_help_docs;"
+            echo "_param_help_docs=()"
+            echo "$_param_code" ;;
+        1) echo "return 1 2>/dev/null || exit 1;" ;;
+        *) echo "return 0 2>/dev/null || exit 0;" ;;
+    esac
+}
 
-# alias param='eval "$(param_.gen_code "${FUNCNAME[0]:-$0}" "$@")"'
+
+# shellcheck disable=SC2142
+# shellcheck disable=SC2154
+# alias param='eval "$(param_.gen_code "${FUNCNAME[0]:-$0}" "$@")" <<< '
+# alias param='param_.gen_code "${FUNCNAME[0]:-$0}" "$@" <<< '
 
 # alias param='param_.parse "${FUNCNAME[0]:-$0}" "$@" <<<'
 
