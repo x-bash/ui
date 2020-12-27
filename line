@@ -88,6 +88,7 @@ str.trim(){
 }
 
 line.to_array.trim(){
+    # TODO: local IFS
     local name=${1:?Array name}
     local line arr=()
     while read -r line; do
@@ -98,6 +99,7 @@ line.to_array.trim(){
 }
 
 line.to_array.trim.ignore_empty(){
+    # TODO: local IFS
     local name=${1:?Array name}
     local line arr=()
     while read -r line; do

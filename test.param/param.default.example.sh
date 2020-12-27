@@ -4,7 +4,7 @@
     param.default app/gitee a 1
     param.default app/gitee b 1
     param.default app/gitee c 1
-    param.default app/gitee ugly "\"abc"
+    param.default app/gitee ugly "\"abc'"
 
     echo "List all key/values in scope app/gitee:"
     param.default app/gitee

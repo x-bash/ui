@@ -20,5 +20,18 @@ echo "destroy repo"
 gt.repo.destroy x-bash/test123
 
 
+owner="edwinjhlee"
+gt.repo.create x-bash
+
+gt.owner(){
+    param.default app/gt owner "$1"
+}
+
+gt.owner edwinjhlee
+gt.repo.create x-bash
+
+gh.owner edwin.jh.lee
+gh.repo.create x-bash
+
 
 

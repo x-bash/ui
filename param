@@ -80,6 +80,7 @@ param.default.load(){
 param.default.save(){
     local scope="${1:?Provide scope}"
     local fp="${2:?Provide File path}"
+    mkdir -p "$(dirname "$fp")"
     param.default "$scope" > "$fp"
 }
 

@@ -14,7 +14,8 @@ oo.create_new_function(){
         # typeset -f | grep '[A-Za-z_-]\+ ()' | cut -d ' ' -f 1
         # for func in $(typeset -F | cut -d ' ' -f 3 | grep "^$prototype.*" | grep -v -E "(make)|(new)" | cut -d ' ' -f 1); do
         for func in $(typeset -f | grep '[A-Za-z_-]\+ ()' | cut -d ' ' -f 1 | grep "^$prototype.*" | grep -v -E "(make)|(new)" | cut -d ' ' -f 1); do
-            method=$(echo "$func" | cut -d '.' -f 2-)
+            # method=$(echo "$func" | cut -d '.' -f 2-)
+            method="${func:(( ${#prototype}+1 ))}"
             method_list+=("$obj.$method")
             eval "$obj.$method(){ O=$obj $func \"\$@\"; }"
         done

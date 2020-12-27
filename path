@@ -14,6 +14,24 @@ path.ext(){
     done
 }
 
+path.parts(){
+    # dirname filename extname
+    local filepath=$1
+
+    if [ $# -eq 1 ]; then
+        dirname "$filepath"
+        basename "$filepath"
+        path.ext "$filepath"
+        return 0
+    fi
+
+    local dirname=${2:-"-"} filename=${3:-"-"} extname=${4:-"-"}
+    
+    [ ! "$dirname" = - ] && eval "$dirname=$(dirname "$filepath")"
+    [ ! "$filename" = - ] && eval "$filename=$(basename "$filepath")"
+    [ ! "$extname" = - ] && eval "$extname=$(path.ext "$filepath")"
+}
+
 path.filename(){
     local filepath i
     for i in "$@"; do
