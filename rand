@@ -59,7 +59,7 @@ rand.lowercase(){ rand.string 'a-z'; }
 rand.uppercase(){ rand.string 'A-Z'; }
 
 rand.ip.address(){
-    :
+    echo "$(rand.int 0 255).$(rand.int 0 255).$(rand.int 0 255).$(rand.int 0 255)"
 }
 
 rand.email.address(){
@@ -85,9 +85,17 @@ rand.int(){
 }
 
 rand.float(){
-    noop
+    local ST=${1:?start number}
+    local EN=${2:?end number}
+    local fix=${3:-3}
+
+    local int floating 
+    int="$(rand.int "$ST" "$EN")"
+    floating="$(rand.int 0 $(( (10 ** fix) - 1 )) )"
+    if [ "$floating" -eq 0 ]; then
+        printf "%d" "$int"
+    else
+        printf "%.${fix}f" "$int.$floating"
+    fi
 }
 
-rand.str(){
-    noop
-}
