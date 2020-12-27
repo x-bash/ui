@@ -16,6 +16,7 @@
 2
 DOCTEST
 
+# TODO: rename
 job.get_active_size(){
     jobs -r | wc -l | tr -d ' '
 }
