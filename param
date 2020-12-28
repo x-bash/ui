@@ -54,6 +54,13 @@ param.default(){
     esac
 }
 
+param.default.delete(){
+    local scope=${1:?Provide scope} key=${2:?Provide key} code
+    code="$(param.base64 "${scope}|${key}")"
+    local name="${X_BASH_PARAM_PREFIX_}${code}"
+    unset "$name"
+}
+
 param.default.clear(){
     local scope="${1:?Provide scope}"
     local i fff a b
