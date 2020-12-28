@@ -64,28 +64,56 @@ str.trim_right(){
     echo -n "$var"
 }
 
+
+# https://stackoverflow.com/questions/40686922/howto-split-a-string-on-a-multi-character-delimiter-in-bash#comment99425158_47633817
+str.split(){
+    # tr "${1:?split char}" '\n'
+    local s IFS delimiter="${1:?Delemiter}" array_name  k
+    shift 1
+    case "$#" in
+        0)  echo "Please provide array name.
+str.split <delimiter> [string] <arary_name>
+" >&2; 
+            return 1; ;;        # TODO: Add details information
+        1)  array_name="$2";  
+            s=$(cat)  ;;
+        *)  s="$1"; 
+            array_name="$3"     ;;
+    esac
+
+    eval "$array_name=()"
+
+    s="$s$delimiter"
+    while [ "${#s}" -gt 0 ]; do 
+        k="${s%%"$delimiter"*}"
+        eval "$array_name+=( \"\$k\" )"
+        s="${s#*"$delimiter"}"
+
+        [ "$s" = "$delimiter" ] && break
+    done
+}
+
 : <<'DOCTEST'
-> str.split : 1:2:3
+> str.splitToLines : 1:2:3
 1
 2
 3
-> str.split : 1:2:3:4:5 -- a b c - d; echo $a $b $c $d
+> str.splitToLines : 1:2:3:4:5 -- a b c - d; echo $a $b $c $d
 1 2 3 5
-> result_list=($(str.split : 1:2:3)); echo "${#result_list[@]}" "${result_list[1]}"
+> IFS=$'\n' result_list=( $(str.splitToLines : 1:2:3) ); echo "${#result_list[@]}" "${result_list[1]}"
 3 2
 DOCTEST
 # According to str.split
 
 # TODO: handle the case: echo -e "a\nfbfc" | str_.split f
-str_.split(){
+str_.splitToLines(){
     # tr "${1:?split char}" '\n'
+    local s IFS
     case "$#" in
-        1) 
-            local s
-            s=$(cat);
-            echo -e "${s//$1/\n}"     ;;
-        *) echo -e "${2//$1/\n}"            ;;
+        1) s=$(cat)   ;;
+        *) s="$2"     ;;
     esac
+    echo -e "${s//$1/\n}"
 }
 
 # str.split - -- a b c
@@ -104,7 +132,7 @@ str.work(){
     echo "$#" "$@"
 }
 
-str.split(){
+str.splitToLines(){
     local IFS SEP=${1:?Please provide seperator}
     shift
 
@@ -114,17 +142,17 @@ str.split(){
         [ "$i" = -- ] && final=$sw
     done
 
-    # Strange case str.split : --
+    # Strange case str.splitToLines : --
     if [ "$final" -ne -1 ] && [ "$final" -ne $# ] ; then
         out=("${@:((final + 1))}")
         set -- "${@:0:final}"
     fi
 
     if [ ${#out[@]} -eq 0 ]; then
-        str_.split "$SEP" "$1"
+        str_.splitToLines "$SEP" "$1"
     else
         local sss=0
-        for i in $(str_.split "$SEP" "$1"); do
+        for i in $(str_.splitToLines "$SEP" "$1"); do
             local var=${out[sss]}
             (( sss++ ))
             [ -z "$var" ] && return 0
