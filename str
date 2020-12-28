@@ -64,6 +64,12 @@ str.trim_right(){
     echo -n "$var"
 }
 
+: <<'DOCTEST'
+> str.split , "$(echo -e "a\nc,b,c")" arr; echo "${#arr[@]}"
+3
+> IFS=$'\n' result_list=( $(str.splitToLines , "$(echo -e "a\nc,b,c")") ); echo "${#result_list[@]}"  # str.split supermacy over str.splitToLines
+4
+DOCTEST
 
 # https://stackoverflow.com/questions/40686922/howto-split-a-string-on-a-multi-character-delimiter-in-bash#comment99425158_47633817
 str.split(){
@@ -75,10 +81,10 @@ str.split(){
 str.split <delimiter> [string] <arary_name>
 " >&2; 
             return 1; ;;        # TODO: Add details information
-        1)  array_name="$2";  
+        1)  array_name="$1";  
             s=$(cat)  ;;
         *)  s="$1"; 
-            array_name="$3"     ;;
+            array_name="$2"     ;;
     esac
 
     eval "$array_name=()"
