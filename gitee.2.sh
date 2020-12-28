@@ -1,6 +1,9 @@
 # shellcheck shell=bash
 
-xrc std/http std/param
+# @src std/http std/param
+. http
+. param
+
 
 ############################
 # Section 1: Instantiation & Utilities

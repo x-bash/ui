@@ -69,33 +69,68 @@ str.trim_right(){
 1
 2
 3
-> str.split : 1:2:3:4:5 a b c - d; echo $a $b $c $d
+> str.split : 1:2:3:4:5 -- a b c - d; echo $a $b $c $d
 1 2 3 5
 > result_list=($(str.split : 1:2:3)); echo "${#result_list[@]}" "${result_list[1]}"
 3 2
 DOCTEST
 # According to str.split
+
+# TODO: handle the case: echo -e "a\nfbfc" | str_.split f
 str_.split(){
     # tr "${1:?split char}" '\n'
-    echo -e "${2//$1/\n}"
+    case "$#" in
+        1) 
+            local s
+            s=$(cat);
+            echo -e "${s//$1/\n}"     ;;
+        *) echo -e "${2//$1/\n}"            ;;
+    esac
+}
+
+# str.split - -- a b c
+str.work(){
+    local out=() sw=0 i
+    for i in "$@"; do
+        (( sw ++ ))
+        if [ "$i" = "--" ]; then
+            out=( "${@:((sw + 1))}" )
+            set -- "${@:0:sw}"
+            break
+        fi
+    done
+
+    echo "${#out[@]}" "${out[@]}"
+    echo "$#" "$@"
 }
 
 str.split(){
-    local IFS
-    case $# in
-    0)  echo "help" >&2; return 1 ;;
-    1)  str_.split "$1" "$(cat)";;
-    2)  str_.split "$1" "$2";;
-    *)
-        local split="$1"
-        local str="$2"
-        shift 2
-        for i in $(str_.split "$split" "$str"); do
-            [ $# -eq 0 ] && break
-            [ "$1" != "-" ] && eval "$1=\"$i\""
-            shift
-        done ;;
-    esac
+    local IFS SEP=${1:?Please provide seperator}
+    shift
+
+    local sw=0 i final=-1 out=()
+    for i in "$@"; do
+        (( sw++ ))
+        [ "$i" = -- ] && final=$sw
+    done
+
+    # Strange case str.split : --
+    if [ "$final" -ne -1 ] && [ "$final" -ne $# ] ; then
+        out=("${@:((final + 1))}")
+        set -- "${@:0:final}"
+    fi
+
+    if [ ${#out[@]} -eq 0 ]; then
+        str_.split "$SEP" "$1"
+    else
+        local sss=0
+        for i in $(str_.split "$SEP" "$1"); do
+            local var=${out[sss]}
+            (( sss++ ))
+            [ -z "$var" ] && return 0
+            [ "$var" != "-" ] && eval "$var=$(str.repr "$i")"
+        done
+    fi
 }
 
 : <<'DOCTEST'
