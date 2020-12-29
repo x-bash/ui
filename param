@@ -134,11 +134,7 @@ param_.type.check(){
     local code name="$1" val="$2" op="$3"; shift 3;
 
     if [ -z "$op" ]; then
-        if [ -z "$val" ]; then
-            echo "Value should not be null. Parameter check ERROR: $name" >&2
-            param.help.show
-            return 1
-        fi
+        return 0
     else
         assert "$val" "$op" "$@"
     fi
@@ -206,7 +202,7 @@ param_.parse(){
 
     local varlist=()    typelist=()     deslist=()
     local vallist=()    deflist=()      # default
-    local oplist=()     choicelist=()
+    local oplist=()     choicelist=()   required=()
 
     local arg_description arg_deslist=() arg_oplist=() arg_choicelist=()
     local rest_argv_des="" rest_argv_op="" rest_argv_choices=()
@@ -314,10 +310,12 @@ param_.parse(){
 
         local default
         if [[ "$varname" == *=* ]]; then
+            required+=("not-fill")
             default="${varname#*=}"
             varname="${varname%%=*}"
             deflist+=("$default")
         else
+            required+=("default")
             default=""
             deflist+=("")
         fi
@@ -423,7 +421,8 @@ param_.parse(){
             [[ ! "${typelist[i]}" = arg* ]] && continue
             local _varname=${varlist[i]}
             if [ "$parameter_name" == "$_varname" ]; then
-                vallist[i]=$1
+                vallist[i]=$1         
+                required[i]="arg"
                 shift
                 sw=1
                 break
@@ -452,7 +451,10 @@ param_.parse(){
         esac
 
         local value=${!name}
-        [ -n "$value" ] && vallist[i]=$value
+        if [ -n "$value" ]; then
+            vallist[i]=$value
+            required[i]="env"
+        fi
     done
 
     # echo "${varlist[@]}" >>test.debug
@@ -464,6 +466,7 @@ param_.parse(){
             [ -n "${vallist[i]}" ] && continue
             local name=${varlist[i]}
             vallist[i]=$(param.default "$scope" "$name")
+            required[i]="scope"
         done
     fi
 
@@ -472,6 +475,12 @@ param_.parse(){
         # For some starnge case, it might not be redundant.
         if [ "${vallist[i]}" == "" ]; then
             vallist[i]="${deflist[i]}"
+        fi
+
+        if [ "${required[i]}" = "not-fill" ]; then
+            echo "Value should not be null. Parameter check ERROR: $name" >&2
+            param.help.show
+            return 1
         fi
 
         # shellcheck disable=SC2206
