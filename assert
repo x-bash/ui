@@ -86,7 +86,14 @@ assert(){
             # param.help.show
             return 1
         fi ;;
-    =str | =int)
+    =str | =nullable | =int)
+
+        if [ "$op" = "=nullable" ]; then
+            if [ -z "$val" ]; then
+                return 0
+            fi
+        fi
+
         if [ -z "${val}" ]; then
             echo "ERROR: A non-null value is expected for parameter" >&2
             # param.help.show

@@ -36,10 +36,11 @@ work(){
 #     work --org dyi  1 2 3
 # )
 
-# work --org dyi --repo aircraft 1 2 3
+work --org dyi --repo aircraft --verbose 1 2 3
+work --org dyi --repo aircraft -v 1 2 3
 
 # org=dyi repo=aircraft work 1 2 3
-work --org dyi --repo hi --verbose 1 2 3
+work --org dyi  1 2 3
 
 # work -h
 

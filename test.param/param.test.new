@@ -3,9 +3,11 @@
 
 # org=d-y-i repo=work work --direction dee --meter
 
+-vd dee
+
 param work '
-    org     "Provide organization"
-    repo    "Provide work"
+    org     "Provide organization"      =nullable
+    repo    "Provide work"              =nullable
     direction=abc "" == abc dec a
     meter=333   ""   =~ [0-9]{1,3}
 '

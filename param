@@ -44,6 +44,7 @@ param.default(){
         local scope=$1 key=$2 code
         code="$(param.base64 "${scope}|${key}")"
         local name="${X_BASH_PARAM_PREFIX_}${code}"
+        declare -p "$name" 1>/dev/null 2>&1 || return 1
         echo "${!name}" ;;
     3)  
         local scope=$1 key=$2 val=$3 code
@@ -131,15 +132,13 @@ param.help.show(){
 }
 
 param_.type.check(){
-    local code name="$1" val="$2" op="$3"; shift 3;
+    local code=0 name="$1" val="$2" op="$3"; shift 3;
 
-    if [ -z "$op" ]; then
-        return 0
-    else
+    if [ -n "$op" ]; then
         assert "$val" "$op" "$@"
+        code=$?
     fi
-
-    code=$?
+    
     if [ "$code" -eq 1 ]; then
         echo "Parameter check ERROR: $name" >&2
         param.help.show
@@ -310,12 +309,12 @@ param_.parse(){
 
         local default
         if [[ "$varname" == *=* ]]; then
-            required+=("not-fill")
+            required+=("default")
             default="${varname#*=}"
             varname="${varname%%=*}"
             deflist+=("$default")
         else
-            required+=("default")
+            required+=("not-fill")
             default=""
             deflist+=("")
         fi
@@ -464,9 +463,11 @@ param_.parse(){
     if [[ -n "$scope" ]]; then
         for (( i=0; i < ${#varlist[@]}; ++i )); do
             [ -n "${vallist[i]}" ] && continue
-            local name=${varlist[i]}
-            vallist[i]=$(param.default "$scope" "$name")
-            required[i]="scope"
+            local name=${varlist[i]} v
+            if v=$(param.default "$scope" "$name"); then
+                vallist[i]=$v
+                required[i]="scope"
+            fi
         done
     fi
 
@@ -478,7 +479,7 @@ param_.parse(){
         fi
 
         if [ "${required[i]}" = "not-fill" ]; then
-            echo "Value should not be null. Parameter check ERROR: $name" >&2
+            echo "Value should not be null. Parameter check ERROR: ${varlist[i]}" >&2
             param.help.show
             return 1
         fi
