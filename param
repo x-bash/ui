@@ -75,7 +75,13 @@ param.default.clear(){
 
 param.default.load(){
     local scope="${1:?Provide scope}"
-    local fp="${2:?Provide File path}" 
+    local fp="${2:?Provide File path}"
+
+    if [ ! -r "$fp" ]; then
+        param.debug "Readable config file not found: $fp"
+        return 0
+    fi
+
     local line key value
     while read -r line; do
         key="$(echo "$line" | cut -d ' ' -f 1)"
@@ -250,7 +256,7 @@ param_.parse(){
                 boolvar_short_str+=" "
                 boolvar_desc+=("$short")
             fi
-            echo "local $full="
+            echo "local $full= 2>/dev/null"
             continue
         fi
 
@@ -374,7 +380,7 @@ param_.parse(){
                 short=${boolvar_short[i]}
                 full=${boolvar[i]}
                 if [[ "$p" = *${short}* ]]; then
-                    echo "local $full=1"
+                    echo "local $full=true 2>/dev/null"
                     sw=1
                     break
                 fi
@@ -400,7 +406,7 @@ param_.parse(){
         for i in "${!boolvar[@]}"; do
             full=${boolvar[i]}
             if [ "$parameter_name" = "$full" ]; then
-                echo "local $full=1"
+                echo "local $full=true 2>/dev/null"
                 sw=1
                 break
             fi
