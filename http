@@ -296,10 +296,10 @@ http_.request(){
 
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
         http.debug curl -D "$header_filepath" -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path"
-        eval curl -D "$header_filepath"  -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path" 2>(http.debug) 1>"$data_filepath"
+        eval curl -D "$header_filepath"  -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http.debug)
     else
         http.debug curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path"
-        eval curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path" 2>(http.debug) 1>"$data_filepath"
+        eval curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http.debug)
     fi
     rm "$tmp"
 
@@ -337,9 +337,9 @@ http.post.text(){ X=POST http_.request.json_body "$@"; }
 http.post.bin(){ X=POST http_.request.json_body "$@"; }
 
 http.get() (    # Notice: Using subshell
-        url=$1;  shift
-        http.qs.mput "$@"
-        X=GET http_.request "$url"
+    url=$1;  shift
+    http.qs.mput "$@"
+    X=GET http_.request "$url"
 )
 
 http.put(){ X=PUT http_.request "$@"; }
