@@ -11,6 +11,7 @@ work(){
         repo    "Provide work"
         direction=abc "" == abc dec a
         meter=333   ""   =~ [0-9]{1,5}
+        --verbose -v "verbose log switch"
     '
 
     echo "-------begin--------"
@@ -21,22 +22,24 @@ work(){
         echo "$i=${!i}"
     done
 
+    echo "verbose: $verbose"
+
     echo "rest args: ${_rest_argv[@]}"
     echo "args: $@"
 
     echo "--------end---------"
 }
 
-(
-    # work.repo default-scope-repo
-    param.default el/work repo default-scope-repo
-    work --org dyi  1 2 3
-)
+# (
+#     # work.repo default-scope-repo
+#     param.default el/work repo default-scope-repo
+#     work --org dyi  1 2 3
+# )
 
-work --org dyi --repo aircraft 1 2 3
+# work --org dyi --repo aircraft 1 2 3
 
 # org=dyi repo=aircraft work 1 2 3
-work --org dyi  1 2 3
+work --org dyi --repo hi --verbose 1 2 3
 
 # work -h
 

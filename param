@@ -209,6 +209,7 @@ param_.parse(){
     line.to_array.trim.ignore_empty linelist
 
     local scope=""
+    local boolvar=() boolvar_short=() boolvar_short_str="" boolvar_desc=()
 
     # Step 1: Parsing into tokens
     # for line in "${linelist[@]}"; do
@@ -233,6 +234,26 @@ param_.parse(){
         fi
 
         varname="${all_arg_arr[0]}"
+
+        ###### BEGIN: handle boolean parameter
+        # --verbise -v "Provide version"
+        if [[ "$varname" = --* ]]; then
+            local full="${varname:2}"
+            boolvar+=("$full")
+            local short="${all_arg_arr[1]}"
+            if [[ "$short" = -? ]]; then
+                boolvar_short+=("${short:1:1}")
+                boolvar_short_str+="${short:1:1}"
+                boolvar_desc+=("${all_arg_arr[2]}")
+            else
+                boolvar_short+=("")
+                boolvar_short_str+=" "
+                boolvar_desc+=("$short")
+            fi
+            echo "local $full=false"
+            continue
+        fi
+
         ###### BEGIN: handle #1 like
         if [[ "$varname" =~ \#[[:digit:]]+ ]]; then
             # echo "KKK $varname" >&2
@@ -345,6 +366,26 @@ param_.parse(){
             return 1
         fi
 
+        # local boolvar=() boolvar_short=() boolvar_desc=()
+
+        if [[ "$parameter_name" =~ ^-[A-Za-z0-9]+$ ]]; then
+            local i short full p="${parameter_name:1}" sw=0
+            for i in "${!boolvar_short[@]}"; do
+                short=${boolvar_short[i]}
+                full=${boolvar[i]}
+                if [[ "$p" = *${short}* ]]; then
+                    echo "local $full=true"
+                    sw=1
+                    break
+                fi
+            done
+
+            if [ $sw = 1 ]; then
+                shift
+                continue
+            fi
+        fi
+
         if [[ ! "$parameter_name" == --* ]]; then
             rest_argv_str+="$(str.repr "$parameter_name") "
             rest_argv+=("$parameter_name")
@@ -353,6 +394,23 @@ param_.parse(){
         fi
 
         parameter_name=${parameter_name:2}
+
+        # boolean variable
+        local i sw=0
+        for i in "${!boolvar[@]}"; do
+            full=${boolvar[i]}
+            if [ "$parameter_name" = "$full" ]; then
+                echo "local $full=true"
+                sw=1
+                break
+            fi
+        done
+        if [ $sw = 1 ]; then
+            shift
+            continue
+        fi
+
+        # Not boolean variable
         shift
         local sw=0 i
         for i in "${!varlist[@]}"; do
