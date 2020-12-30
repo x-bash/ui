@@ -22,3 +22,24 @@ reflect.variable.rename(){
     eval "$new_name=\$$original_name"
     unset "$original_name"
 }
+
+reflect.command.establish(){
+    eval "$(
+        local rootcmd="${1:?Root Command}" 
+        local cmd="$rootcmd" trycmd="$rootcmd"
+        shift
+        while [ $# -gt 0 ]; do
+            trycmd+=".$1"
+            if declare -f "$trycmd" 1>/dev/null 2>/dev/null; then
+                cmd="$trycmd"
+                shift
+            else
+                echo "$cmd" "$@"
+                if [ "$trycmd" = "$rootcmd" ]; then
+                    echo "show help;"
+                fi 
+                break
+            fi
+        done
+    )"
+}
