@@ -23,7 +23,8 @@ reflect.variable.rename(){
     unset "$original_name"
 }
 
-reflect.command.establish(){
+# str(){ reflect.compound_command.generate "str" "$@"; }
+reflect.compound_command.generate(){
     eval "$(
         local rootcmd="${1:?Root Command}" 
         local cmd="$rootcmd" trycmd="$rootcmd"
