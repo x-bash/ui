@@ -440,7 +440,9 @@ param_.parse(){
 
     # Step 2b: Init the values with the enviroment
     for (( i=0; i < ${#varlist[@]}; ++i )); do
-        [ -n "${vallist[i]}" ] && continue
+        # [ -n "${vallist[i]}" ] && continue
+        [ "${required[i]}" = "arg" ] && continue
+
         local name=${varlist[i]}
 
         case "${typelist[i]}" in
@@ -462,7 +464,10 @@ param_.parse(){
     # Step 2c: Init the values with the default scope.
     if [[ -n "$scope" ]]; then
         for (( i=0; i < ${#varlist[@]}; ++i )); do
-            [ -n "${vallist[i]}" ] && continue
+            # [ -n "${vallist[i]}" ] && continue
+            if [ "${required[i]}" = "arg" ] || [ "${required[i]}" = "env" ]; then
+                continue
+            fi
             local name=${varlist[i]} v
             if v=$(param.default "$scope" "$name"); then
                 vallist[i]=$v
@@ -473,8 +478,7 @@ param_.parse(){
 
     # Step 3: If value is STILL NULL, use the default value. Then, Type-CHECK
     for i in "${!varlist[@]}"; do
-        # For some starnge case, it might not be redundant.
-        if [ "${vallist[i]}" == "" ]; then
+        if [ "${required[i]}" = "default" ]; then
             vallist[i]="${deflist[i]}"
         fi
 
