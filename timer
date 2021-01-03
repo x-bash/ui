@@ -24,6 +24,7 @@ timer.make(){
 timer.reset(){
     local timer=${O:-DEFAULT}
     # eval "export $timer=$(date +%s)"
+    # eval "export X_CMD_COM_X_BASH_TIMER_$timer=($(timer.ns))" # export is a bug
     eval "X_CMD_COM_X_BASH_TIMER_$timer=($(timer.ns))"
 }
 
