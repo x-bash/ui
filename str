@@ -377,7 +377,7 @@ str.unbase64(){
     fi
 }
 
-str.md5(){
+str_.md5(){
     local cmd
     if command -v md5 >/dev/null 2>&1; then
         cmd=md5
@@ -389,6 +389,37 @@ str.md5(){
     else
         echo -n "$1" | $cmd | cut -d ' ' -f 1
     fi
+}
+
+# Wrap the function with output variable
+
+: <<'DOCTEST'
+> echo -n hi | str.md5
+49f68a5c8493ec2c0bf489821c21fc3b
+> str.md5 "hi"
+49f68a5c8493ec2c0bf489821c21fc3b
+> str.md5 -- a
+> echo "$a"
+49f68a5c8493ec2c0bf489821c21fc3b
+> str.md5 "hi" -- a
+49f68a5c8493ec2c0bf489821c21fc3b
+DOCTEST
+# shellcheck disable=SC2086
+str.md5(){
+    case $# in
+        0)  str_.md5; return 0;;
+        1)  str_.md5 $1; return 0;;
+        2)  if [ "$1" == -- ]; then
+                eval $2="$(str_.md5)"; 
+                return 0
+            fi ;;
+        *) 
+            eval $3="$(str_.md5 "$1")"; 
+            return 0;;
+    esac
+
+    # TODO
+    echo "show help"
 }
 
 : <<'DOCTEST'
