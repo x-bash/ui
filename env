@@ -3,6 +3,8 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
+# TODO: load module by source file
+# TODO: save module using declare -p a b c
 
 env.load(){
     local IFS
