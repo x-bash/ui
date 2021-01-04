@@ -67,6 +67,10 @@ json.items(){
     done
 }
 
+json.debug(){
+    :
+}
+
 json.extract(){
     if [ "$#" -eq 0 ]; then
         return 1
@@ -88,7 +92,7 @@ json.extract(){
     done
     str="${str:0:((${#str}-1))}\]"
 
-    echo "$str"
+    json.debug "Pattern: $str"
 
     local s
 
@@ -96,10 +100,18 @@ json.extract(){
 
     awk -f "$(xrc.which awk/JSON.awk)" - | while read -r line; do
         if [[ "$line" =~ ^$str ]]; then
-            echo "${line:(( ${#BASH_REMATCH[0]} + 1 ))}"
+            if [ "$RAW" ] ; then
+                eval echo -e "${line:(( ${#BASH_REMATCH[0]} + 1 ))}"
+            else
+                echo "${line:(( ${#BASH_REMATCH[0]} + 1 ))}"
+            fi
             # echo "${s:1}"
         fi
     done
+}
+
+json.extract.raw(){
+    RAW=1 json.extract "$@"
 }
 
 
