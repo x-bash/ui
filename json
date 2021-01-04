@@ -72,6 +72,42 @@ json.extract(){
         return 1
     fi
 
+    local line str="\["
+    for i in "$@"; do
+        if [ "$i" = "*" ]; then
+            str+="[^,]+,"
+            # str+="[[:print:]]+,"
+            continue
+        fi
+
+        if [[ "$i" =~ [0-9]+ ]]; then
+            str+="$i,"
+            continue
+        fi
+        str+="\"$i\","
+    done
+    str="${str:0:((${#str}-1))}\]"
+
+    echo "$str"
+
+    local s
+
+    # awk -f "$(xrc.which awk/JSON.awk)" -
+
+    awk -f "$(xrc.which awk/JSON.awk)" - | while read -r line; do
+        if [[ "$line" =~ ^$str ]]; then
+            echo "${line:(( ${#BASH_REMATCH[0]} + 1 ))}"
+            # echo "${s:1}"
+        fi
+    done
+}
+
+
+json.extract1(){
+    if [ "$#" -eq 0 ]; then
+        return 1
+    fi
+
     local line str="*\["
     for i in "$@"; do
         if [ "$i" = "*" ]; then
@@ -86,42 +122,6 @@ json.extract(){
         str+="\"$i\","
     done
     str="${str:0:((${#str}-1))}\]*"
-
-    echo "$str"
-
-    local s
-
-    # awk -f "$(xrc.which awk/JSON.awk)" -
-
-    awk -f "$(xrc.which awk/JSON.awk)" - | while read -r line; do
-        if [[ "$line" == $str ]]; then
-            s="${line#$str}"
-            echo "${s:1}"
-        fi
-    done
-}
-
-
-json.extract1(){
-    if [ "$#" -eq 0 ]; then
-        return 1
-    fi
-
-    local line str="*\[\"$1\""
-    shift
-    for i in "$@"; do
-        if [ "$i" = "*" ]; then
-            str+=",*"
-            continue
-        fi
-
-        if [[ "$i" =~ [0-9]+ ]]; then
-            str+=",$i"
-            continue
-        fi
-        str+=",\"$i\""
-    done
-    str+="\]*"
 
     echo "$str"
 
