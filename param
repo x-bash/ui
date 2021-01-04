@@ -5,7 +5,7 @@
 
 xrc std/assert std/list std/dict std/str std/line
 
-x.debug.init param
+debug.init param
 
 X_BASH_PARAM_PREFIX_="X_BASH_STD_PARAM_DEFAULT_LIST_PREFIX_"
 
