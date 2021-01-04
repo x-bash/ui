@@ -393,6 +393,7 @@ assert.nofile(){
     for i in "$@"; do
         [ -f "$i" ] && return 1
     done
+    return 0
 }
 
 assert.file(){
