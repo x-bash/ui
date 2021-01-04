@@ -387,3 +387,24 @@ assert.var.not_empty(){
 #         fi
 #     done
 # }
+
+assert.nofile(){
+    local i
+    for i in "$@"; do
+        [ -f "$i" ] && return 1
+    done
+}
+
+assert.file(){
+    local i
+    for i in "$@"; do
+        [ -f "$i" ] || return 1
+    done
+}
+
+assert.file.readable(){
+    local i
+    for i in "$@"; do
+        [ -r "$i" ] || return 1
+    done
+}
