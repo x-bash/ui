@@ -111,6 +111,7 @@ json_.extract_data_from_obj(){
 xrc std/str
 
 # json.var .errorcode errocode .reason reason
+# json.var .errorcode =errorcode .reason =reason
 json.var(){
     local all line str args i result var
     all="$(awk "$(xrc.cat awk/JSON.awk)" -)"
@@ -124,6 +125,7 @@ json.var(){
             str="$(json_.search_pattern "${args[@]}")"
         fi
         result="$(json_.extract_data_from_obj "$str" <<<"$all")"
+        [[ "$var" = =* ]] && var=${var:1}
         eval "$var=\"\$result\""
     done
 }
