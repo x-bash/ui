@@ -67,16 +67,16 @@ json.items(){
     done
 }
 
-json.debug(){
-    :
-}
+debug.init json
 
-json.extract(){
-    if [ "$#" -eq 0 ]; then
-        return 1
-    fi
+# json.extract \
+#     \* errmsg -- errmsg -- \
+#     \* reason -- reason
 
-    local line str="\["
+# json.extract .*.errmsg errmsg .reason reason
+
+json_.search_pattern(){
+    local i str="\["
     for i in "$@"; do
         if [ "$i" = "*" ]; then
             str+="[^,]+,"
@@ -91,23 +91,56 @@ json.extract(){
         str+="\"$i\","
     done
     str="${str:0:((${#str}-1))}\]"
+    echo "$str"
+}
 
-    json.debug "Pattern: $str"
-
-    local s
-
-    # awk -f "$(xrc.which awk/JSON.awk)" -
-
-    awk -f "$(xrc.which awk/JSON.awk)" - | while read -r line; do
-        if [[ "$line" =~ ^$str ]]; then
-            if [ "$RAW" ] ; then
-                eval echo -e "${line:(( ${#BASH_REMATCH[0]} + 1 ))}"
-            else
-                echo "${line:(( ${#BASH_REMATCH[0]} + 1 ))}"
-            fi
-            # echo "${s:1}"
+json_.extract_data_from_obj(){
+    local line pat
+    pat="${1:?Provide pattern}"
+    while read -r line; do
+        [[ ! "$line" =~ ^$pat ]] && continue
+        if [ "$RAW" ] ; then
+            eval echo -e "${line:(( ${#BASH_REMATCH[0]} + 1 ))}"
+        else
+            echo "${line:(( ${#BASH_REMATCH[0]} + 1 ))}"
         fi
+        # echo "${s:1}"
     done
+}
+
+xrc std/str
+
+# json.var .errorcode errocode .reason reason
+json.var(){
+    local all line str args i result var
+    all="$(awk "$(xrc.cat awk/JSON.awk)" -)"
+    
+    while [ "$#" -ge 2 ]; do
+        i="$1"; var="$2"; shift 2
+        str.split . "$i" args
+        if [ -z "${args[0]}" ]; then
+            str="$(json_.search_pattern "${args[@]:1}")"
+        else
+            str="$(json_.search_pattern "${args[@]}")"
+        fi
+        result="$(json_.extract_data_from_obj "$str" <<<"$all")"
+        eval "$var=\"\$result\""
+    done
+}
+
+json.var.raw(){
+    RAW=1 json.var "$@"
+}
+
+json.extract(){
+    if [ "$#" -eq 0 ]; then
+        return 1
+    fi
+
+    local line str
+    str="$(json_.search_pattern "$@")"
+    json.debug "Pattern: $str"
+    awk -f "$(xrc.which awk/JSON.awk)" - | json_.extract_data_from_obj "$str"
 }
 
 json.extract.raw(){
