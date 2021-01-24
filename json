@@ -5,6 +5,18 @@
 
 # json.generate abc=cde cea=asf
 
+json.escape(){
+    local a="${1:?Provide string}"
+    a="$(echo "${a//$'\\'/\\}")"
+    a="$(echo "${a//$'\n'/\\n}")"
+    a="$(echo "${a//$'\t'/\\t}")"
+    a="$(echo "${a//$'\b'/\\b}")"
+    a="$(echo "${a//\"/\\\"}")"
+    echo "\"$a\""
+}
+
+
+# Reference: https://github.com/jpmens/jo/blob/master/jo.md
 json.gen(){
     printf "{\n"
 
@@ -24,16 +36,16 @@ json.gen(){
             value=${i#*=}
 
             if [[ "$value" =~ ^[+-]?[0-9]+(.[0-9]+)*$ ]]; then
-                printf '  "%s": %s' "$key" "$value"
+                printf '  %s: %s' "$(json.escape "$key")" "$value"
             else
-                printf '  "%s": "%s"' "$key" "$value"
+                printf '  %s: %s' "$key" "$(json.escape "$value")"
             fi
             continue
         fi
 
         key=${i%%\:*}
         value=${i#*\:}
-        printf '  "%s": "%s"' "$key" "$value"
+        printf '  %s: %s' "$(json.escape "$key")" "$(json.escape "$value")"
     done
     printf "\n}"
 }
@@ -112,8 +124,9 @@ xrc std/str
 
 # json.var .errorcode errocode .reason reason
 # json.var .errorcode =errorcode .reason =reason
-json.var(){
-    local all line str args i result var
+# json.var .errorcode =err <<< '{ "errorcode": 3 }'
+# echo "$err"
+json.var(){    local all line str args i result var
     all="$(awk "$(xrc.cat awk/JSON.awk)" -)"
     
     while [ "$#" -ge 2 ]; do
@@ -149,37 +162,39 @@ json.extract.raw(){
     RAW=1 json.extract "$@"
 }
 
-
-json.extract1(){
-    if [ "$#" -eq 0 ]; then
-        return 1
-    fi
-
-    local line str="*\["
-    for i in "$@"; do
-        if [ "$i" = "*" ]; then
-            str+="*,"
-            continue
-        fi
-
-        if [[ "$i" =~ [0-9]+ ]]; then
-            str+="$i,"
-            continue
-        fi
-        str+="\"$i\","
-    done
-    str="${str:0:((${#str}-1))}\]*"
-
-    echo "$str"
-
-    local s
-
-    # awk -f "$(xrc.which awk/JSON.awk)" -
-
-    awk -f "$(xrc.which awk/JSON.awk)" - | while read -r line; do
-        if [[ "$line" == $str ]]; then
-            s="${line#$str}"
-            echo "${s:1}"
-        fi
-    done
+# json.modify a=3 b=4 c=5
+json.modify(){
+    :
 }
+
+json.format(){
+    :
+}
+
+json.var a= .[1].errorcode b= .[1].status
+json.gen "{ err: $a, status: $b }"
+
+json.obj '
+a = {
+    a: 3,
+    b: 4
+}
+'
+
+json.obj '
+    a.a=12
+    a.b=15
+'
+
+json.var a= a.a b=a.b
+
+json.dump a
+
+{
+    a: { b: 1 }
+}
+
+a=$(jo 'arr.length()')
+
+a=``arr.length()``
+

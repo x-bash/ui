@@ -1,0 +1,18 @@
+
+: <<A
+DICT = LEFT{ + KV_LIST + RIGHT}
+KV_LIST = KV | KV COMMA KV_LIST
+KV = KEY : VALUE
+
+ARRAY = LEFT[ + VALUE_LIST + RIGHT]
+
+KEY= "[A-Z]+"
+KEY= LS + [A-Z]+ RS
+
+VALUE = LS + [A-Z]+ RS
+VALUE = true | false
+VALUE = [0-9]+
+VALUE = DICT
+VALUE = ARRAY
+A
+

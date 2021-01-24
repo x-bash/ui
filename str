@@ -453,9 +453,26 @@ str.repr(){
     printf '"%s"' "${1//\"/\\\"}"
 }
 
-# str.parse_arg_list(){
+str.replace(){
+    echo "${${1:?Original string}/"${2:?Source substring}"/${3:?Target string}}"
+}
 
-# }
+str.replace_all(){
+    echo "${${1:?Original string}//"${2:?Source substring}"/${3:?Target string}}"
+}
+
+str.replace_n(){
+    local org="${1:?Original string}"
+    local src="${2:?Source substring}"
+    local num="${3:?Number}"
+    local tgt="${4:?Target string}"
+    local SUBSEP=$'\034' i
+    for i in $(seq $(( num -1 )) ); do
+        org="${org/"$src"/$SUBSEP}"
+    done
+    org="${org/"$src"/$tgt}"
+    echo "${org//$SUBSEP/$src}"
+}
 
 
 ## Regular Expression design
