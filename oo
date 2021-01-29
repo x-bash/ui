@@ -18,6 +18,7 @@ oo.create_new_function(){
             method="${func:(( ${#prototype}+1 ))}"
             method_list+=("$obj.$method")
             eval "$obj.$method(){ O=$obj $func \"\$@\"; }"
+            alias $obj.$method="O=$obj $func"
         done
 
         eval "$obj.delete(){

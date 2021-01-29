@@ -61,6 +61,7 @@ line.exist_or_append() {
     fi
 }
 
+# Only works for zsh bash
 line.to_array(){
     local name=${1:?Array name} line
     shift

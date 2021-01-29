@@ -1,0 +1,40 @@
+test1(){
+    local a=()
+    for i in $(seq 100); do
+        a[$i]=$i
+    done
+
+    # for i in $(seq 100); do
+    #     echo "${a[i]}"
+    # done
+}
+
+test2(){
+    for i in $(seq 100); do
+        local a_$i
+        eval a_$i="$i"
+    done
+
+    # for i in $(seq 100); do
+    #     eval echo a_$i
+    # done
+}
+
+test3(){
+    :
+}
+
+当前我遇到了比较麻烦的问题：
+
+1. 如何解决数组的问题
+
+老实说，当前的解决方案几乎没办法，因为我无法保证两者运行是一样的。
+除非我用单变量，jq的方案。但这种方案在这种场景中，近乎笑话了。
+
+当前param的
+
+
+
+
+
+

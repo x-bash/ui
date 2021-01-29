@@ -111,6 +111,31 @@ alias param='
         esac
     } <<<'
 
+param._parse2(){
+    # For ash/dash "$@"
+    local a=""
+    for i in $(seq 1 $(($# - 1))); do
+        a="$a \"\$$i\""
+    done
+
+    local _param_code
+    _param_code="$(eval param_.parse "$a")"
+    case "$?" in
+        0) echo "$_param_code" ;;
+        1) echo "return 1 2>/dev/null || exit 1" ;;
+        *) echo "return 0" ;;
+    esac
+}
+
+# shellcheck disable=SC2142
+# shellcheck disable=SC2154
+alias param2='
+    local _param_code _param_help_docs=() 2>/dev/null;
+    param._parse2 "${FUNCNAME[0]:-$0}" "$@"
+'
+
+
+
 # alias param='
 #     local _param_code _param_help_docs=() 2>/dev/null; 
 #     { 
