@@ -1,21 +1,13 @@
-# shellcheck shell=bash
+# shellcheck shell=sh
 
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-rand.int(){
-    local ST=${1:?start number}
-    local EN=${2:?end number}
-
-    local SIZE=${3:-0}
-
-    printf "%0${SIZE}d" $(( ( RANDOM % (EN-ST) )  + ST ))
-}
-
+# shellcheck disable=SC2039
 
 # Refer https://serverfault.com/questions/103359/how-to-create-a-uuid-in-bash
 # Refer https://github.com/Bash-it/bash-it/blob/master/aliases/available/uuidgen.aliases.bash
-rand.uuid(){
+rand_uuid(){
     if command -v uuid 1>/dev/null; then # Linux
         uuid "$@"
     elif command -v uuidgen 1>/dev/null; then # macOS/BSD
@@ -23,9 +15,9 @@ rand.uuid(){
     elif [ -f /proc/sys/kernel/random/uuid ]; then # Linux like alpine
         cat /proc/sys/kernel/random/uuid
     else
-        local N B T
+        local N=0 B T
         for (( N=0; N < 16; ++N )); do
-            B=$(( $RANDOM%255 ))
+            B=$(( "$RANDOM" % 255 ))
 
             if (( N == 6 )); then
                 printf '4%x' $(( B%15 ))
@@ -46,36 +38,34 @@ rand.uuid(){
 }
 
 # Refer https://gist.github.com/earthgecko/3089509
-rand.string(){
+rand_string(){
     local LENGTH=${1:-32}
     local CHARSET=${2:-'a-zA-Z0-9'}
     # LC_CTYPE setting according to https://wxnacy.com/2018/03/07/tr-Illegal-byte-sequence/
-    cat /dev/random | LC_CTYPE=C tr -c -d $CHARSET | fold -w $LENGTH | head -n 1
+    LC_CTYPE=C tr -c -d "$CHARSET" < /dev/random | fold -w "$LENGTH" | head -n 1
 }
 
-rand.alphanum(){ rand.string "$@"; }
-rand.alpha(){ rand.string 'a-zA-Z'; }
-rand.lowercase(){ rand.string 'a-z'; }
-rand.uppercase(){ rand.string 'A-Z'; }
+rand_alphanum(){ rand_string "$@"; }
+rand_alpha(){ rand_string 'a-zA-Z'; }
+rand_lowercase(){ rand_string 'a-z'; }
+rand_uppercase(){ rand_string 'A-Z'; }
 
-rand.ip.address(){
-    echo "$(rand.int 0 255).$(rand.int 0 255).$(rand.int 0 255).$(rand.int 0 255)"
+rand_ip_address(){
+    echo "$(rand_int 0 255).$(rand_int 0 255).$(rand_int 0 255).$(rand_int 0 255)"
 }
 
-rand.email.address(){
+rand_email_address(){
     :
 }
 
-rand.valid.user.name(){
+rand_valid_user_name(){
     :
 }
-
-
 
 # rand
 
 # TODO: padding zero in the beginning
-rand.int(){
+rand_int(){
     local ST=${1:?start number}
     local EN=${2:?end number}
 
@@ -84,14 +74,40 @@ rand.int(){
     printf "%0${SIZE}d" $(( ( RANDOM % (EN-ST) )  + ST ))
 }
 
-rand.float(){
+# Refer https://unix.stackexchange.com/questions/140750/generate-random-numbers-in-specific-range
+# Fast 1ms
+rand_int(){
+    awk -v min="${1:?start number}" -v max="${2:?end number}" 'BEGIN{srand(); print int(min+rand()*(max-min+1))}'
+}
+
+# Slow 10ms
+rand_int(){
+    local ST=${1:?start number}
+    local EN=${2:?end number}
+
+    local SIZE=${3:-0}
+
+    printf "%0${SIZE}d" $(( ( $(od -An -N2 -i /dev/random) % (EN-ST) )  + ST ))
+}
+
+# Slow 10ms
+rand_int(){
+    local ST=${1:?start number}
+    local EN=${2:?end number}
+
+    local SIZE=${3:-0}
+
+    printf "%0${SIZE}d" $(( ( $(head -200 /dev/urandom | cksum | cut -f1 -d " ") % (EN-ST) )  + ST ))
+}
+
+rand_float(){
     local ST=${1:?start number}
     local EN=${2:?end number}
     local fix=${3:-3}
 
     local int floating 
-    int="$(rand.int "$ST" "$EN")"
-    floating="$(rand.int 0 $(( (10 ** fix) - 1 )) )"
+    int="$(rand_int "$ST" "$EN")"
+    floating="$(rand_int 0 $(( (10 ** fix) - 1 )) )"
     if [ "$floating" -eq 0 ]; then
         printf "%d" "$int"
     else
