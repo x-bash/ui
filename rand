@@ -62,43 +62,26 @@ rand_valid_user_name(){
     :
 }
 
-# rand
 
-# TODO: padding zero in the beginning
-rand_int(){
-    local ST=${1:?start number}
-    local EN=${2:?end number}
+if [ -n "$RANDOM" ]; then
+    # ash, bash, zsh
+    # TODO: padding zero in the beginning
+    rand_int(){
+        local ST=${1:?start number} EN=${2:?end number} SIZE=${3:-0}
+        printf "%0${SIZE}d" $(( ( RANDOM % (EN-ST) )  + ST ))
+    }
+else
+    # Refer https://unix.stackexchange.com/questions/140750/generate-random-numbers-in-specific-range
+    rand_int(){
+        local ST=${1:?start number}
+        local EN=${2:?end number}
 
-    local SIZE=${3:-0}
+        local SIZE=${3:-0}
 
-    printf "%0${SIZE}d" $(( ( RANDOM % (EN-ST) )  + ST ))
-}
+        printf "%0${SIZE}d" $(( ( $(hexdump -n 2 -e '/2 "%u"' /dev/urandom) % (EN-ST) )  + ST ))
+    }
+fi
 
-# Refer https://unix.stackexchange.com/questions/140750/generate-random-numbers-in-specific-range
-# Fast 1ms
-rand_int(){
-    awk -v min="${1:?start number}" -v max="${2:?end number}" 'BEGIN{srand(); print int(min+rand()*(max-min+1))}'
-}
-
-# Slow 10ms
-rand_int(){
-    local ST=${1:?start number}
-    local EN=${2:?end number}
-
-    local SIZE=${3:-0}
-
-    printf "%0${SIZE}d" $(( ( $(od -An -N2 -i /dev/random) % (EN-ST) )  + ST ))
-}
-
-# Slow 10ms
-rand_int(){
-    local ST=${1:?start number}
-    local EN=${2:?end number}
-
-    local SIZE=${3:-0}
-
-    printf "%0${SIZE}d" $(( ( $(head -200 /dev/urandom | cksum | cut -f1 -d " ") % (EN-ST) )  + ST ))
-}
 
 rand_float(){
     local ST=${1:?start number}
