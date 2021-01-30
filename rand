@@ -48,9 +48,9 @@ rand_string(){
 }
 
 rand_alphanum(){ rand_string "$@"; }
-rand_alpha(){ rand_string 'a-zA-Z'; }
-rand_lowercase(){ rand_string 'a-z'; }
-rand_uppercase(){ rand_string 'A-Z'; }
+rand_alpha(){ rand_string "${1:-32}" 'a-zA-Z'; }
+rand_lowercase(){ rand_string "${1:-32}" 'a-z'; }
+rand_uppercase(){ rand_string "${1:-32}" 'A-Z'; }
 
 rand_ip_address(){
     echo "$(rand_int 0 255).$(rand_int 0 255).$(rand_int 0 255).$(rand_int 0 255)"
