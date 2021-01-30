@@ -3,9 +3,9 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-assert.selftest(){
-    @src std/test
-    test.doctest "${BASH_SOURCE[0]}"
+selftest(){
+    xrc std/doctest
+    doctest "${BASH_SOURCE[0]}"
 }
 
 # assert(){
@@ -73,14 +73,14 @@ assert(){
     case "$op" in
     =~)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-        if ! assert.within_regex "$val" "$@"; then
+        if ! within_regex "$val" "$@"; then
             echo "ERROR: '$val' NOT match any regex defined" >&2
             # param.help.show
             return 1
         fi;;
     =)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-        if ! assert.within "$val" "$@"; then
+        if ! assert_within "$val" "$@"; then
             # echo "$val" "$@" >&2
             echo "ERROR: '$val' Not one of the candidate set." >&2
             # param.help.show
@@ -109,7 +109,7 @@ assert(){
         fi
 
         [ "${#@}" -ne 0 ] && {
-            if ! assert.within "$val" "$@"; then
+            if ! assert_within "$val" "$@"; then
                 echo "ERROR: '$val' Not inside the $op set." >&2
                 # param.help.show
                 return 1
@@ -125,7 +125,7 @@ assert(){
         fi
 
         for datum in $val; do
-            assert.within "$datum" "$@" && continue
+            assert_within "$datum" "$@" && continue
             echo "ERROR: ['$val'] After splited with \'$IFS\', element '$datum' does NOT match the string set" >&2
             # param.help.show
             return 1
@@ -140,7 +140,7 @@ assert(){
         fi
 
         for datum in $val; do
-            assert.within_regex "$datum" "$@" && continue
+            assert_within_regex "$datum" "$@" && continue
             echo "ERROR: ['$val']. After splited with \'$IFS\', element '$datum' does NOT match the regex set." >&2
             # param.help.show
             return 1
@@ -156,18 +156,18 @@ assert(){
 #     local op="$2"
 #     shift 2
 #     case "$op" in
-#     =) assert.within "$value" "$@";;
-#     =~) assert.within_regex "$value" "$@";;
+#     =) assert_within "$value" "$@";;
+#     =~) assert_within_regex "$value" "$@";;
 #     *) return 1;;
 #     esac
 # }
 
 : <<'DOCTEST'
-> assert.within 1abc 1abc1 1abc2 && echo yes
-> assert.within 1abc 1abc1 1abc2 1abc abc3 && echo yes
+> assert_within 1abc 1abc1 1abc2 && echo yes
+> assert_within 1abc 1abc1 1abc2 1abc abc3 && echo yes
 yes
 DOCTEST
-assert.within(){
+assert_within(){
     local c value="$1"
     shift
     for c in "$@"; do
@@ -180,13 +180,13 @@ assert.within(){
 
 
 : <<'DOCTEST'
-> assert.within_regex 1abc 1abc1 1abc2 && echo yes
-> assert.within_regex 1abc 1abc1 1abc2 1abc abc3 && echo yes
+> assert_within_regex 1abc 1abc1 1abc2 && echo yes
+> assert_within_regex 1abc 1abc1 1abc2 1abc abc3 && echo yes
 yes
-> assert.within_regex 1abc 1abc1 1abc2 [0-9][a-z]+ abc3 && echo yes
+> assert_within_regex 1abc 1abc1 1abc2 [0-9][a-z]+ abc3 && echo yes
 yes
 DOCTEST
-assert.within_regex(){
+assert_within_regex(){
     local c value="$1"
     shift
     for c in "$@"; do
@@ -198,11 +198,11 @@ assert.within_regex(){
 }
 
 : <<'DOCTEST'
-> assert.eq 1abc 1abc1 1abc2 2>/dev/null && echo yes
-> assert.eq 1abc 1abc 1abc && echo yes
+> assert_eq 1abc 1abc1 1abc2 2>/dev/null && echo yes
+> assert_eq 1abc 1abc 1abc && echo yes
 yes
 DOCTEST
-assert.eq(){
+assert_eq(){
     local real=${1:?Real value}
     while [ $# -gt 1 ]; do
         shift
@@ -216,13 +216,13 @@ assert.eq(){
 
 
 : <<'DOCTEST'
-> assert.t "sleep 1s" 2>/dev/null && echo yes
+> assert_t "sleep 1s" 2>/dev/null && echo yes
 yes
-> assert.t "[ 5 -eq 3 ]" 2>/dev/null && echo yes
-> assert.t "[ 3 -eq 3 ]" 2>/dev/null && echo yes
+> assert_t "[ 5 -eq 3 ]" 2>/dev/null && echo yes
+> assert_t "[ 3 -eq 3 ]" 2>/dev/null && echo yes
 yes
 DOCTEST
-assert.t(){
+assert_t(){
     if eval "$*"; then
         return 0
     else
@@ -232,12 +232,12 @@ assert.t(){
 }
 
 : <<'DOCTEST'
-> assert.f "sleep 1s" 2>/dev/null && echo yes
-> assert.f "[ 5 -eq 3 ]" 2>/dev/null && echo yes
+> assert_f "sleep 1s" 2>/dev/null && echo yes
+> assert_f "[ 5 -eq 3 ]" 2>/dev/null && echo yes
 yes
-> assert.f "[ 3 -eq 3 ]" 2>/dev/null && echo yes
+> assert_f "[ 3 -eq 3 ]" 2>/dev/null && echo yes
 DOCTEST
-assert.f(){
+assert_f(){
     if eval "$*"; then
         echo "${MSG:-"Expect command execution to be false: $*"}" >&2
         return 1
@@ -246,14 +246,14 @@ assert.f(){
     fi
 }
 
-# There is two ways to use assert.grep
+# There is two ways to use assert_grep
 : <<'DOCTEST'
-> assert.grep hi <<<"hello hi" 1>/dev/null && echo yes
+> assert_grep hi <<<"hello hi" 1>/dev/null && echo yes
 yes
-> assert.grep "test.doctest" 2>/dev/null <"$(xrc.which test)" && echo yes
+> assert_grep "test.doctest" 2>/dev/null <"$(xrc.which test)" && echo yes
 yes
 DOCTEST
-assert.grep(){
+assert_grep(){
     if grep "${1:?Please provide grep pattern}" 1>/dev/null; then
         return 0
     else
@@ -263,11 +263,11 @@ assert.grep(){
 }
 
 : <<'DOCTEST'
-> assert.float 1.2 1.0 1.1 34.1 && echo yes
+> assert_float 1.2 1.0 1.1 34.1 && echo yes
 yes
-> assert.float 1.2 1.0 1.- 34 2>/dev/null && echo yes
+> assert_float 1.2 1.0 1.- 34 2>/dev/null && echo yes
 DOCTEST
-assert.float(){
+assert_float(){
     while [ $# -gt 0 ]; do
         [[ "$1" =~ ^[\ \t]?[0-9]+(.[0-9]+)?[\ \t]?$ ]] || {
             echo "${MSG:-"Expect var to be of float type: $*"}" >&2
@@ -279,11 +279,11 @@ assert.float(){
 }
 
 : <<'DOCTEST'
-> assert.int 1 2 3 " 5 " && echo yes
+> assert_int 1 2 3 " 5 " && echo yes
 yes
-> assert.int 1 2 1.2 3 2>/dev/null && echo yes
+> assert_int 1 2 1.2 3 2>/dev/null && echo yes
 DOCTEST
-assert.int(){
+assert_int(){
     while [ $# -gt 0 ]; do
         [[ "$1" =~ ^[\ \t]?[0-9]+[\ \t]?$ ]] || {
             echo "${MSG:-"Expect var to be of int type: $*"}" >&2
@@ -296,11 +296,11 @@ assert.int(){
 
 : <<'DOCTEST'
 > a=3; b=(1 2 3); c=8; d=(3 8)
-> assert.var.is_array a b c 2>/dev/null && echo yes
-> assert.var.is_array b d && echo yes
+> assert_var_is_array a b c 2>/dev/null && echo yes
+> assert_var_is_array b d && echo yes
 yes
 DOCTEST
-assert.var.is_array(){
+assert_var_is_array(){
     while [ $# -gt 0 ]; do
         if ! declare -p "${1:?Please provide variable name}" 2> /dev/null | grep -q '^declare \-a'; then
             echo "${MSG:-"Expect var to be of array type: $*"}" >&2
@@ -319,18 +319,18 @@ testFun(){
     
     docker run -it ubuntu bash > "$TMP_1"
     MSG="testFun failed" \
-        assert.grep "work" -- "work" <"$TMP_1"
-    assert.grep "$(line "$TMP_1" 2)" "$TMP_2"
+        assert_grep "work" -- "work" <"$TMP_1"
+    assert_grep "$(line "$TMP_1" 2)" "$TMP_2"
     MSG="testFun failed for reason like" \
-        assert.grep "$(line "$TMP_1" 3)" "$TMP_2"
+        assert_grep "$(line "$TMP_1" 3)" "$TMP_2"
 
-    # assert.grep "work" -- "testFun failed" <$TMP_1
-    # assert.grep $(line $TMP_1 2) $TMP_2
-    # assert.grep "$(line $TMP_1 3)" $TMP_2 -- "testFun failed for reason like" 
+    # assert_grep "work" -- "testFun failed" <$TMP_1
+    # assert_grep $(line $TMP_1 2) $TMP_2
+    # assert_grep "$(line $TMP_1 3)" $TMP_2 -- "testFun failed for reason like" 
 
-    # assert.eq 2 $(line $TMP_1 3)
-    # assert.eq 2 $(file.line $TMP_1 3)
-    # assert.eq 2 $(sed -n 3p $TMP_1)
+    # assert_eq 2 $(line $TMP_1 3)
+    # assert_eq 2 $(file.line $TMP_1 3)
+    # assert_eq 2 $(sed -n 3p $TMP_1)
 }
 
 # Example:
@@ -341,17 +341,17 @@ testFun(){
 
 : <<'DOCTEST'
 > a=3; b=(1 2 3); c=
-> assert.var.not_empty a b c && echo yes
-> assert.var.not_empty a b && echo yes
+> assert_var.not_empty a b c && echo yes
+> assert_var.not_empty a b && echo yes
 yes
 DOCTEST
-assert.var.not_empty(){
+assert_var.not_empty(){
     for i in "$@"; do
         [ -n "${!i}" ] || return 1
     done
 }
 
-# assert.strlen(){
+# assert_strlen(){
 #     local varname=${1:?Please provide variable name}
 #     local val=${!$varname}
 #     local len=${#val}
@@ -364,7 +364,7 @@ assert.var.not_empty(){
 # }
 
 # The following code is ridiculously wrong ...
-# assert.str_eq(){
+# assert_str_eq(){
 #     local val=${!1:?Please provide variable name}
 #     shift
 #     for i in "$@"; do
@@ -376,7 +376,7 @@ assert.var.not_empty(){
 #     done
 # }
 
-# assert.str_match_regex(){
+# assert_str_match_regex(){
 #     local val=${!1:?Please provide variable name}
 #     shift
 #     for i in "$@"; do
@@ -388,7 +388,7 @@ assert.var.not_empty(){
 #     done
 # }
 
-assert.nofile(){
+assert_nofile(){
     local i
     for i in "$@"; do
         [ -f "$i" ] && return 1
@@ -396,14 +396,14 @@ assert.nofile(){
     return 0
 }
 
-assert.file(){
+assert_file(){
     local i
     for i in "$@"; do
         [ -f "$i" ] || return 1
     done
 }
 
-assert.file.readable(){
+assert_file_readable(){
     local i
     for i in "$@"; do
         [ -r "$i" ] || return 1
