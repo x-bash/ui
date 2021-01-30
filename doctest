@@ -2,7 +2,7 @@
 
 debug_init doctest
 
-test.doctest.run_code(){
+doctest.run_code(){
     local test_script_fifo=${test_script_fifo:?Provide test script fifo}
     local out_fifo=${out_fifo:?Provide out fifo}
 
@@ -71,7 +71,7 @@ $cl"
 
                 # IF it is a command
                 if [ -n "$script_code" ]; then
-                    test.doctest.run_code "$script_code" "$script_expect_result" || {
+                    doctest.run_code "$script_code" "$script_expect_result" || {
                         return_code=$?
                         break 2
                     }
