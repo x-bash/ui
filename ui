@@ -32,21 +32,7 @@ ui(){
     esac
 }
 
-ui_debug(){
-    :
-}
-
-ui_debug.enable(){
-    ui_debug(){
-        echo "$@" >>./ui_debug.log
-    }
-}
-
-ui_debug.disable(){
-    ui_debug(){
-        :
-    }
-}
+debug_init ui
 
 ############################
 # Section 1: ui style
