@@ -32,18 +32,18 @@ ui(){
     esac
 }
 
-ui.debug(){
+ui_debug(){
     :
 }
 
-ui.debug.enable(){
-    ui.debug(){
-        echo "$@" >>./ui.debug.log
+ui_debug.enable(){
+    ui_debug(){
+        echo "$@" >>./ui_debug.log
     }
 }
 
-ui.debug.disable(){
-    ui.debug(){
+ui_debug.disable(){
+    ui_debug(){
         :
     }
 }
@@ -220,19 +220,19 @@ ui.region.update(){
 
     # Cut down the lines
     if [ "$linenum" -ge "$maxr" ]; then
-        ui.debug linenum!!! "$linenum"
+        ui_debug linenum!!! "$linenum"
         linenum=$(( maxr - 1 )) # Important Parameter Adjustment
     fi
 
     ui.region.clear
     ui.cursor.read end1_row
 
-    ui.debug end1_row "$end1_row"
-    ui.debug linenum "$linenum"
-    ui.debug maxr "$maxr"
+    ui_debug end1_row "$end1_row"
+    ui_debug linenum "$linenum"
+    ui_debug maxr "$maxr"
 
     if (( end1_row + linenum > maxr )); then
-        ui.debug "Go up"
+        ui_debug "Go up"
         tput rc
         local diff=$((linenum)) # Important Parameter Adjustment
         for i in $(seq $diff); do

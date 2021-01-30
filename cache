@@ -17,10 +17,7 @@ str.md5(){
     fi
 }
 
-cache.debug(){
-    local IFS=
-    [[ "$X_BASH_DEBUG" =~ (^|,)(std/)*cache($|,) ]] && printf "DBG: %s\n" "$@" >&2
-}
+debug_init cache
 
 cache.cmd.help(){
     local IFS=

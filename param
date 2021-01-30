@@ -5,7 +5,7 @@
 
 xrc std/assert std/list std/dict std/str std/line
 
-debug.init param
+debug_init param
 
 X_BASH_PARAM_PREFIX_="X_BASH_STD_PARAM_DEFAULT_LIST_PREFIX_"
 
@@ -79,7 +79,7 @@ param.default.load(){
     local fp="${2:?Provide File path}"
 
     if [ ! -r "$fp" ]; then
-        param.debug "Readable config file not found: $fp"
+        param_debug "Readable config file not found: $fp"
         return 0
     fi
 
@@ -140,7 +140,7 @@ alias param2='
 #     local _param_code _param_help_docs=() 2>/dev/null; 
 #     { 
 #         _param_code="$(param_.parse "${FUNCNAME[0]:-$0}" "$@")";
-#         echo "$_param_code" >>test.debug
+#         echo "$_param_code" >>test_debug
 #         case "$?" in
 #             0) eval "$_param_code" ;;
 #             1) return 1 2>/dev/null || exit 1 ;;
@@ -483,8 +483,8 @@ param_.parse(){
         fi
     done
 
-    # echo "${varlist[@]}" >>test.debug
-    # echo "${vallist[@]}" >>test.debug
+    # echo "${varlist[@]}" >>test_debug
+    # echo "${vallist[@]}" >>test_debug
 
     # Step 2c: Init the values with the default scope.
     if [[ -n "$scope" ]]; then

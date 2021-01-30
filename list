@@ -17,7 +17,7 @@ list.free(){
     eval "unset $O"
 }
 
-list.debug(){
+list_debug(){
     local IFS=
     [[ "$X_BASH_DEBUG" =~ (^|,)(std/)*list($|,) ]] && printf "DBG: %s\n" "$@" >&2
 }

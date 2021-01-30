@@ -25,7 +25,7 @@ http.make(){
     dict.put "url" "${2:?Provide url}"
 }
 
-debug.init http
+debug_init http
 
 http.browse(){
     local BROWSER=${BROWSER:-$BROWSER}
@@ -145,12 +145,12 @@ http.header.content-type.eq(){
 
     for i in "${candidates[@]}"; do
         if [[ "$i" == *${target}* ]]; then
-            http.debug "Add header: Content-Type=$i"
+            http_debug "Add header: Content-Type=$i"
             http.header.put "Content-Type" "$i"
             return 0
         fi
     done
-    http.debug "Add header: Content-Type=$target"
+    http_debug "Add header: Content-Type=$target"
     http.header.put "Content-Type" "$target"
 }
 
@@ -287,7 +287,7 @@ http_.request(){
     tmp=$(mktemp)
     echo "$data" > "$tmp"
     # TODO: Display the data if only if body is text and data is NOT a lot
-    # http.debug "body is: $data"
+    # http_debug "body is: $data"
     # [ -n "$DEBUG" ] && echo "body is: $data" >&2
 
     local header_filepath data_filepath
@@ -295,15 +295,15 @@ http_.request(){
     data_filepath="$(http_.resp.latest.body.filepath)"
 
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        http.debug curl -D "$header_filepath" -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path"
-        eval curl -D "$header_filepath"  -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http.debug)
+        http_debug curl -D "$header_filepath" -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path"
+        eval curl -D "$header_filepath"  -X "$X" "$(http.qs.dump.curl)" "$(http_.header.dump.curl_args)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_debug)
     else
-        http.debug curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path"
-        eval curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http.debug)
+        http_debug curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path"
+        eval curl -D "$header_filepath" -X "$X" "$(http_.header.dump.curl_args)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_debug)
     fi
     rm "$tmp"
 
-    http.debug "Response Header is: $(cat "$header_filepath")"
+    http_debug "Response Header is: $(cat "$header_filepath")"
 
     local a b c
     # shellcheck disable=SC2034
