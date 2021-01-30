@@ -2,7 +2,7 @@
 
 debug_init doctest
 
-doctest.run_code(){
+_doctest_run_code(){
     local test_script_fifo=${test_script_fifo:?Provide test script fifo}
     local out_fifo=${out_fifo:?Provide out fifo}
 
@@ -37,7 +37,7 @@ doctest(){
     (
         #shellcheck disable=SC1090
         source "$1";
-        doctest.exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" 1>/dev/null 2>&1
+        _doctest_exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" 1>/dev/null 2>&1
     ) &
 
     local PROCESS_ID="$!"
@@ -71,7 +71,7 @@ $cl"
 
                 # IF it is a command
                 if [ -n "$script_code" ]; then
-                    doctest.run_code "$script_code" "$script_expect_result" || {
+                    _doctest_run_code "$script_code" "$script_expect_result" || {
                         return_code=$?
                         break 2
                     }
@@ -99,7 +99,7 @@ $cl"
     return $return_code
 }
 
-doctest.exec_script(){
+_doctest_exec_script(){
     while :; do
         eval "$(cat "${2:?fifo file}")" 1>"${3:?output fifo file}" 2>&1
     done
