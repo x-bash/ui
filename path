@@ -3,25 +3,25 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-path.ext(){
+path_ext(){
     local i ret filepath
     for i in "$@"; do
         filepath=$(basename "${i}")
         ret=${filepath##*.}
         # ret=$(cut -d '.')
-        # to handle the situation: `path.extensions abc`, ret="abc", should return ""
+        # to handle the situation: `path_extensions abc`, ret="abc", should return ""
         [ "$ret" == "$filepath" ] || printf "%s" "$ret"
     done
 }
 
-path.parts(){
+path_parts(){
     # dirname filename extname
     local filepath=$1
 
     if [ $# -eq 1 ]; then
         dirname "$filepath"
         basename "$filepath"
-        path.ext "$filepath"
+        path_ext "$filepath"
         return 0
     fi
 
@@ -29,10 +29,10 @@ path.parts(){
     
     [ ! "$dirname" = - ] && eval "$dirname=$(dirname "$filepath")"
     [ ! "$filename" = - ] && eval "$filename=$(basename "$filepath")"
-    [ ! "$extname" = - ] && eval "$extname=$(path.ext "$filepath")"
+    [ ! "$extname" = - ] && eval "$extname=$(path_ext "$filepath")"
 }
 
-path.filename(){
+path_filename(){
     local filepath i
     for i in "$@"; do
         filepath=$(basename "$i")
@@ -40,41 +40,41 @@ path.filename(){
     done
 }
 
-path.dirname(){
+path_dirname(){
     local i
     for i in "$@"; do
         dirname "$i"
     done
 }
 
-path.basename(){
+path_basename(){
     local i
     for i in "$@"; do
         basename "$i"
     done
 }
 
-path.abs(){
+path_abs(){
     local p=${1:-.}
     if [ -f "$p" ]; then
         echo "$(cd "$(dirname "$p")" && pwd)/$(basename "$p")"
     else
-        (cd "${1:-.}" && pwd)
+        (cd "$p" && pwd)
     fi
 }
 
-path.script.path(){
-    path.abs "${BASH_SOURCE[0]}"
+path_script_path(){
+    path_abs "${BASH_SOURCE[0]}"
 }
 
 # TODO
-path.common2(){
+path_common2(){
     # local a=$1
     # local b=$2   
     :
 }
 
-path.common(){
+path_common(){
     for i in "$@"; do
         :
     done
@@ -83,22 +83,22 @@ path.common(){
 # PATH environment variable operations
 # code from el-logic
 
-path.display(){
+path_display(){
     local IFS=":"
     for i in $PATH; do 
         echo "$i";
     done
 }
 
-path.append(){
+path_append(){
     PATH="$PATH:${1:?"Provide new path"}"
 }
 
-path.prepend(){
+path_prepend(){
     PATH="${1:?"Provide new path"}:$PATH"
 }
 
-path.remove(){
+path_remove(){
     :
 }
 
@@ -107,9 +107,11 @@ path.remove(){
 # In linux, `readlink -f <filepath>`. Not works in BSD system
 # https://superuser.com/questions/330199/how-get-full-path-to-target-of-link
 # TODO: using subprocess to optimize
-path.readlink(){
+path_readlink(){
     local TGT=${1:?"Provide name"}
-    local ORI A RES
+    local ORI 
+    local A
+    local RES
     ORI=$(pwd)
     A=$(readlink "$TGT")
     cd "$(dirname "$TGT")" && cd "$(dirname "$A")" || return 1
@@ -118,8 +120,8 @@ path.readlink(){
 }
 
 # Protected folders
-path.rmrf(){
-    @src std/str
+path_rmrf(){
+    xrc std/str
     for i in "$@"; do
         local tgt
         tgt="$(str.trim "$i")"
@@ -135,33 +137,43 @@ path.rmrf(){
 }
 
 # TODO: check this function
-path.rmrf.safe(){
-    local i sw=0 filepath pattern pattern_list=() path_list=() hyphen2=0
+path_rmrf_safe(){
+    local i
+    local sw=0
+    local filepath
+    local pattern
+    local pattern_list=""
+    local path_list=""
+    local hyphen2=0
+    local IFS=
 
     for i in "$@"; do
         if [ "$i" == -- ]; then
             hyphen2=1
         fi
         if [ $hyphen2 -eq 0 ]; then
-            pattern_list+=("$i")
+            pattern_list="$pattern_list
+$i"
         else
-            path_list+=("$i")
+            path_list="$path_list
+$i"
         fi
     done
 
     if [ $hyphen2 -eq 0 ]; then
-        path_list=("${pattern_list[@]}")
-        pattern_list=()
+        path_list="$pattern_list"
+        pattern_list=""
     fi
 
-    for filepath in "${path_list[@]}"; do
+    for filepath in $path_list; do
         case "$filepath" in
             /)      sw=1; printf "Detect rm -rf /" >&2      ;;
             /bin*)  sw=1; printf "Detect rm -rf /bin" >&2   ;;
             /home)  sw=1; printf "Detect rm -rf /home" >&2  ;;
-            *)      for pattern in "${pattern_list[@]}"; do
+            *)      for pattern in $pattern_list; do
+                        # [[ "$filepath" =~ $pattern ]]
+                        str_regex "$filepath" "$pattern" || continue
                         sw=1
-                        [[ "$filepath" =~ $pattern ]]
                         printf "Detect violation of RULES: %s" "$pattern" >&2
                     done;;
         esac
