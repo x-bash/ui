@@ -26,6 +26,7 @@ _doctest_run_code(){
     fi
 }
 
+# In the future, using the awk to accelerate.
 # Main Method.
 doctest(){
     local test_script_fifo="doctest.tmp.input.fifo" out_fifo="doctest.tmp.output.fifo"
@@ -59,7 +60,8 @@ doctest(){
             block+=("> ")
             for cl in "${block[@]}"; do
                 # If it is not command
-                if [[ ! "$cl" =~ ^\>[[:space:]] ]]; then
+                # if [[ ! "$cl" =~ ^\>[[:space:]] ]]; then
+                if ! str_regex "$cl" "^\> "; then
                     if [ -z "$script_expect_result" ]; then
                         script_expect_result="$cl"
                     else
@@ -85,8 +87,9 @@ $cl"
 
         # Must start with doctest
         # [[ "$line" =~ ^\<\<([[:alnum:]]+)$ ]] && {
-        [[ "$line" =~ ^\ *\:*\ *\<\<\'((doctest|DOCTEST)[A-Za-z0-9-]*)\'$ ]] && {
-            start="${BASH_REMATCH[1]}"
+        # [[ "$line" =~ ^\ *\:*\ *\<\<\'((doctest|DOCTEST)[A-Za-z0-9-]*)\'$ ]] && {
+        str_regex "$line" "^ *: *<<'?DOCTEST'?$" && {
+            start="DOCTEST"
             doctest_debug "Token FOUND: $start"
             block=()
         }
