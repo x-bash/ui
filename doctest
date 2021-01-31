@@ -2,6 +2,25 @@
 
 debug_init doctest
 
+str_regex(){
+    local value="${1}"
+    local pattern="${2:?str_regex(): Provide pattern}"
+
+    # Only dash does not support pattern="${pattern//\\/\\\\}"
+
+    echo "" | awk -v value="$value" "END {
+        if (match(value, /$pattern/)) {
+            exit 0
+        } else {
+            exit 1;
+        }
+    }"
+}
+
+doctest_debug(){
+    echo "$@" >&2
+}
+
 _doctest_run_code(){
     local test_script_fifo=${test_script_fifo:?Provide test script fifo}
     local out_fifo=${out_fifo:?Provide out fifo}
@@ -32,7 +51,7 @@ _doctest_run_code(){
 doctest(){
     local test_script_fifo="doctest.tmp.input.fifo" 
     local out_fifo="doctest.tmp.output.fifo"
-    local IFS=$'\n'
+    local IFS=
 
     rm "$test_script_fifo" "$out_fifo" 2>/dev/null 
     mkfifo "$test_script_fifo" "$out_fifo"
@@ -66,9 +85,9 @@ $line"
             local cl
             block="$block
 >  "
+            IFS=$'\n'
             for cl in $block; do
                 # If it is not command
-                # if [[ ! "$cl" =~ ^\>[[:space:]] ]]; then
                 if ! str_regex "$cl" "^> "; then
                     if [ -z "$script_expect_result" ]; then
                         script_expect_result="$cl"
