@@ -73,7 +73,7 @@ assert(){
     case "$op" in
     =~)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
-        if ! within_regex "$val" "$@"; then
+        if ! assert_within_regex "$val" "$@"; then
             echo "ERROR: '$val' NOT match any regex defined" >&2
             # param.help.show
             return 1
@@ -101,7 +101,8 @@ assert(){
         fi
 
         if [ "$op" = "=int" ]; then
-            if  [[ ! "$val" =~ ^[\ \t]*[0-9]+[\ \t]*$ ]]; then
+            # if [[ ! "$val" =~ ^[\ \t]*[0-9]+[\ \t]*$ ]]; then
+            if ! str_regex "$val" "^[\ \t]*[0-9]+[\ \t]*$" ; then
                 echo "ERROR: '$val' An integer expected." >&2
                 # param.help.show
                 return 1
@@ -118,7 +119,8 @@ assert(){
     =\[?\] | =?)
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        if [[ "$op" == '=['?']' ]]; then
+        # if [[ "$op" == '=['?']' ]]; then
+        if str_regex "$op" "^=\[.\]$"; then
             IFS=${op:2:1}
         else
             IFS=${op:1:1}
@@ -133,7 +135,8 @@ assert(){
     =~\[?\] | =~? )
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
-        if [[ "$op" == '=~['?']' ]]; then
+        # if [[ "$op" == '=~['?']' ]]; then
+        if str_regex "$op" "^=~\[.\]$"; then
             IFS=${op:3:1}
         else
             IFS=${op:2:1}
@@ -190,7 +193,8 @@ assert_within_regex(){
     local c value="$1"
     shift
     for c in "$@"; do
-        if [[ "$value" =~ ^($c)$ ]]; then
+        #if [[ "$value" =~ ^($c)$ ]]; then
+        if str_regex "$value" "^($c)$"; then
             return 0
         fi
     done
@@ -250,7 +254,7 @@ assert_f(){
 : <<'DOCTEST'
 > assert_grep hi <<<"hello hi" 1>/dev/null && echo yes
 yes
-> assert_grep "test.doctest" 2>/dev/null <"$(xrc.which test)" && echo yes
+> assert_grep "testsuite" 2>/dev/null <"$(xrc_which std/test)" && echo yes
 yes
 DOCTEST
 assert_grep(){
@@ -269,7 +273,8 @@ yes
 DOCTEST
 assert_float(){
     while [ $# -gt 0 ]; do
-        [[ "$1" =~ ^[\ \t]?[0-9]+(.[0-9]+)?[\ \t]?$ ]] || {
+        # [[ "$1" =~ ^[\ \t]?[0-9]+(.[0-9]+)?[\ \t]?$ ]] || {
+        str_regex "$1" "^[ \t]*[+-]?[0-9]+(.[0-9]+)?[ \t]*$" || {
             echo "${MSG:-"Expect var to be of float type: $*"}" >&2
             return 1
         }
@@ -285,7 +290,8 @@ yes
 DOCTEST
 assert_int(){
     while [ $# -gt 0 ]; do
-        [[ "$1" =~ ^[\ \t]?[0-9]+[\ \t]?$ ]] || {
+        # [[ "$1" =~ ^[\ \t]?[0-9]+[\ \t]?$ ]] || {
+        str_regex "$1" "^[+-]?[ \t]?[0-9]+[ \t]?$" || {
             echo "${MSG:-"Expect var to be of int type: $*"}" >&2
             return 1
         }
@@ -341,11 +347,11 @@ testFun(){
 
 : <<'DOCTEST'
 > a=3; b=(1 2 3); c=
-> assert_var.not_empty a b c && echo yes
-> assert_var.not_empty a b && echo yes
+> assert_var_not_empty a b c && echo yes
+> assert_var_not_empty a b && echo yes
 yes
 DOCTEST
-assert_var.not_empty(){
+assert_var_not_empty(){
     for i in "$@"; do
         [ -n "${!i}" ] || return 1
     done
