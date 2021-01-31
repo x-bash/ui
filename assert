@@ -67,7 +67,8 @@ assert(){
         }
     '
 
-    local IFS=$'\n' datum
+    local IFS=$'\n' 
+    local datum
 
     local val="$1" op="$2"; shift 2
     case "$op" in
@@ -121,33 +122,45 @@ assert(){
 
         # if [[ "$op" == '=['?']' ]]; then
         if str_regex "$op" "^=\[.\]$"; then
-            IFS=${op:2:1}
+            # IFS=${op:2:1}
+            IFS=$(echo "$op" | tr -d "=[]")
         else
-            IFS=${op:1:1}
+            # IFS=${op:1:1}
+            IFS=$(echo "$op" | tr -d "=")
         fi
 
-        for datum in $val; do
+        val=$(echo "$val" | tr "$IFS" "\n" )
+        while read -r datum; do
             assert_within "$datum" "$@" && continue
             echo "ERROR: ['$val'] After splited with \'$IFS\', element '$datum' does NOT match the string set" >&2
             # param.help.show
             return 1
-        done ;;
+        done <<A
+$val
+A
+    ;;
     =~\[?\] | =~? )
         eval "$CHOICE_LIST_MUST_NOT_BE_EMTPY"
 
         # if [[ "$op" == '=~['?']' ]]; then
         if str_regex "$op" "^=~\[.\]$"; then
-            IFS=${op:3:1}
+            # IFS=${op:3:1}
+            IFS=$(echo "$op" | tr -d "=~[]")
         else
-            IFS=${op:2:1}
+            # IFS=${op:2:1}
+            IFS=$(echo "$op" | tr -d "=~")
         fi
 
-        for datum in $val; do
+        val=$(echo "$val" | tr "$IFS" "\n" )
+        while read -r datum; do
             assert_within_regex "$datum" "$@" && continue
             echo "ERROR: ['$val']. After splited with \'$IFS\', element '$datum' does NOT match the regex set." >&2
             # param.help.show
             return 1
-        done ;;
+        done <<A
+$val
+A
+    ;;
     *)  [ "$op" == "" ] || echo ": TODO: $op" >&2 ;;
     esac
 
@@ -190,7 +203,8 @@ yes
 yes
 DOCTEST
 assert_within_regex(){
-    local c value="$1"
+    local c 
+    local value="$1"
     shift
     for c in "$@"; do
         #if [[ "$value" =~ ^($c)$ ]]; then
@@ -251,10 +265,11 @@ assert_f(){
 }
 
 # There is two ways to use assert_grep
+# > assert_grep "doctest" 2>/dev/null <"$(xrc_which std/test)" && echo yes
+# yes
+
 : <<'DOCTEST'
 > echo "hello hi" | assert_grep hi 1>/dev/null && echo yes
-yes
-> assert_grep "testsuite" 2>/dev/null <"$(xrc_which std/test)" && echo yes
 yes
 DOCTEST
 assert_grep(){

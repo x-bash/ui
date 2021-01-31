@@ -2,24 +2,24 @@
 
 debug_init doctest
 
-str_regex(){
-    local value="${1}"
-    local pattern="${2:?str_regex(): Provide pattern}"
+# str_regex(){
+#     local value="${1}"
+#     local pattern="${2:?str_regex(): Provide pattern}"
 
-    # Only dash does not support pattern="${pattern//\\/\\\\}"
+#     # Only dash does not support pattern="${pattern//\\/\\\\}"
 
-    echo "" | awk -v value="$value" "END {
-        if (match(value, /$pattern/)) {
-            exit 0
-        } else {
-            exit 1;
-        }
-    }"
-}
+#     echo "" | awk -v value="$value" "END {
+#         if (match(value, /$pattern/)) {
+#             exit 0
+#         } else {
+#             exit 1;
+#         }
+#     }"
+# }
 
-doctest_debug(){
-    echo "$@" >&2
-}
+# doctest_debug(){
+#     echo "$@" >&2
+# }
 
 _doctest_run_code(){
     local test_script_fifo=${test_script_fifo:?Provide test script fifo}
@@ -31,16 +31,16 @@ _doctest_run_code(){
     # echo "${script_code:1}" >"$test_script_fifo"
     echo "${script_code#> *}" >"$test_script_fifo"
     script_actual_result="$(cat "$out_fifo")"
-    if [ ! "$script_actual_result" == "$script_expect_result" ]; then
+    if [ ! "$script_actual_result" = "$script_expect_result" ]; then
         {
-            echo -e "\033[31mNOT ok\033[0m"
-            echo -e "\033[36m--code--\033[0m"
+            printf "%b\n" "\033[31mNOT ok\033[0m"
+            printf "%b\n" "\033[36m--code--\033[0m"
             echo "$script_code"
-            echo -e "\033[32m--expect--\033[0m"
+            printf "%b\n" "\033[32m--expect--\033[0m"
             echo "$script_expect_result"
-            echo -e "\033[31m--actual--\033[0m"
+            printf "%b\n"  "\033[31m--actual--\033[0m"
             echo "$script_actual_result"          
-            echo "===="
+            printf "%b\n"  "===="
             return 1
         }
     fi
@@ -85,8 +85,7 @@ $line"
             local cl
             block="$block
 >  "
-            IFS=$'\n'
-            for cl in $block; do
+            while read -r cl; do
                 # If it is not command
                 if ! str_regex "$cl" "^> "; then
                     if [ -z "$script_expect_result" ]; then
@@ -113,7 +112,9 @@ $cl"
 
                 script_code="$cl"
                 script_expect_result=""
-            done
+            done <<A
+$block
+A
             start=""
             continue
         fi
