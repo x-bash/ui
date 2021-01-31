@@ -165,7 +165,7 @@ $i"
         pattern_list=""
     fi
 
-    for filepath in $path_list; do
+    while read -r filepath; do
         case "$filepath" in
             /)      sw=1; printf "Detect rm -rf /" >&2      ;;
             /bin*)  sw=1; printf "Detect rm -rf /bin" >&2   ;;
@@ -177,7 +177,9 @@ $i"
                         printf "Detect violation of RULES: %s" "$pattern" >&2
                     done;;
         esac
-    done
+    done <<A
+$path_list
+A
 
     if [ "$sw" -eq 1 ]; then
         printf "file.rm.safe cannot remove the critical files. If you insists, please directly using rm command." >&2
