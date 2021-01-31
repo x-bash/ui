@@ -10,6 +10,7 @@ str_md5(){
     else
         cmd=md5sum
     fi
+
     if [ -z "$1" ]; then
         $cmd | cut -d ' ' -f 1
     else
@@ -17,7 +18,7 @@ str_md5(){
     fi
 }
 
-debug_init cache
+debug_init ccmd
 
 ccmd_help(){
     local IFS=
@@ -54,6 +55,8 @@ DESCRIPTION
             > ccmd 3m -- curl https://x-bash.gitee.io/boot
         Cache the command result in the file "~/cache" in future 3 hours
             > ccmd 3h ~/cache -- curl https://x-bash.gitee.io/boot
+        Cache the command result in the file "~/cache" regardless whether the command fails
+            > ccmd -- curl https://x-bash.gitee.io/boot || true
 '
 }
 
@@ -61,28 +64,31 @@ DESCRIPTION
 TMPDIR=${TMPDIR:-$(dirname "$(mktemp -u)")}
 
 ccmd(){
-    local IFS=  
-    local ARGS=()
+    local IFS=
+    local expiration
+    local filepath
+
     while [ ! "$1" == "--" ]; do
         if [ "$#" -eq 0 ]; then
             ccmd_help "PANIC: Expect -- and its following command\n" >&2
-            return 1
+            return 64
         fi
-        ARGS+=("$1"); shift
+        if [ -z "$expiration" ]; then
+            expiration="$1"
+        elif [ -z "$filepath" ]; then
+            filepath="$1"
+        else
+            ccmd_help "More than 3 arguments before --."
+            return 64 # EX_USAGE=64         # The command was used incorrectly, e.g., with the wrong number of arguments, a bad flag, a bad syntax in a parameter, or whatever.
+        fi
+        shift
     done
 
-    local expiration=60m 
-    local filepath
-    case "${#ARGS[@]}" in
-        0) ;;
-        1) expiration=${ARGS[0]};;
-        *) expiration=${ARGS[0]}; filepath=${ARGS[1]};;
-    esac
-
+    expiration=${expiration:-60m}
     # if [[ ! "$expiration" =~ ^[0-9]+[dmwsh]?$ ]]; then
     if ! str_regex "$expiration" "^[0-9]+[dmwsh]?$"; then
         ccmd_help "PANIC: Expiration should match pattern n[dmwsh]." >&2
-        return 1
+        return 65 # EX_DATAERR=65       # The input data was incorrect in some way. This should only be used for user's data and not system files.
     fi
 
     if [ -z "$filepath" ]; then
@@ -92,14 +98,20 @@ ccmd(){
     fi
     
     if find "$filepath" -mtime "-${expiration}" 2>/dev/null | grep -q ^; then
-        cache_debug "Using cache in Cache Path: $filepath"
+        ccmd_debug "Using cache in Cache Path: $filepath"
         cat "$filepath"
     else
-        cache_debug "FILEPATH does't exists or older than ${expiration} second. Update"
+        ccmd_debug "FILEPATH does't exists or older than ${expiration} second. Update"
 
         local BACKUP_PATH="$filepath.x-bash.origin.ed15841d4fba5c1dba9045bcbfa0819a"
-        if mv "$filepath" "$BACKUP_PATH"; then
-            eval "$@" | tee "$filepath"
+        if ! mv "$filepath" "$BACKUP_PATH"; then
+            ccmd_debug "Cannot backup because fail to create backup file."
+            return 73 # EX_CANTCREAT: A (user specified) output file cannot be created.
+        fi
+
+        if eval "$@" | tee "$filepath"; then
+            mv "$BACKUP_PATH" "$filepath"
+        else
             rm -rf "$BACKUP_PATH"
         fi
     fi
