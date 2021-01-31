@@ -45,15 +45,16 @@ DESCRIPTION
     If no unit provided, the default unit is "d"
 
     Example:
-        Update the command result NOW
+        Do NOT use cache. Update the command result NOW
             > ccmd 0 -- curl https://x-bash.gitee.io/boot     
-        Cache the command result in future 60 minutes (default)
+        Use cache if updated within 1 day. (default)
             > ccmd -- curl https://x-bash.gitee.io/boot  
+        Use cache if updated within 3 day.
         Cache the command result in future 3 days
-            > ccmd 3 -- curl https://x-bash.gitee.io/boot     
-        Cache the command result in future 3 minutess
+            > ccmd 3 -- curl https://x-bash.gitee.io/boot   
+        Use cache if updated within 3 minutes.
             > ccmd 3m -- curl https://x-bash.gitee.io/boot
-        Cache the command result in the file "~/cache" in future 3 hours
+        Use cache if updated within 3 hours.
             > ccmd 3h ~/cache -- curl https://x-bash.gitee.io/boot
         Cache the command result in the file "~/cache" regardless whether the command fails
             > ccmd -- curl https://x-bash.gitee.io/boot || true
@@ -84,7 +85,7 @@ ccmd(){
         shift
     done
 
-    expiration=${expiration:-60m}
+    expiration=${expiration:-1d}
     # if [[ ! "$expiration" =~ ^[0-9]+[dmwsh]?$ ]]; then
     if ! str_regex "$expiration" "^[0-9]+[dmwsh]?$"; then
         ccmd_help "PANIC: Expiration should match pattern n[dmwsh]." >&2
