@@ -103,16 +103,14 @@ ccmd(){
     else
         ccmd_debug "FILEPATH does't exists or older than ${expiration} second. Update"
 
-        local BACKUP_PATH="$filepath.x-bash.origin.ed15841d4fba5c1dba9045bcbfa0819a"
-        if ! mv "$filepath" "$BACKUP_PATH"; then
-            ccmd_debug "Cannot backup because fail to create backup file."
-            return 73 # EX_CANTCREAT: A (user specified) output file cannot be created.
-        fi
-
-        if eval "$@" | tee "$filepath"; then
-            mv "$BACKUP_PATH" "$filepath"
+        local TEMP_PATH="$filepath.x-bash.origin.ed15841d4fba5c1dba9045bcbfa0819a"
+        if eval "$@" | tee "$TEMP_PATH"; then
+            mv "$TEMP_PATH" "$filepath"
+            return 0
         else
-            rm -rf "$BACKUP_PATH"
+            local code=$?
+            rm "$TEMP_PATH"
+            return "$code"
         fi
     fi
 }
