@@ -3,7 +3,7 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-str.md5(){
+str_md5(){
     local cmd
     if command -v md5 >/dev/null 2>&1; then
         cmd=md5
@@ -19,18 +19,18 @@ str.md5(){
 
 debug_init cache
 
-cache.cmd.help(){
+cache_cmd_help(){
     local IFS=
     printf "%s\n" "$@"
 
     printf '
 ------------------
 NAME
-    cache.cmd -- cache the command result. 
+    cache_cmd -- cache the command result. 
     From std/cache: https://github.com/x-bash/std/blob/master/cache Or https://gitee.com/x-bash/std/blob/master/cache
 
 SYNOPSIS
-    cache.cmd [expiration, n[smhdw] ] [cache-filepath] -- <command> [...arguments]
+    cache_cmd [expiration, n[smhdw] ] [cache-filepath] -- <command> [...arguments]
 
 DESCRIPTION
     About expiration, pattern like "n[smhdw]"
@@ -44,50 +44,58 @@ DESCRIPTION
     If no unit provided, the default unit is "d"
 
     Example:
+        Update the command result NOW
+            > cache_cmd 0 -- curl https://x-bash.gitee.io/boot     
         Cache the command result in future 60 minutes (default)
-            > cache.cmd -- curl https://x-bash.gitee.io/boot       
+            > cache_cmd -- curl https://x-bash.gitee.io/boot  
         Cache the command result in future 3 days
-            > cache.cmd 3 -- curl https://x-bash.gitee.io/boot     
+            > cache_cmd 3 -- curl https://x-bash.gitee.io/boot     
         Cache the command result in future 3 minutess
-            > cache.cmd 3m -- curl https://x-bash.gitee.io/boot
+            > cache_cmd 3m -- curl https://x-bash.gitee.io/boot
         Cache the command result in the file "~/cache" in future 3 hours
-            > cache.cmd 3h ~/cache -- curl https://x-bash.gitee.io/boot
+            > cache_cmd 3h ~/cache -- curl https://x-bash.gitee.io/boot
 '
 }
 
-cache.cmd(){
-    local IFS=  ARGS=()
+# Check it again.
+TMPDIR=${TMPDIR:-$(dirname "$(mktemp -u)")}
+
+cache_cmd(){
+    local IFS=  
+    local ARGS=()
     while [ ! "$1" == "--" ]; do
         if [ "$#" -eq 0 ]; then
-            cache.cmd.help "PANIC: Expect -- and its following command\n" >&2
+            cache_cmd_help "PANIC: Expect -- and its following command\n" >&2
             return 1
         fi
         ARGS+=("$1"); shift
     done
 
-    local expiration=60m filepath
+    local expiration=60m 
+    local filepath
     case "${#ARGS[@]}" in
         0) ;;
         1) expiration=${ARGS[0]};;
         *) expiration=${ARGS[0]}; filepath=${ARGS[1]};;
     esac
 
-    if [[ ! "$expiration" =~ ^[0-9]+[dmwsh]?$ ]]; then
-        cache.cmd.help "PANIC: Expiration should match pattern n[dmwsh]." >&2
+    # if [[ ! "$expiration" =~ ^[0-9]+[dmwsh]?$ ]]; then
+    if ! str_regex "$expiration" "^[0-9]+[dmwsh]?$"; then
+        cache_cmd_help "PANIC: Expiration should match pattern n[dmwsh]." >&2
         return 1
     fi
 
     if [ -z "$filepath" ]; then
         filepath="${X_CMD_X_BASH_CACHE_CMD_FOLDER:-${TMPDIR}x-cmd-path}"
         mkdir -p "$filepath"
-        filepath="$filepath/$(str.md5 "$*")"
+        filepath="$filepath/$(str_md5 "$*")"
     fi
     
     if find "$filepath" -mtime "-${expiration}" 2>/dev/null | grep -q ^; then
-        [[ "$STD_DEBUG" == *cache* ]] && echo "Using cache in Cache Path: $filepath" >&2
+        cache_debug "Using cache in Cache Path: $filepath"
         cat "$filepath"
     else
-        [[ "$STD_DEBUG" == *cache* ]] && echo "FILEPATH does't exists or older than ${expiration} second. Update" >&2
+        cache_debug "FILEPATH does't exists or older than ${expiration} second. Update"
 
         local BACKUP_PATH="$filepath.x-bash.origin.ed15841d4fba5c1dba9045bcbfa0819a"
         if mv "$filepath" "$BACKUP_PATH"; then
@@ -97,21 +105,21 @@ cache.cmd(){
     fi
 }
 
-cache.cmd.clear(){
+cache_cmd_clear(){
     local FILEPATH="${X_CMD_X_BASH_CACHE_CMD_FOLDER:-${TMPDIR}x-cmd-path}"
     rm -f "$FILEPATH/*"
 }
 
 # If you want a new environment for script
-cache.cmd.setup(){
+cache_cmd_setup(){
     X_CMD_X_BASH_CACHE_CMD_FOLDER="${1:-"$(mktemp)"}"
     export X_CMD_X_BASH_CACHE_CMD_FOLDER
     mkdir -p "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
 }
 
 # Remember teardown if you have setup
-cache.cmd.teardown(){
-    @src path
-    path.rmrf.safe "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
+cache_cmd_teardown(){
+    xrc path
+    path_rmrf_safe "$X_CMD_X_BASH_CACHE_CMD_FOLDER"
     unset X_CMD_X_BASH_CACHE_CMD_FOLDER
 }
