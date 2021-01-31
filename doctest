@@ -9,7 +9,8 @@ _doctest_run_code(){
     local script_code="${1:?"Provide script code"}"
     local script_actual_result script_expect_result="${2}"
     # TODO: How to get rid of it in sh
-    echo "${script_code:1}" >"$test_script_fifo"
+    # echo "${script_code:1}" >"$test_script_fifo"
+    echo "${script_code#> *}" >"$test_script_fifo"
     script_actual_result="$(cat "$out_fifo")"
     if [ ! "$script_actual_result" == "$script_expect_result" ]; then
         {
@@ -39,7 +40,7 @@ doctest(){
     export test_script_fifo out_fifo
     (
         #shellcheck disable=SC1090
-        source "$1";
+        . "$1";
         _doctest_exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" 1>/dev/null 2>&1
     ) &
 
@@ -52,7 +53,8 @@ doctest(){
     local script_expect_result=""
     while read -r line; do
         if [ -n "$start" ]; then
-            if [[ ! "$line" =~ ^$start$ ]]; then
+            # if [[ ! "$line" =~ ^$start$ ]]; then
+            if [ ! "$line" = "$start" ]; then
                 block="$block
 $line"
                 continue
@@ -60,14 +62,14 @@ $line"
 
             doctest_debug "starting running"
 
-            start="" # clear out
+            # start="" # clear out after
             local cl
             block="$block
-> "
+>  "
             for cl in $block; do
                 # If it is not command
                 # if [[ ! "$cl" =~ ^\>[[:space:]] ]]; then
-                if ! str_regex "$cl" "^\> "; then
+                if ! str_regex "$cl" "^> "; then
                     if [ -z "$script_expect_result" ]; then
                         script_expect_result="$cl"
                     else
@@ -79,23 +81,34 @@ $cl"
 
                 # IF it is a command
                 if [ -n "$script_code" ]; then
-                    _doctest_run_code "$script_code" "$script_expect_result" || {
-                        return_code=$?
-                        break 2
-                    }
+                    if [ "$X_BASH_SRC_SHELL" != "sh" ] || [ "$start" != "DOCTEST-NO-SH" ]; then
+                        _doctest_run_code "$script_code" "$script_expect_result" || {
+                            return_code=$?
+                            rm "$test_script_fifo" "$out_fifo"
+                            kill -9 $PROCESS_ID 1>/dev/null 2>&1
+                            return $return_code
+                            # break 2   # break 2 unsupported in sh
+                        }
+                    fi
                 fi
 
                 script_code="$cl"
                 script_expect_result=""
             done
+            start=""
             continue
         fi
 
         # Must start with doctest
         # [[ "$line" =~ ^\<\<([[:alnum:]]+)$ ]] && {
         # [[ "$line" =~ ^\ *\:*\ *\<\<\'((doctest|DOCTEST)[A-Za-z0-9-]*)\'$ ]] && {
-        str_regex "$line" "^ *: *<<'?DOCTEST'?$" && {
-            start="DOCTEST"
+        str_regex "$line" "^ *: *<<'?DOCTEST(-NO-SH)?'?$" && {
+            local k="${line#*DOCTEST-NO-SH*}"
+            if [ "${#k}" -eq ${#line} ]; then
+                start="DOCTEST"
+            else
+                start="DOCTEST-NO-SH"
+            fi
             doctest_debug "Token FOUND: $start"
             block=""
         }

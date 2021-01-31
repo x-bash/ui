@@ -252,7 +252,7 @@ assert_f(){
 
 # There is two ways to use assert_grep
 : <<'DOCTEST'
-> assert_grep hi <<<"hello hi" 1>/dev/null && echo yes
+> echo "hello hi" | assert_grep hi 1>/dev/null && echo yes
 yes
 > assert_grep "testsuite" 2>/dev/null <"$(xrc_which std/test)" && echo yes
 yes
@@ -300,22 +300,27 @@ assert_int(){
     return 0
 }
 
-: <<'DOCTEST'
+
+# It cannot pass the test in sh. So. Don't
+: <<'DOCTEST-NO-SH'
 > a=3; b=(1 2 3); c=8; d=(3 8)
 > assert_var_is_array a b c 2>/dev/null && echo yes
 > assert_var_is_array b d && echo yes
 yes
-DOCTEST
-assert_var_is_array(){
-    while [ $# -gt 0 ]; do
-        if ! declare -p "${1:?Please provide variable name}" 2> /dev/null | grep -q '^declare \-a'; then
-            echo "${MSG:-"Expect var to be of array type: $*"}" >&2
-            return 1
-        fi
-        shift
-    done
-    return 0
-}
+DOCTEST-NO-SH
+
+if [ "$X_BASH_SRC_SHELL" != "sh" ]; then
+    assert_var_is_array(){
+        while [ $# -gt 0 ]; do
+            if ! declare -p "${1:?Please provide variable name}" 2> /dev/null | grep -q '^declare \-a'; then
+                echo "${MSG:-"Expect var to be of array type: $*"}" >&2
+                return 1
+            fi
+            shift
+        done
+        return 0
+    }
+fi
 
 testFun(){
     # Do it in usual way
@@ -346,14 +351,21 @@ testFun(){
 
 
 : <<'DOCTEST'
+> a=3; c=
+> assert_var_not_empty a c && echo yes
+> assert_var_not_empty a && echo yes
+yes
+DOCTEST
+
+: <<'DOCTEST-NO-SH'
 > a=3; b=(1 2 3); c=
 > assert_var_not_empty a b c && echo yes
 > assert_var_not_empty a b && echo yes
 yes
-DOCTEST
+DOCTEST-NO-SH
 assert_var_not_empty(){
     for i in "$@"; do
-        [ -n "${!i}" ] || return 1
+        eval "[ -n \"\$$i\" ] || return 1"
     done
 }
 
