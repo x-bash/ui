@@ -8,7 +8,7 @@ _doctest_run_code(){
 
     local script_code="${1:?"Provide script code"}"
     local script_actual_result script_expect_result="${2}"
-
+    # TODO: How to get rid of it in sh
     echo "${script_code:1}" >"$test_script_fifo"
     script_actual_result="$(cat "$out_fifo")"
     if [ ! "$script_actual_result" == "$script_expect_result" ]; then
@@ -29,7 +29,9 @@ _doctest_run_code(){
 # In the future, using the awk to accelerate.
 # Main Method.
 doctest(){
-    local test_script_fifo="doctest.tmp.input.fifo" out_fifo="doctest.tmp.output.fifo"
+    local test_script_fifo="doctest.tmp.input.fifo" 
+    local out_fifo="doctest.tmp.output.fifo"
+    local IFS=$'\n'
 
     rm "$test_script_fifo" "$out_fifo" 2>/dev/null 
     mkfifo "$test_script_fifo" "$out_fifo"
@@ -44,12 +46,15 @@ doctest(){
     local PROCESS_ID="$!"
     local return_code=0
 
-    local start="" block=() script_code="" script_expect_result=""
+    local start=""
+    local block=""
+    local script_code=""
+    local script_expect_result=""
     while read -r line; do
         if [ -n "$start" ]; then
             if [[ ! "$line" =~ ^$start$ ]]; then
-                block=("${block[@]}" "$line")
-                # TODO: block+=("$line")
+                block="$block
+$line"
                 continue
             fi
 
@@ -57,8 +62,9 @@ doctest(){
 
             start="" # clear out
             local cl
-            block+=("> ")
-            for cl in "${block[@]}"; do
+            block="$block
+> "
+            for cl in $block; do
                 # If it is not command
                 # if [[ ! "$cl" =~ ^\>[[:space:]] ]]; then
                 if ! str_regex "$cl" "^\> "; then
@@ -91,7 +97,7 @@ $cl"
         str_regex "$line" "^ *: *<<'?DOCTEST'?$" && {
             start="DOCTEST"
             doctest_debug "Token FOUND: $start"
-            block=()
+            block=""
         }
     done <"$1"
 
