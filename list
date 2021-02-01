@@ -1,0 +1,7 @@
+# shellcheck shell=sh
+
+if [ -z "$ZSH_VERSION" ] && [ -z "$BASH_VERSION" ]; then
+    xrc std/list_str
+else
+    xrc std/list_native
+fi
