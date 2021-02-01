@@ -10,7 +10,7 @@ path_ext(){
         ret=${filepath##*.}
         # ret=$(cut -d '.')
         # to handle the situation: `path_extensions abc`, ret="abc", should return ""
-        [ "$ret" == "$filepath" ] || printf "%s" "$ret"
+        [ "$ret" = "$filepath" ] || printf "%s" "$ret"
     done
 }
 
@@ -125,10 +125,10 @@ path_rmrf(){
     for i in "$@"; do
         local tgt
         tgt="$(str.trim "$i")"
-        [ "$tgt" == "" ] && continue
+        [ "$tgt" = "" ] && continue
 
         # TODO: add other patterns
-        if [ "$tgt" == "/" ]; then
+        if [ "$tgt" = "/" ]; then
             yesno "WARNING: Sure of removing '$tgt': " || continue
         fi
 
@@ -148,7 +148,7 @@ path_rmrf_safe(){
     local IFS=
 
     for i in "$@"; do
-        if [ "$i" == -- ]; then
+        if [ "$i" = -- ]; then
             hyphen2=1
         fi
         if [ $hyphen2 -eq 0 ]; then
