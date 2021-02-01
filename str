@@ -10,16 +10,16 @@
 # a=(1 2 3)
 # IFS=$'\n'; echo "${a[*]}"
 
-str.selftest(){
+str_selftest(){
     @src std/test
     test.doctest "${BASH_SOURCE[0]}"
 }
 
 : <<'DOCTEST'
-> str.join "++" 1 2 3
+> str_join "++" 1 2 3
 1++2++3
 DOCTEST
-str.join(){
+str_join(){
     local sep=$1
     shift 1
     local bar
@@ -28,7 +28,7 @@ str.join(){
     echo "$bar"
 }
 
-str.len(){
+str_len(){
     if [ $# -ne 0 ]; then
         while [ $# -ne 0 ]; do
             echo "${#1}"
@@ -41,7 +41,7 @@ str.len(){
     fi
 }
 
-str.trim(){
+str_trim(){
     local var="$*"
     # remove leading whitespace characters
     var="${var#"${var%%[![:space:]]*}"}"
@@ -50,14 +50,14 @@ str.trim(){
     echo -n "$var"
 }
 
-str.trim_left(){
+str_trim_left(){
     local var="$*"
     # remove leading whitespace characters
     var="${var#"${var%%[![:space:]]*}"}"
     echo -n "$var"
 }
 
-str.trim_right(){
+str_trim_right(){
     local var="$*"
     # remove trailing whitespace characters
     var="${var%"${var##*[![:space:]]}"}"
@@ -65,20 +65,20 @@ str.trim_right(){
 }
 
 : <<'DOCTEST'
-> str.split , "$(echo -e "a\nc,b,c")" arr; echo "${#arr[@]}"
+> str_split , "$(echo -e "a\nc,b,c")" arr; echo "${#arr[@]}"
 3
-> IFS=$'\n' result_list=( $(str.split_to_lines , "$(echo -e "a\nc,b,c")") ); echo "${#result_list[@]}"  # str.split supermacy over str.split_to_lines
+> IFS=$'\n' result_list=( $(str_split_to_lines , "$(echo -e "a\nc,b,c")") ); echo "${#result_list[@]}"  # str_split supermacy over str_split_to_lines
 4
 DOCTEST
 
 # https://stackoverflow.com/questions/40686922/howto-split-a-string-on-a-multi-character-delimiter-in-bash#comment99425158_47633817
-str.split(){
+str_split(){
     # tr "${1:?split char}" '\n'
     local s IFS delimiter="${1:?Delemiter}" array_name  k
     shift 1
     case "$#" in
         0)  echo "Please provide array name.
-str.split <delimiter> [string] <arary_name>
+str_split <delimiter> [string] <arary_name>
 " >&2; 
             return 1; ;;        # TODO: Add details information
         1)  array_name="$1";  
@@ -100,16 +100,16 @@ str.split <delimiter> [string] <arary_name>
 }
 
 : <<'DOCTEST'
-> str.split_to_lines : 1:2:3
+> str_split_to_lines : 1:2:3
 1
 2
 3
-> str.split_to_lines : 1:2:3:4:5 -- a b c - d; echo $a $b $c $d
+> str_split_to_lines : 1:2:3:4:5 -- a b c - d; echo $a $b $c $d
 1 2 3 5
-> IFS=$'\n' result_list=( $(str.split_to_lines : 1:2:3) ); echo "${#result_list[@]}" "${result_list[1]}"
+> IFS=$'\n' result_list=( $(str_split_to_lines : 1:2:3) ); echo "${#result_list[@]}" "${result_list[1]}"
 3 2
 DOCTEST
-# According to str.split
+# According to str_split
 str_.split_to_lines(){
     # tr "${1:?split char}" '\n'
     local s IFS
@@ -120,11 +120,11 @@ str_.split_to_lines(){
     echo -e "${s//$1/\n}"
 }
 
-# str.split - -- a b c
-str.work(){
+# str_split - -- a b c
+str_work(){
     local out=() sw=0 i
     for i in "$@"; do
-        (( sw ++ ))
+        sw=$(( sw+1 ))
         if [ "$i" = "--" ]; then
             out=( "${@:((sw + 1))}" )
             set -- "${@:0:sw}"
@@ -136,17 +136,17 @@ str.work(){
     echo "$#" "$@"
 }
 
-str.split_to_lines(){
+str_split_to_lines(){
     local IFS SEP=${1:?Please provide seperator}
     shift
 
     local sw=0 i final=-1 out=()
     for i in "$@"; do
-        (( sw++ ))
+        sw=$(( sw+1 ))
         [ "$i" = -- ] && final=$sw
     done
 
-    # Strange case str.split_to_lines : --
+    # Strange case str_split_to_lines : --
     if [ "$final" -ne -1 ] && [ "$final" -ne $# ] ; then
         out=("${@:((final + 1))}")
         set -- "${@:0:final}"
@@ -158,18 +158,18 @@ str.split_to_lines(){
         local sss=0
         for i in $(str_.split_to_lines "$SEP" "$1"); do
             local var=${out[sss]}
-            (( sss++ ))
+            sss=$(( sss+1 ))
             [ -z "$var" ] && return 0
-            [ "$var" != "-" ] && eval "$var=$(str.repr "$i")"
+            [ "$var" != "-" ] && eval "$var=$(str_repr "$i")"
         done
     fi
 }
 
 : <<'DOCTEST'
-> str.upper "3abcDEF9"
+> str_upper "3abcDEF9"
 3ABCDEF9
 DOCTEST
-str.upper(){
+str_upper(){
     if [ "$#" -eq 0 ]; then
         tr "[:lower:]" "[:upper:]"
     else
@@ -178,10 +178,10 @@ str.upper(){
 }
 
 : <<'DOCTEST'
-> str.lower "3abcDEF9"
+> str_lower "3abcDEF9"
 3abcdef9
 DOCTEST
-str.lower(){
+str_lower(){
     if [ "$#" -eq 0 ]; then
         tr "[:upper:]" "[:lower:]"
     else
@@ -192,40 +192,40 @@ str.lower(){
 # other format using library
 
 : <<'DOCTEST'
-> str.starts_with "hi world" hi && echo yes
+> str_starts_with "hi world" hi && echo yes
 yes
 DOCTEST
-str.starts_with(){
+str_starts_with(){
     [[ ${1:?Provide string} == ${2:?Provide prefix}* ]]
 }
 
 : <<'DOCTEST'
-> str.starts_with_regex "hi world" [a\-z]i && echo yes
+> str_starts_with_regex "hi world" [a\-z]i && echo yes
 yes
 DOCTEST
-str.starts_with_regex(){
+str_starts_with_regex(){
     [[ ${1:?Provide string} =~ ^${2:?Provide prefix in regex form} ]]
 }
 
 : <<'DOCTEST'
-> str.ends_with "hi world" ld && echo yes
+> str_ends_with "hi world" ld && echo yes
 yes
 DOCTEST
-str.ends_with(){
+str_ends_with(){
     [[ ${1?:Provide string} == *${2:?Provide suffix} ]]
 }
 
-str.ends_with_regex(){
+str_ends_with_regex(){
     [[ ${1?:Provide string} =~ ${2:?Provide suffix}$ ]]
 }
 
 : <<'DOCTEST'
-> str.slice "hi world" 3:
+> str_slice "hi world" 3:
 world
-> str.slice "hi world" 3:-1
+> str_slice "hi world" 3:-1
 worl
 DOCTEST
-str.slice(){    
+str_slice(){    
     local srcStr=${1:?Please input a string to slice}
     local start end
     
@@ -251,10 +251,10 @@ str.slice(){
 }
 
 : <<'DOCTEST'
-> str.indexof "hi world" "world"
+> str_indexof "hi world" "world"
 3
 DOCTEST
-str.indexof(){
+str_indexof(){
     local src=${1:?Provide src string}, tgt=${2:?Provide target str}
     local after_tgt_in_src=${src#*${tgt}}
     if [ "${#after_tgt_in_src}" -eq "${#src}" ]; then
@@ -265,7 +265,7 @@ str.indexof(){
 
 ## text
 
-str.dos2unix(){
+str_dos2unix(){
     if [ $# -eq 0 ]; then
         sed -e 's/\r//'
     else
@@ -275,7 +275,7 @@ str.dos2unix(){
 
 # refer https://en.wikipedia.org/wiki/Unix2dos
 # refer https://www.cyberciti.biz/faq/howto-unix-linux-convert-dos-newlines-cr-lf-unix-text-format/
-str.unix2dos(){
+str_unix2dos(){
     if [ $# -eq 0 ]; then
         # test cat abc.txt | sed -e 's/$/\r/' | cat -vet -
         sed -e $'s/$/\r/'
@@ -289,7 +289,7 @@ str.unix2dos(){
 }
 
 # Reference: https://stackoverflow.com/questions/5349718/how-can-i-repeat-a-character-in-bash
-str.repeat(){
+str_repeat(){
     local t character="${1:?Charactor}" number="${2:?Number of characters}"
     case "${#character}" in
     0) echo "Wrong" >&2;;
@@ -301,7 +301,7 @@ str.repeat(){
 # USAGE 1, remove in file: remove_eol_space filepath
 # USAGE 2, remove in file and backup with BAK as extensions: BAK='.bak' remove_eol_space filepath
 # USAGE 3, remove and output to stdout: cat filepath | remove_eol_space
-str.remove_eol_space(){
+str_remove_eol_space(){
     if [ $# -eq 0 ]; then
         sed -e 's/[[:blank:]]*$//g'
     else
@@ -313,7 +313,7 @@ str.remove_eol_space(){
 #     tr '[a-zA-Z]' '[n-za-mN-ZA-M]'
 # }
 
-str._rot(){
+_str_rot(){
     local rot=${1:-13}
     local letter='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789=-+'
     local before=${letter:0:$rot}
@@ -321,63 +321,63 @@ str._rot(){
     tr $letter $after$before
 }
 
-str.rot.encode(){
+str_rot_encode(){
     local ROT=${1:?Provide rot number}
     shift
     if [ $# -eq 0 ]; then
-        str._rot "$ROT"
+        _str_rot "$ROT"
     else
-        echo -n "$1" | str._rot "$ROT"
+        echo -n "$1" | _str_rot "$ROT"
     fi
 }
 
-str.rot.decode(){
+str_rot_decode(){
     local ROT=${1:?Provide rot number}
     shift
     if [ $# -eq 0 ]; then
-        str._rot $(( 65 - ROT ))
+        _str_rot $(( 65 - ROT ))
     else
-        echo -n "$1" | str._rot $(( 65 - ROT ))
+        echo -n "$1" | _str_rot $(( 65 - ROT ))
     fi
 }
 
-str.brb.encode(){
+str_brb_encode(){
     local ROT=${1:?Provide rot number}
     shift
     if [ $# -eq 0 ]; then
-        base64 | str.rot.encode "$ROT" | base64;
+        base64 | str_rot_encode "$ROT" | base64;
     else
-        echo -n "$1" | base64 | str.rot.encode "$ROT" | base64;
+        echo -n "$1" | base64 | str_rot_encode "$ROT" | base64;
     fi
 }
 
-str.brb.decode(){
+str_brb_decode(){
     local ROT=${1:?Provide rot number}
     shift
     if [ $# -eq 0 ]; then
-        base64 --decode | str.rot.decode "$ROT" | base64 --decode
+        base64 --decode | str_rot_decode "$ROT" | base64 --decode
     else
-        echo -n "$1" | base64 --decode | str.rot.decode "$ROT" | base64 --decode
+        echo -n "$1" | base64 --decode | str_rot_decode "$ROT" | base64 --decode
     fi
 }
 
-str.base64(){
+str_base64(){
     if [ $# -eq 0 ]; then
         base64
     else
-        str.trim "$(echo -n "${1:?Provide string}" | base64)"
+        str_trim "$(echo -n "${1:?Provide string}" | base64)"
     fi
 }
 
-str.unbase64(){
+str_unbase64(){
     if [ $# -eq 0 ]; then
         base64 --decode
     else
-        str.trim "$(echo -n "${1:?Provide string}" | base64 --decode)"
+        str_trim "$(echo -n "${1:?Provide string}" | base64 --decode)"
     fi
 }
 
-str_.md5(){
+_str_md5(){
     local cmd
     if command -v md5 >/dev/null 2>&1; then
         cmd=md5
@@ -394,27 +394,27 @@ str_.md5(){
 # Wrap the function with output variable
 
 : <<'DOCTEST'
-> echo -n hi | str.md5
+> echo -n hi | str_md5
 49f68a5c8493ec2c0bf489821c21fc3b
-> str.md5 "hi"
+> str_md5 "hi"
 49f68a5c8493ec2c0bf489821c21fc3b
-> str.md5 -- a
+> str_md5 -- a
 > echo "$a"
 49f68a5c8493ec2c0bf489821c21fc3b
-> str.md5 "hi" -- a
+> str_md5 "hi" -- a
 49f68a5c8493ec2c0bf489821c21fc3b
 DOCTEST
 # shellcheck disable=SC2086
-str.md5(){
+str_md5(){
     case $# in
-        0)  str_.md5; return 0;;
-        1)  str_.md5 $1; return 0;;
-        2)  if [ "$1" == -- ]; then
-                eval $2="$(str_.md5)"; 
+        0)  _str_md5; return 0;;
+        1)  _str_md5 $1; return 0;;
+        2)  if [ "$1" = -- ]; then
+                eval $2="$(_str_md5)"; 
                 return 0
             fi ;;
         *) 
-            eval $3="$(str_.md5 "$1")"; 
+            eval $3="$(_str_md5 "$1")"; 
             return 0;;
     esac
 
@@ -423,10 +423,10 @@ str.md5(){
 }
 
 : <<'DOCTEST'
-> str.sha "hi x-bash"
+> str_sha "hi x-bash"
 b595755ac2c4a251bef3187cda6550e25e72752a
 DOCTEST
-str.sha(){
+str_sha(){
     local ALGOR=${ALGOR:-1}
     if command -v shasum >/dev/null 2>&1; then
         echo -n "${1:?str to encrypt}" | shasum -a "$ALGOR" | cut -d ' ' -f 1
@@ -442,26 +442,26 @@ str.sha(){
     # TODO: Install x and provide encryption
 }
 
-str.sha1(){     ALGOR=1 str.sha "$@"; }
-str.sha256(){   ALGOR=256 str.sha "$@"; }
-str.sha512(){   ALGOR=512 str.sha "$@"; }
+str_sha1(){     ALGOR=1 str_sha "$@"; }
+str_sha256(){   ALGOR=256 str_sha "$@"; }
+str_sha512(){   ALGOR=512 str_sha "$@"; }
 
-str.repr(){
+str_repr(){
     # echo "\"$(echo "$1" | sed s/\"/\\\\\"/g)\""
     # echo "\"${1//\"/\\\\\"}\""
     # echo "\"${1//\"/\\\"}\""
     printf '"%s"' "${1//\"/\\\"}"
 }
 
-str.replace(){
+str_replace(){
     echo "${${1:?Original string}/"${2:?Source substring}"/${3:?Target string}}"
 }
 
-str.replace_all(){
+str_replace_all(){
     echo "${${1:?Original string}//"${2:?Source substring}"/${3:?Target string}}"
 }
 
-str.replace_n(){
+str_replace_n(){
     local org="${1:?Original string}"
     local src="${2:?Source substring}"
     local num="${3:?Number}"
@@ -479,18 +479,18 @@ str.replace_n(){
 
 export OR="\|"
 
-R.wrap(){
+R_wrap(){
     echo -n "\($1\)"
 }
 
-R.or(){
-    R.wrap "$(str.join "\|" "$@")"
+R_or(){
+    R_wrap "$(str_join "\|" "$@")"
 }
 
 # IP_0_255="[0-9]${OR}\([1-9][0-9]\)${OR}\(1[0-9][0-9]\)${OR}\(2[0-4][0-9]\)${OR}\(25[0-5]\)"
 
 # shellcheck disable=SC2046,SC2006
-IP_0_255=$( R.or `R.wrap "[0-9]"` `R.wrap "[1-9][0-9]"` `R.wrap "1[0-9][0-9]"` `R.wrap "2[0-4][0-9]"` `R.wrap "25[0-5]"` )
+IP_0_255=$( R_or `R_wrap "[0-9]"` `R_wrap "[1-9][0-9]"` `R_wrap "1[0-9][0-9]"` `R_wrap "2[0-4][0-9]"` `R_wrap "25[0-5]"` )
 export IP="\\b${IP_0_255}\.${IP_0_255}\.${IP_0_255}\.${IP_0_255}\\b"
 
 # [[:alpha:]] [[:alphanum:]] [[:number:]]
