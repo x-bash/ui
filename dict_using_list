@@ -14,8 +14,8 @@ else
 fi
 COMMENT
 
-@src std/list
-@src std/str
+xrc std/list
+xrc std/str
 
 dict.make(){
     list.make "$@"
