@@ -1,10 +1,13 @@
-# shellcheck shell=bash
+# shellcheck shell=sh
+# shellcheck disable=SC2039
 
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
 path_ext(){
-    local i ret filepath
+    local i 
+    local ret 
+    local filepath
     for i in "$@"; do
         filepath=$(basename "${i}")
         ret=${filepath##*.}
@@ -25,7 +28,9 @@ path_parts(){
         return 0
     fi
 
-    local dirname=${2:-"-"} filename=${3:-"-"} extname=${4:-"-"}
+    local dirname=${2:-"-"} 
+    local filename=${3:-"-"} 
+    local extname=${4:-"-"}
     
     [ ! "$dirname" = - ] && eval "$dirname=$(dirname "$filepath")"
     [ ! "$filename" = - ] && eval "$filename=$(basename "$filepath")"
@@ -33,7 +38,8 @@ path_parts(){
 }
 
 path_filename(){
-    local filepath i
+    local filepath 
+    local i
     for i in "$@"; do
         filepath=$(basename "$i")
         printf "%s" "${filepath%.*}"
