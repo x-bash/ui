@@ -12,7 +12,7 @@ debug_init array
 # \n Using \001
 # 
 
-list_sep="$(printf "\001")"
+LIST_SEP="$(printf "\001")"
 
 list_make(){
     local O="${1:?list_name}"
@@ -25,8 +25,8 @@ list_free(){
 
 list_size(){
     local O="${O:?list_name}"
-    eval printf "%s" "\${$O%%\${list_sep}*}"
-    # eval printf "%s" "\$$O" | cut -d "$list_sep" -f 1
+    eval printf "%s" "\${$O%%\${LIST_SEP}*}"
+    # eval printf "%s" "\$$O" | cut -d "$LIST_SEP" -f 1
     # eval "echo ${$O}"
 }
 
@@ -41,36 +41,36 @@ list_get(){
         return 1
     fi
 
-    eval printf "%s" "\$$O" | cut -d "$list_sep" -f "$((i+2))"
+    eval printf "%s" "\$$O" | cut -d "$LIST_SEP" -f "$((i+2))"
 }
 
 list_push() {
     local O="${O:?list_name}"
-    local IFS="$list_sep"
+    local IFS="$LIST_SEP"
 
     local len
-    len=$(eval printf "%s" "\${$O%%${list_sep}*}")
+    len=$(eval printf "%s" "\${$O%%${LIST_SEP}*}")
     if [ "$len" -eq 0 ]; then
-        eval $O="$(printf "%s${list_sep}%s" "$((len+$#))" "$*")"
+        eval $O="$(printf "%s${LIST_SEP}%s" "$((len+$#))" "$*")"
     else
         local body
-        body=$(eval printf "%s" "\${$O#*${list_sep}}")
-        eval $O="$(printf "%s${list_sep}%s${list_sep}%s" "$((len+$#))" "$body" "$*")"
+        body=$(eval printf "%s" "\${$O#*${LIST_SEP}}")
+        eval $O="$(printf "%s${LIST_SEP}%s${LIST_SEP}%s" "$((len+$#))" "$body" "$*")"
     fi
 }
 
 list_push_before() {
     local O="${O:?list_name}"
-    local IFS="$list_sep"
+    local IFS="$LIST_SEP"
 
     local len
-    len=$(eval printf "%s" "\${$O%%${list_sep}*}")
+    len=$(eval printf "%s" "\${$O%%${LIST_SEP}*}")
     if [ "$len" -eq 0 ]; then
-        eval $O="$(printf "%s${list_sep}%s" "$((len+$#))" "$*")"
+        eval $O="$(printf "%s${LIST_SEP}%s" "$((len+$#))" "$*")"
     else
         local body
-        body=$(eval printf "%s" "\${$O#*${list_sep}}")
-        eval $O="$(printf "%s${list_sep}%s${list_sep}%s" "$((len+$#))" "$*" "$body")"
+        body=$(eval printf "%s" "\${$O#*${LIST_SEP}}")
+        eval $O="$(printf "%s${LIST_SEP}%s${LIST_SEP}%s" "$((len+$#))" "$*" "$body")"
     fi
 }
 
@@ -105,20 +105,20 @@ list_foreach(){
         i=$((i+1))
     done <<A
 $(eval printf "%s" "\$$O" | tr "
-$list_sep" '\001\n' )
+$LIST_SEP" '\001\n' )
 A
 }
 
 list_pop(){
     local O="${O:?list_name}"
     local len
-    len=$(eval printf "%s" "\${$O%%${list_sep}*}")
+    len=$(eval printf "%s" "\${$O%%${LIST_SEP}*}")
     case "$len" in
     0)  return 1    ;;
-    1)  eval printf "%s" "\${$O##*\${list_sep}}"
+    1)  eval printf "%s" "\${$O##*\${LIST_SEP}}"
         eval $O=0   ;;
-    *)  eval printf "%s" "\${$O##*\${list_sep}}"
-        eval $O="$(printf "%s${list_sep}%s" "$((len-1))" "$(eval printf "%s" "\${$O%\${list_sep}*}")")" ;;
+    *)  eval printf "%s" "\${$O##*\${LIST_SEP}}"
+        eval $O="$(printf "%s${LIST_SEP}%s" "$((len-1))" "$(eval printf "%s" "\${$O%\${LIST_SEP}*}")")" ;;
     esac
     return 0
 }
@@ -126,15 +126,15 @@ list_pop(){
 list_shift(){
     local O="${O:?list_name}"
     local len
-    len=$(eval printf "%s" "\${$O%%${list_sep}*}")
+    len=$(eval printf "%s" "\${$O%%${LIST_SEP}*}")
     case "$len" in
     0)  return 1    ;;
-    1)  eval printf "%s" "\${$O##*\${list_sep}}"
+    1)  eval printf "%s" "\${$O##*\${LIST_SEP}}"
         eval $O=0   ;;
     *)  
-        local t="$(eval printf "%s" "\${$O#*\${list_sep}}")"
-        printf "%s" "${t%%${list_sep}*}"
-        eval $O="$(printf "%s${list_sep}%s" "$((len-1))" "$(printf "%s" "${t#*${list_sep}}")")" ;;
+        local t="$(eval printf "%s" "\${$O#*\${LIST_SEP}}")"
+        printf "%s" "${t%%${LIST_SEP}*}"
+        eval $O="$(printf "%s${LIST_SEP}%s" "$((len-1))" "$(printf "%s" "${t#*${LIST_SEP}}")")" ;;
     esac
     return 0
 }
@@ -170,7 +170,7 @@ list_remove_by_value(){
     local value=${1:?value}
     value=$(echo "$value" | tr '"\\' "\001\002")
 
-    eval $O="$(eval printf "%s" "\$$O" | awk -v RS="$list_sep" -v ORS="$list_sep" -v value="$value" \
+    eval $O="$(eval printf "%s" "\$$O" | awk -v RS="$LIST_SEP" -v ORS="$LIST_SEP" -v value="$value" \
     '
         BEGIN{
             gsub("\001", "\"", value)
@@ -192,7 +192,7 @@ list_remove(){
     local O="${O:?list_name}"
 
     local idx=${1:?idx}
-    eval $O="$(eval printf "%s" "\$$O" | awk -v RS="$list_sep" -v ORS="$list_sep" -v idx="$idx" \
+    eval $O="$(eval printf "%s" "\$$O" | awk -v RS="$LIST_SEP" -v ORS="$LIST_SEP" -v idx="$idx" \
     '
         BEGIN{ idx=int(value) + 2 }
         {
@@ -236,7 +236,7 @@ list_get_by_regex(){
 
 list_print(){
     local O="${O:?list_name}"
-    eval printf "%s" "\$$O" | cut -d "$list_sep" -f 2- | tr "$list_sep" "
+    eval printf "%s" "\$$O" | cut -d "$LIST_SEP" -f 2- | tr "$LIST_SEP" "
 "
 }
 
