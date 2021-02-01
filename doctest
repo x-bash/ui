@@ -4,23 +4,6 @@
 
 debug_init doctest
 
-# str_regex "/abc" "^/" && echo hi
-# str_regex "\"/abc" "^\"/"
-# str_regex(){
-#     local value="${1}"
-#     local pattern="${2:?str_regex(): Provide pattern}"
-
-#     # Only dash does not support pattern="${pattern//\\/\\\\}"
-
-#     echo "" | awk -v value="$value" "END {
-#         if (match(value, /$pattern/)) {
-#             exit 0
-#         } else {
-#             exit 1;
-#         }
-#     }"
-# }
-
 # doctest_debug(){
 #     echo "$@" >&2
 # }
