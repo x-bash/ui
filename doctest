@@ -1,7 +1,11 @@
 # shellcheck shell=bash
 
+# TODO: Rewrite in awk to optimize performance in the future.
+
 debug_init doctest
 
+# str_regex "/abc" "^/" && echo hi
+# str_regex "\"/abc" "^\"/"
 # str_regex(){
 #     local value="${1}"
 #     local pattern="${2:?str_regex(): Provide pattern}"
