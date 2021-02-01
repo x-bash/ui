@@ -3,7 +3,7 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-line.map(){
+line_map(){
     local line
     while read -rd $'\n' line; do
         eval "$@"
@@ -11,7 +11,7 @@ line.map(){
 }
 
 # using regex to filter
-line.rmap(){
+line_rmap(){
     local line
     local code="${2: echo \"\$line\"}"
     while read -rd $'\n' line; do
@@ -22,7 +22,7 @@ line.rmap(){
 }
 
 # using glob to filter
-line.gmap(){
+line_gmap(){
     local line
     local code="${2: echo \"\$line\"}"
     while read -rd $'\n' line; do
@@ -33,7 +33,7 @@ line.gmap(){
 }
 
 # using eval to filter
-line.fmap(){
+line_fmap(){
     local line
     local code="${2: echo \"\$line\"}"
     while read -rd $'\n' line; do
@@ -44,7 +44,7 @@ line.fmap(){
 }
 
 # From file.exits_or_append
-line.exist_or_append() {
+line_exist_or_append() {
     if [ $# -eq 0 ]; then
         echo "show help" >&2
     elif [ $# -eq 1 ]; then
@@ -61,52 +61,56 @@ line.exist_or_append() {
     fi
 }
 
-# Only works for zsh bash
-line.to_array(){
-    local name=${1:?Array name} line
-    shift
-    if [ $# -eq 0 ]; then
-        while read -r line; do
-            eval "$name+=(\"\$line\")"
-        done # <<< "$(cat -)"
-    else
-        while [ $# -gt 0 ]; do
+if [ -n "$ZSH_VERSION" ] || [ -n "$BASH_VERSION" ]; then
+
+    # Only works for zsh bash
+    line_to_array(){
+        local name=${1:?Array name} line
+        shift
+        if [ $# -eq 0 ]; then
             while read -r line; do
                 eval "$name+=(\"\$line\")"
-            done <"$1"
-            shift
-        done
-    fi
-}
+            done # <<< "$(cat -)"
+        else
+            while [ $# -gt 0 ]; do
+                while read -r line; do
+                    eval "$name+=(\"\$line\")"
+                done <"$1"
+                shift
+            done
+        fi
+    }
 
-str.trim(){
-    local var="$*"
-    # remove leading whitespace characters
-    var="${var#"${var%%[![:space:]]*}"}"
-    # remove trailing whitespace characters
-    var="${var%"${var##*[![:space:]]}"}"
-    echo -n "$var"
-}
+    str_trim(){
+        local var="$*"
+        # remove leading whitespace characters
+        var="${var#"${var%%[![:space:]]*}"}"
+        # remove trailing whitespace characters
+        var="${var%"${var##*[![:space:]]}"}"
+        echo -n "$var"
+    }
 
-line.to_array.trim(){
-    # TODO: local IFS
-    local name=${1:?Array name}
-    local line arr=()
-    while read -r line; do
-        line="$(str.trim "$line")"
-        arr+=("$line")
-    done <<< "$(cat -)"
-    eval "$name"'=("${arr[@]}")'
-}
+    line_to_array_trim(){
+        # TODO: local IFS
+        local name=${1:?Array name}
+        local line arr=()
+        while read -r line; do
+            line="$(str_trim "$line")"
+            arr+=("$line")
+        done <<< "$(cat -)"
+        eval "$name"'=("${arr[@]}")'
+    }
 
-line.to_array.trim.ignore_empty(){
-    # TODO: local IFS
-    local name=${1:?Array name}
-    local line arr=()
-    while read -r line; do
-        line="$(str.trim "$line")"
-        [ "$line" = "" ] && continue
-        arr+=("$line")
-    done <<< "$(cat -)"
-    eval "$name"'=("${arr[@]}")'
-}
+    line_to_array_trim_ignore_empty(){
+        # TODO: local IFS
+        local name=${1:?Array name}
+        local line arr=()
+        while read -r line; do
+            line="$(str_trim "$line")"
+            [ "$line" = "" ] && continue
+            arr+=("$line")
+        done <<< "$(cat -)"
+        eval "$name"'=("${arr[@]}")'
+    }
+
+fi
