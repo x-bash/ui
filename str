@@ -110,7 +110,7 @@ str_split <delimiter> [string] <arary_name>
 3 2
 DOCTEST
 # According to str_split
-str_.split_to_lines(){
+_str_split_to_lines(){
     # tr "${1:?split char}" '\n'
     local s IFS
     case "$#" in
@@ -153,10 +153,10 @@ str_split_to_lines(){
     fi
 
     if [ ${#out[@]} -eq 0 ]; then
-        str_.split_to_lines "$SEP" "$1"
+        _str_split_to_lines "$SEP" "$1"
     else
         local sss=0
-        for i in $(str_.split_to_lines "$SEP" "$1"); do
+        for i in $(_str_split_to_lines "$SEP" "$1"); do
             local var=${out[sss]}
             sss=$(( sss+1 ))
             [ -z "$var" ] && return 0
@@ -398,10 +398,8 @@ _str_md5(){
 49f68a5c8493ec2c0bf489821c21fc3b
 > str_md5 "hi"
 49f68a5c8493ec2c0bf489821c21fc3b
-> str_md5 -- a
-> echo "$a"
-49f68a5c8493ec2c0bf489821c21fc3b
 > str_md5 "hi" -- a
+> echo "$a"
 49f68a5c8493ec2c0bf489821c21fc3b
 DOCTEST
 # shellcheck disable=SC2086
