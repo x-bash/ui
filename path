@@ -130,7 +130,7 @@ path_rmrf(){
     xrc std/str
     for i in "$@"; do
         local tgt
-        tgt="$(str.trim "$i")"
+        tgt="$(str_trim "$i")"
         [ "$tgt" = "" ] && continue
 
         # TODO: add other patterns
