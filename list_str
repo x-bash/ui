@@ -59,7 +59,7 @@ list_push() {
     fi
 }
 
-list_push_before() {
+list_unshift() {
     local O="${O:?list_name}"
     local IFS="$LIST_SEP"
 
