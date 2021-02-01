@@ -16,8 +16,8 @@
 
 # : <<A
 # Usage 1:
-# tmp.init
-# @defer tmp.finalize
+# tmp_init
+# @defer tmp_finalize
 
 # a="$(tmp "/var/tcd")"
 # A
@@ -29,16 +29,16 @@
 # a="$(tmp "/var/tcd")"
 # A
 
-alias tmp.auto="tmp.init; xrc std/@; @defer tmp.finalize"
+alias tmp.auto="tmp_init; xrc std/@; @defer tmp_finalize"
 
 # _X_CMD_X_BASH_FILE_TMP_GLOBAL=
-tmp.init(){
+tmp_init(){
     # _X_CMD_X_BASH_FILE_TMP_GLOBAL="$(mktemp)"
     _X_CMD_X_BASH_FILE_TMP_GLOBAL="${TMPDIR}$(date +%Y%m%d%H%M%S)_${RANDOM}/"
     mkdir -p "$_X_CMD_X_BASH_FILE_TMP_GLOBAL"
 }
 
-tmp_.folder(){
+_tmp_folder(){
     local res
     if [ -z "$_X_CMD_X_BASH_FILE_TMP_GLOBAL" ]; then
         res="${TMPDIR}_X_BASH_DEFAULT_TMP/"
@@ -51,7 +51,7 @@ tmp_.folder(){
 
 tmp(){
     local FOLDER_PATH
-    FOLDER_PATH="$(tmp_.folder)"
+    FOLDER_PATH="$(_tmp_folder)"
 
     local key="$1"
     if [ -z "$key" ]; then
@@ -63,9 +63,9 @@ tmp(){
     fi
 }
 
-tmp.list()(         # Notice, using subshell
+tmp_list()(         # Notice, using subshell
     local FOLDER_PATH
-    FOLDER_PATH="$(tmp_.folder)"
+    FOLDER_PATH="$(_tmp_folder)"
 
     shopt -s nullglob
     cd "$FOLDER_PATH" || return 1
@@ -75,8 +75,8 @@ tmp.list()(         # Notice, using subshell
     done
 )
 
-tmp.list.named()(   # Notice, using subshell
-    FOLDER_PATH="$(tmp_.folder)"
+tmp_list_named()(   # Notice, using subshell
+    FOLDER_PATH="$(_tmp_folder)"
     shopt -s nullglob
     cd "$FOLDER_PATH" || return 1
     for i in _NAMED_*; do
@@ -84,8 +84,8 @@ tmp.list.named()(   # Notice, using subshell
     done
 )
 
-tmp.list.unnamed()( # Notice, using subshell
-    FOLDER_PATH="$(tmp_.folder)"
+tmp_list_unnamed()( # Notice, using subshell
+    FOLDER_PATH="$(_tmp_folder)"
     shopt -s nullglob
     cd "$FOLDER_PATH" || return 1
     local i
@@ -97,7 +97,7 @@ tmp.list.unnamed()( # Notice, using subshell
 # better name? deinit? clear?
 # Please refer the following site before discussion:
 # https://softwareengineering.stackexchange.com/questions/163004/what-is-the-opposite-of-initialize-or-init
-tmp.finalize(){
-    FOLDER_PATH="$(tmp_.folder)"
+tmp_finalize(){
+    FOLDER_PATH="$(_tmp_folder)"
     rm -rf "$FOLDER_PATH"
 }
