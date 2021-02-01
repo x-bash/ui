@@ -4,7 +4,7 @@
 # maintainer:   Li Junhao      
 
 # TODO: we should only check status
-test.run.all() {
+test_run_all() {
     local i
     for i in $(typeset -F | cut -d ' ' -f 3 | grep "tc:" | grep -v "tc:setup" | grep -v "tc:teardown"); do
         tc:setup
@@ -19,7 +19,7 @@ test.run.all() {
     done
 }
 
-tc.info(){
+tc_info(){
     echo hi
 }
 
@@ -27,7 +27,7 @@ tc.info(){
 # TODO: We have to honor the TAP protocol
 # TODO: Please follow http://testanything.org/tap-specification.html
 
-test.tap(){
+test_tap(){
     # Version
     echo "TAP version 13" >&3
 
@@ -49,7 +49,7 @@ testsuite(){
             done >&2
             # shellcheck disable=SC1090
             source "$filepath" >&2
-            ( test.run.all ) >&2
+            ( test_run_all ) >&2
             echo "$?"
         ); then
             :
