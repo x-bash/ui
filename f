@@ -36,9 +36,9 @@ f1
 f2(){
     local IFS=,
     # local IFS=
-    local a='a,b,c'
+    local a='a,b,c,'
 
-    while read -r i; do
+    while read  -r i; do
         echo "--- $i"
 
     done <<A

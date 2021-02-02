@@ -3,7 +3,7 @@
 debug_init doctest
 
 _doctest_parse_code(){
-    awk -f ./doctest.awk "${1:?Provide file name}"
+    awk -f "$(xrc std/doctest.awk)" "${1:?Provide file name}"
 }
 
 _doctest_run_code(){
@@ -55,8 +55,10 @@ doctest(){
     local script_code
     local script_expect_result
 
-    local SEP="$(printf "\001")"
-    local RESULT_SEP="$(printf "\002")"
+    local SEP
+    SEP="$(printf "\001")"
+    local RESULT_SEP
+    RESULT_SEP="$(printf "\002")"
 
     while read -r line; do
         script_code=$(echo "$line" | cut -d "$SEP" -f 1 )
