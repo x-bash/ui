@@ -47,3 +47,63 @@ A
 }
 
 f2
+
+ff1(){
+    for i in `seq 100`; do
+        echo "abcc" | awk '$0=="abcc"{ print $0; }'  >/dev/null
+    done
+}
+
+ff2(){
+    for i in `seq 100`; do
+        echo "abcc" | sed -n /abcc/p >/dev/null
+    done
+}
+
+ff3(){
+    for i in `seq 100`; do
+        echo "abcc" | awk '$0~"^abc"{ print $0; }'  >/dev/null
+    done
+}
+
+ff4(){
+    for i in `seq 100`; do
+        echo "abcc" | sed -n /^abc/p >/dev/null
+    done
+}
+
+ff5(){
+    for i in `seq 100`; do
+        str_regex "abcc" "^abc"
+    done
+}
+
+ff6(){
+    for i in `seq 100`; do
+        [[ "abcc" =~ ^abc ]]
+    done
+}
+
+
+ff6(){
+    for i in `seq 100`; do
+        echo "abcc" | grep "abc" && echo hi
+    done
+}
+
+
+ff7(){
+    while read -r line; do
+        echo "-- $line"
+    done <<A
+$(seq 100)
+A
+}
+
+ff8(){
+    for i in $(seq 100); do
+        echo "-- $i"
+    done
+}
+
+
