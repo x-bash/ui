@@ -3,7 +3,8 @@
 debug_init doctest
 
 _doctest_parse_code(){
-    awk -f "$(xrc std/doctest.awk)" "${1:?Provide file name}"
+    # awk -f "$(xrc std/doctest.awk)" "${1:?Provide file name}"
+    awk -f "./doctest.awk" "${1:?Provide file name}"
 }
 
 _doctest_run_code(){
