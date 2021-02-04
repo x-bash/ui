@@ -16,117 +16,250 @@
 
 # 5ms
 
-function parse_token(s, idx){
-
-}
-
 function f(text){
     # print line
+    gsub("^\n+|\n+$", "", text)
+
     gsub("[\ \t\v\b]+\n[\ \t\v\b]+", "\n", text)
     # print line
     gsub(/\\\\/, "\001", text)
     gsub(/\\"/, "\002", text)
+    gsub(/\\ /, "\003", text)
 
-    gsub(/"[^"]*"|[-A-Za-z0-9_=]+/, "\003&", text)
+    gsub(/"[^"]*"|[^ \t\n\v\b]+/, TOKEN_SEP "&", text)
     gsub("\001", /\\\\/, text)
     gsub("\002", /\\"/, text)   # "
+    gsub("\003", /\\ /, text)
+
+    gsub("[ \t\v\b]+" TOKEN_SEP, TOKEN_SEP, text)
+    return text
 }
 
-function get_value(){
-    # 
-}
 
-function parse_item_to_generate_help(line,      line_arr, line_arr_len, ret, name, default, desc, op) {
-    line_arr_len = split(line, line_arr, "\003")
-    name = line[2];     desc = line[3];     op = line[4]
-    default = name
-    name = gsub("=.+$", "", name)
+function parse_item_to_generate_help(line,      token_arr, token_arr_len, ret, name, name_idx, i, default, desc, op) {
+    token_arr_len = split(line, token_arr, TOKEN_SEP)
 
-    if (name == line[2])    default = null
-    else                    default = gsub("^.+=", "", name)
+    for (name_idx=2; name_idx <= token_arr_len; ++name_idx) {
+        name = token_arr[name_idx]
+        # gsub("(^ +)|( +$)", "", name)
+        if (! match(name, "(^--?[A-Za-z_0-9]+$)|(^--?[A-Za-z_0-9]+=)")) {
+            break
+        }
+    }
+    name_idx --
 
-    if (op == "=NONE") {
-        arg_has_value[name] = false
+    name = token_arr[2]
+    gsub("=.+$", "", name)
+    if (name == token_arr[2])    default = null
+    else {
+        default = token_arr[2]
+        gsub("^[^=]+=", "", default)
+    }
+
+    desc = token_arr[name_idx+1];     op = token_arr[name_idx+2]
+
+    if (op == "=FLAG") {
+        for (i=2; i<=name_idx; ++i){
+            arg_has_value[token_arr[i]] = false
+        }
     } else {
-        arg_has_value[name] = true
+        for (i=2; i<=name_idx; ++i){
+            arg_has_value[token_arr[i]] = true
+        }
     }
 
     # TODO: make it better
-    return "    --" name "\t"  default "\t"      desc
+    ret = "    " name "\t"  default "\t"      desc    "\t"    op
+    
+    if (name_idx > 2) {
+        ret = ret "\n        alias:"
+        for (i=3; i<=name_idx; ++i){
+            ret = ret " " token_arr[i]
+        }
+    }
+
+    return ret
 }
 
-function assert_arr_eq(value, sep, line_arr_len, line_arr,    j, value_arr_len, value_arr, sw){
+function assert_arr_eq(value, sep, token_arr_len, token_arr,    j, value_arr_len, value_arr, sw){
     value_arr_len = split(value, value_arr, sep)
     for (j=1; j<=value_arr_len; ++j) {
         sw = false
-        for (idx=5; idx<=line_arr_len; ++idx) {
-            if (match(value_arr[j], line_arr[idx]) {
+        for (idx=5; idx<=token_arr_len; ++idx) {
+            if (match(value_arr[j], token_arr[idx])) {
                 sw = true
                 break
             }
         }
         if ( sw == false) {
             # show help
-            exit 1
+            exit_print(1)
         }
     }
 }
 
+function quote_string(str){
+    gsub(/\"/, "\\\"", str)
+    return "\"" str "\""
+}
 
-function parse_item(line,   line_arr_len, line_arr, value, name, default, idx, j, sw, value_arr, value_arr_len, sep){
-    line_arr_len = split(line, line_arr, "\003")
-    name = line[2]
-    desc = line[3]
-    op = line[4]
 
-    value = arg_map[name]
-    if (op == "") {
-        return
+function append_code(code){
+    CODE=CODE "\n" code
+}
+
+function error(s){
+    print s > "/dev/stderr"
+}
+
+function print_helpdoc(){
+    print "----------------------" > "/dev/stderr"
+    print HELP_DOC > "/dev/stderr"
+}
+
+function exit_print(code){
+    print "return " code " 2>/dev/null || exit " code
+    exit code
+}
+
+function parse_item(line,   
+    token_arr_len, token_arr, 
+    value, name, default, idx, i, j, sw, value_arr, value_arr_len, sep){
+   
+    token_arr_len = split(line, token_arr, TOKEN_SEP)
+    value = null
+
+    for (name_idx=2; name_idx <= token_arr_len; ++name_idx) {
+        name = token_arr[name_idx]
+        if (! match(name, "(^--?[A-Za-z_0-9]+$)|(^--?[A-Za-z_0-9]+=)")) break
+    }
+    name_idx --
+
+    name = token_arr[2]
+    gsub("=.+$", "", name)
+    if (name == token_arr[2])    default = null
+    else {
+        default = token_arr[2]
+        gsub("^[^=]+=", "", default)
+    }
+    gsub("^--?", "", name)
+
+    value = null
+    for (i=2; i<=name_idx; ++i){
+        idx = token_arr[i]   # idx is temp variable, here meaning _name
+        if (idx in arg_map) {
+            value = arg_map[idx]
+            break
+        }
     }
 
-    if (op == "=NONE") {
-        if (value == ARG_ENABLED)
+    desc = token_arr[name_idx + 1]
+    op = token_arr[name_idx + 2]
+
+    if (op == "=FLAG") {
+        if (value == null) {
+            append_code( "local " name "= " " 2>/dev/null" )
+        } else {
+            append_code( "local " name "=true" " 2>/dev/null" )
+        }
+        return true
+    }
+
+
+    if (value == null) {
+        # TODO: get value from default scope
+        if (value == null) {
+            if (default == null) {
+                error("Arg: " name " SHOULD NOT be null.")
+                print_helpdoc()
+                exit_print(1)
+            } else {
+                value = default
+            }
+        }
+    }
+
+    if (op == "") {
+        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
+        return true
     }
 
     if (op == "=int") {
         if (! match(value, /[+-]?[0-9]+/) ) {    # float is: /[+-]?[0-9]+(.[0-9]+)?/
-            # show help
-            exit 1
+            error( "Arg: [" name "] value is [" value "]\nIs NOT an integer." )
+            print_helpdoc()
+            exit_print(1)
         }
+        append_code( "local " name "=" value " 2>/dev/null" )
     } else if (op == "=") {
         sw = false
-        for (idx=5; idx<=line_arr_len; ++idx) {
-            if (value == line_arr[idx]) {
+        for (idx=5; idx<=token_arr_len; ++idx) {
+            if (value == token_arr[idx]) {
                 sw = true
                 break
             }
         }
         if (sw == false) {
-            # show help
-            exit 1
+            gsub(TOKEN_SEP, "\n" line)
+            error( "Arg: [" name "] value is [" value "]\nFail to match any candidates:\n" line )
+            print_helpdoc()
+            exit_print(1)
         }
-    } else if (op =~ /^=.$/) {
-        assert_arr_eq(value, substr(op, 2, 1), line_arr_en, line_arr)
-    } else if (op =~ /^=[.]$/) {
-        assert_arr_eq(value, substr(op, 3, 1), line_arr_en, line_arr)
-    } else {
-        # Wrong
+
+        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
+    }else if (op == "=~") {
+        sw = false
+        for (idx=5; idx<=token_arr_len; ++idx) {
+            if (match(value, "^"token_arr[idx]"$")) {
+                sw = true
+                break
+            }
+        }
+        if (sw == false) {
+            gsub(TOKEN_SEP, "\n" line)
+            error( "Arg: [" name "] value is [" value "]\nFail to match any candidates:\n" line )
+            print_helpdoc()
+            exit_print(1)
+        }
+
+        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
+    } else if (op ~ /^=.$/) {
+        sep = substr(op, 2, 1)
+        assert_arr_eq(value, sep, token_arr_en, token_arr)
+        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
+    } else if (op ~ /^=[.]$/) {
+        sep = substr(op, 3, 1)
+        assert_arr_eq(value, sep, token_arr_en, token_arr)
+        gsub(sep, "\034", value)    # how to do that?
+        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
+    } else if (op ~ /^=~.$/) {
+        sep = substr(op, 3, 1)
+        assert_arr_eq(value, sep, token_arr_en, token_arr)
+        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
+    } else if (op ~ /^=~[.]$/) {
+        sep = substr(op, 4, 1)
+        assert_arr_eq(value, sep, token_arr_en, token_arr)
+        gsub(sep, "\034", value)    # how to do that?
+        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
+    }else {
+        print "Op Not Match any candidates: \n" line > "/dev/stderr"
+        exit_print(1)
     }
 }
 
-function parse(text,    text_arr, text_arr_len){
+function parse(text,    text_arr, text_arr_len, i){
     text_arr_len = split(f(text), text_arr, "\n")
 
     # Step 1: Generate help
-    help_doc = "Command Info:"
+    HELP_DOC = "Command Info:"
     for (i=1; i<=text_arr_len; i++) {
         line = text_arr[i]
-        help_doc = help_doc "\n" parse_item_to_generate_help(line)
+        HELP_DOC = HELP_DOC "\n" parse_item_to_generate_help(line)
     }
-    help_doc = help_doc "\n"
+    HELP_DOC = HELP_DOC "\n"
 
     # Step 2: Prepare arguments
-    prepare_arg_map()
+    prepare_arg_map(ARGSTR)
 
     # Step 3: Get item Value, then validate it.
     for (i=1; i<=text_arr_len; i++) {
@@ -135,15 +268,6 @@ function parse(text,    text_arr, text_arr_len){
     }
 }
 
-BEGIN{
-    RS="\001"
-    ARG_SEP="\002"
-    false = 0;  true = 1;
-    ARG_ENABLED = "\002"
-    null="\001"
-    return_code = 0
-    # arg_map
-}
 
 function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
     key = null
@@ -157,7 +281,7 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
             if (arg_has_value[e] == true){
                 key = e
             } else {
-                arg_map[e] = ARG_ENABLED
+                arg_map[e] = FLAG_ENALED
                 key = null # unecessary
             }
         } else if (key != null) {
@@ -176,8 +300,22 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
 }
 
 
-END {
+BEGIN{
+    RS="\001"
+    if (ARG_SEP == false) ARG_SEP="\002"
+    TOKEN_SEP = "\005"
+    false = 0;  true = 1;
+    FLAG_ENALED = "\002"
+    null="\001"
+    return_code = 0
+    
+    # arg_map
+}
+
+{
     parse($0)
+    print CODE
+    print "local HELP_DOC=" quote_string(HELP_DOC) " 2>/dev/null"
     exit return_code
 }
 

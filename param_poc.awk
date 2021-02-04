@@ -8,6 +8,10 @@ function w(arr){
     if (c == 0) { print "is 0"; }
     if (arr[6] == 045) { print "is no nul"; }
     print 0
+
+    if (7 in arr) {
+         print "oiside"
+    }
 }
 
 function w1(){
