@@ -17,8 +17,6 @@ _param_main(){
 
 # Because awk split bug in unprintable seperators. We have to encode the string by transposing the newline character
 
-PARAM_DEFAULT_DICT_KV_SEP="$(printf "\001")"
-PARAM_DEFAULT_DICT_LINE_SEP="$(printf "\002")"
 
 param_default_clear(){
     local O="${O:-default}"
@@ -45,81 +43,80 @@ param_default_clear(){
 
 # awk '{ a="\n"; print split(a, arr, "\033"); }'
 
+PARAM_NEWLINE_TR="$(printf "\001")"
+
 param_default_set(){
     local O="${O:-default}"
-    local tt="$(eval printf "%s" "\$PARAM_DEFAULT_$O")"
 
-    # change \n to \001
-    # split key - value to 
+    local s
+    s="$(awk \
+        -v key="$(printf "%s" "${1:?Provide key}" | tr "\n" "${PARAM_NEWLINE_TR}")" \
+        -v val="$(printf "%s" "${2:?Provide value}" | tr "\n" "${PARAM_NEWLINE_TR}")" '
 
-    echo "ffffff"
-    # eval "PARAM_DEFAULT_$O"="\${PARAM_DEFAULT_$O}${PARAM_DEFAULT_DICT_LINE_SEP}${1:?Provide key}${PARAM_DEFAULT_DICT_KV_SEP}${2:?Provide value}"
-    local s="$(awk -v key="${1:?Provide key}" -v value="${2?Provide value}" -v KV_SEP="${PARAM_DEFAULT_DICT_KV_SEP}" -v LINE_SEP="${PARAM_DEFAULT_DICT_LINE_SEP}" '
-
-BEGIN {  
-    print "hello" >"/dev/stderr"; 
-    RS="\034"; sw = 1;  
+BEGIN {
+    RS="\n"
+    is_keyline = 0
+    sw = 1
 }
 
 {
-    gsub("\n$", "", $0)
-    arr_len = split($0, arr, LINE_SEP)
-    key_val = arr[1]
-
-    sw = 1
-    ret = ""
-    LINE_SEP_ACTUAL = ""
-    for (i=2; i<=arr_len; ++i) {
-        kv = arr[i]
-        split(kv, kvarr, KV_SEP)
-        if (kvarr[1] == key) {
-            ret = ret LINE_SEP_ACTUAL key KV_SEP value
+    if (is_keyline == 0) {
+        keyline=$0
+    } else {
+        if (keyline == key) {
+            print key
+            print val
             sw = 0
         } else {
-            ret = ret LINE_SEP_ACTUAL kvarr[1] KV_SEP kvarr[2]
+            print keyline
+            print $0
         }
-        LINE_SEP_ACTUAL = LINE_SEP
+        
     }
-    if (sw == 1) ret = ret LINE_SEP_ACTUAL key KV_SEP value
-    printf("%s", ret)
+    is_keyline = 1 - is_keyline
 }
+
+END {
+    if (sw == 1) {
+        print "here" >"/dev/stderr"
+        print key
+        print val
+    }
+}
+
 ' <<A
-${1:?Provide key}${PARAM_DEFAULT_DICT_KV_SEP}${2?Provide value}${PARAM_DEFAULT_DICT_LINE_SEP}$tt
+$(eval printf "%s" \"\$PARAM_DEFAULT_${O}\")
 A
 )"
+    echo "$s"
     eval "PARAM_DEFAULT_$O=\"\$s\""
 }
 
 
 param_default_get(){
-    local O="${O:-default}"
-    local s="$(eval echo "\$PARAM_DEFAULT_${O}")"
+    awk -v key="$(printf "%s" "${1:?Provide key}" | tr "\n" "${PARAM_NEWLINE_TR}")" '
 
-    awk -v key="${1:?Provide key}" -v KV_SEP="${PARAM_DEFAULT_DICT_KV_SEP}" -v LINE_SEP="${PARAM_DEFAULT_DICT_LINE_SEP}" '
-
-BEGIN{  RS="\034";  }    
-    
-{
-    arr_len = split($0, arr, LINE_SEP)
-    for (i=1; i<=arr_len; ++i) {
-        kv = arr[i]
-        split(kv, kvarr, KV_SEP)
-        if (kvarr[1] == key) {
-            print kvarr[2]
-            exit 0
-        }
+NR%2==1{
+    if ($0 == key) {
+        getline
+        print $0
+        exit 0
     }
-    exit 1
-}' <<A
-$(eval echo "\$PARAM_DEFAULT_${O}")
+}
+END { exit 1; }
+' <<A
+$(eval printf "%s" \"\$PARAM_DEFAULT_${O:-default}\")
 A
 }
 
 param_default_list(){
-    local O="${O:-default}"
-
-    # eval echo "\$PARAM_DEFAULT_${O}" | tr "${PARAM_DEFAULT_DICT_LINE_SEP}" " "
-    eval echo "\$PARAM_DEFAULT_${O}" | tr "${PARAM_DEFAULT_DICT_KV_SEP}${PARAM_DEFAULT_DICT_LINE_SEP}" "=\n"
+    eval printf "%s" \"\$PARAM_DEFAULT_${O:-default}\" | awk 'NR%2==1{
+        keyline=$0
+    }
+    NR%2==0{
+        gsub("\001", "\n", $0)
+        print keyline "=" $0
+    }'
 }
 
 w(){
