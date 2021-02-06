@@ -43,6 +43,15 @@ line_fmap(){
     done
 }
 
+line_no() {
+    awk '{ print NR ": " $0  }' "${1:--}"
+}
+
+line_every(){
+    # default is: awk "NR%2==0{ print \$0;  }" "${1:--}"
+    awk "NR%${1:-2}==${2:-0}{ print \$0;  }" -
+}
+
 # From file.exits_or_append
 line_exist_or_append() {
     if [ $# -eq 0 ]; then

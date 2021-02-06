@@ -2,17 +2,28 @@
 
 
 # shellcheck disable=SC2142
-alias param='_param "$@"'
-
-_param(){
-    eval "$(_param_main "$@")"
-}
+alias param='{ eval "$(_param_main "$@")"; }'
 
 # dict_key  dict_value
 _param_main(){
-    echo "$SCOPE" >/dev/stderr
-    local IFS="$(printf "\005")"
-    awk -v ARGSTR="$*" -v ARG_SEP="$IFS" -v O="${O}" -f param.awk -
+    local IFS
+    IFS="$(printf "\005")"
+
+    local param_definition
+    param_definition="$(cat)"
+
+    local default
+    default="$(awk '{  if ($1 == "default") { printf "%s" $2; exit 0; } }' - <<A
+$param_definition
+A
+)"
+    default="${default#default}"
+
+    awk -v ARGSTR="$*" \
+        -v scope_str="$(eval printf "%s" \"\$PARAM_DEFAULT_$default\" | tr "\n" "${PARAM_DEFAULT_SEP_TR}")" \
+        -v ARG_SEP="$IFS" -v O="${O}" -f param.awk - <<A
+$param_definition
+A
 }
 
 # Because awk split bug in unprintable seperators. We have to encode the string by transposing the newline character
@@ -44,6 +55,7 @@ param_default_clear(){
 # awk '{ a="\n"; print split(a, arr, "\033"); }'
 
 PARAM_NEWLINE_TR="$(printf "\001")"
+PARAM_DEFAULT_SEP_TR="$(printf "\006")"
 
 param_default_set(){
     local O="${O:-default}"
@@ -78,7 +90,6 @@ BEGIN {
 
 END {
     if (sw == 1) {
-        print "here" >"/dev/stderr"
         print key
         print val
     }
@@ -119,11 +130,17 @@ param_default_list(){
     }'
 }
 
+
+param_new w
+
+O=w param_default_set repo xk1
+
+
 w(){
-    SCOPE=SCOPE123 param <<A
+    w.param <<A
     --repo  -r  "Provide repo name"     =~  [A-Za-z0-9]+
     --user=el  -u  "Provide user name"     =~  [A-Za-z0-9]+
-    --access   "Access Priviledge"      =  pulbic private
+    --access   "Access Priviledge"      =  public private
     --verbose  -v  "Display in verbose mode"    =FLAG
 A
 
@@ -137,4 +154,15 @@ A
 }
 
 # w --repo hi
-w --repo hi --access ss
+w --access public
+
+_f(){
+    for i in $(seq "${1:?length}"); do
+        printf "%s " "\"\$$i\""
+    done
+}
+
+f(){
+    eval set -- "$(_f $(($#-2)))"
+    echo "$@"
+}

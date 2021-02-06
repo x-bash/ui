@@ -1,0 +1,10 @@
+f(){
+    # echo hi
+    echo cat
+}
+
+
+$(f 1) <<A
+abc
+A
+

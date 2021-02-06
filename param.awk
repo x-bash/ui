@@ -168,7 +168,9 @@ function parse_item(line,
 
     if (value == null) {
         # TODO: get value from default scope
-        if (value == null) {
+        if (name in default_scope) {
+            value = default_scope[name]
+        } else {
             if (default == null) {
                 error("Arg: " name " SHOULD NOT be null.")
                 print_helpdoc()
@@ -295,7 +297,15 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
     tmp = i
 
     for (; i<=arg_arr_len; ++i) {
+        # rest: rest_arguments
         rest[i-tmp+1] = arg_arr[i]
+    }
+}
+
+function prepare_scope(scope_str,    scope_arr_len, scope_arr, key, value){
+    scope_arr_len = split(scope_str, scope_arr, scope_str_sep)
+    for (i=1; i<=scope_arr_len; i+=2) {
+        default_scope[scope_arr[i]] = scope_arr[i+1]
     }
 }
 
@@ -308,14 +318,16 @@ BEGIN{
     FLAG_ENALED = "\002"
     null="\001"
     return_code = 0
-    
-    # arg_map
+
+    scope_str_sep = "\006"
+    prepare_scope(scope_str)
+
 }
 
 {
     parse($0)
     print CODE
-    print "local HELP_DOC=" quote_string(HELP_DOC) " 2>/dev/null"
+    # print "local HELP_DOC=" quote_string(HELP_DOC) " 2>/dev/null"
     exit return_code
 }
 
