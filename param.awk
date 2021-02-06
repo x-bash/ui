@@ -257,8 +257,7 @@ function parse(text,    text_arr, text_arr_len, i, start){
     # Step 1: Generate help
     HELP_DOC = "Command Info:"
     for (i=start; i<=text_arr_len; i++) {
-        line = text_arr[i]
-        HELP_DOC = HELP_DOC "\n" parse_item_to_generate_help(line)
+        HELP_DOC = HELP_DOC "\n" parse_item_to_generate_help(text_arr[i])
     }
     HELP_DOC = HELP_DOC "\n"
 
@@ -304,16 +303,15 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
     }
 }
 
-function prepare_scope(scope_str,    scope_arr_len, scope_arr, key, value){
-    scope_arr_len = split(scope_str, scope_arr, scope_str_sep)
-    for (i=1; i<=scope_arr_len; i+=2) {
-        default_scope[scope_arr[i]] = scope_arr[i+1]
-    }
-}
+# function prepare_scope(scope_str,    scope_arr_len, scope_arr, key, value){
+#     scope_arr_len = split(scope_str, scope_arr, scope_str_sep)
+#     for (i=1; i<=scope_arr_len; i+=2) {
+#         default_scope[scope_arr[i]] = scope_arr[i+1]
+#     }
+# }
 
 
 BEGIN{
-    RS="\001"
     if (ARG_SEP == false) ARG_SEP="\002"
     TOKEN_SEP = "\005"
     false = 0;  true = 1;
@@ -321,13 +319,37 @@ BEGIN{
     null="\001"
     return_code = 0
 
-    scope_str_sep = "\006"
-    prepare_scope(scope_str)
+    # scope_str_sep = "\006"
+    # prepare_scope(scope_str)
 
+    part_one = true
+
+    text = ""
+
+    text_arr_len = 0
+    keyline = ""
 }
 
 {
-    parse($0)
+    # print "---> \t" $0 > "/dev/stderr"
+    if ($0 == "---") {
+        part_one = false
+    } else {
+        if (part_one == true) {
+            text = text "\n" $0
+        } else {
+            if (keyline == "") {
+                keyline = $0
+            } else {
+                default_scope[keyline] = $0
+                keyline = ""
+            }
+        }
+    }
+}
+
+END{
+    parse(text)
     print CODE
     # print "local HELP_DOC=" quote_string(HELP_DOC) " 2>/dev/null"
     exit return_code

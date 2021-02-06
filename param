@@ -22,12 +22,14 @@ _param_main(){
 $param_definition
 A
 )"; then
-        s=$(eval printf "%s" \"\$PARAM_DEFAULT_${default}\" | tr "\n" "$(printf "\006")")
+        s=$(eval printf "%s" \"\$PARAM_DEFAULT_${default}\")
     fi
 
     awk -v ARGSTR="$*"      -v ARG_SEP="$IFS" \
-        -v scope_str="$s"   -f param.awk - <<A
+        -f param.awk - <<A
 $param_definition
+---
+$s
 A
 }
 
