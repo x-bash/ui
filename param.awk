@@ -249,12 +249,14 @@ function parse_item(line,
     }
 }
 
-function parse(text,    text_arr, text_arr_len, i){
+function parse(text,    text_arr, text_arr_len, i, start){
     text_arr_len = split(f(text), text_arr, "\n")
+    # There is TOKEN_SEP before "default"
+    start = (text_arr[1] ~ /^.default/) ? 2 : 1
 
     # Step 1: Generate help
     HELP_DOC = "Command Info:"
-    for (i=1; i<=text_arr_len; i++) {
+    for (i=start; i<=text_arr_len; i++) {
         line = text_arr[i]
         HELP_DOC = HELP_DOC "\n" parse_item_to_generate_help(line)
     }
@@ -264,7 +266,7 @@ function parse(text,    text_arr, text_arr_len, i){
     prepare_arg_map(ARGSTR)
 
     # Step 3: Get item Value, then validate it.
-    for (i=1; i<=text_arr_len; i++) {
+    for (i=start; i<=text_arr_len; i++) {
         line = text_arr[i]
         parse_item(line)
     }

@@ -42,7 +42,7 @@ A
 
 
 param <<A
-    default     gitee/${O:-default}
+    default     gitee_${O:-default}
     --repo      -r  "Provide repo name"         =~      [A-Za-z0-9]+
     --user=el   -u  "Provide user name"         =~      [A-Za-z0-9]+
     --access    -a  "Access Priviledge"         =       public private

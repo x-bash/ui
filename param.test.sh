@@ -13,25 +13,33 @@ _param_main(){
     param_definition="$(cat)"
 
     local default
-    default="$(awk '{  if ($1 == "default") { printf "%s" $2; exit 0; } }' - <<A
+    local s=""
+
+#     awk '{ if ($1 == "default") printf("%s\t%s\t", $1, $2) >"/dev/stderr"; exit 0 }' <<A
+# $param_definition
+# A
+
+    if default="$(awk '{ if ($1 == "default") { printf("%s", $2); exit 0; } else { exit 1; } }' - <<A
 $param_definition
 A
-)"
-    default="${default#default}"
+)"; then
+        s=$(eval printf "%s" \"\$PARAM_DEFAULT_${default}\" | tr "\n" "$(printf "\006")")
+    fi
 
-    awk -v ARGSTR="$*" \
-        -v scope_str="$(eval printf "%s" \"\$PARAM_DEFAULT_$default\" | tr "\n" "${PARAM_DEFAULT_SEP_TR}")" \
-        -v ARG_SEP="$IFS" -v O="${O}" -f param.awk - <<A
+    awk -v ARGSTR="$*"  -v ARG_SEP="$IFS" \
+        -v scope_str="$s" \
+        -v O="${O}" -f param.awk - <<A
 $param_definition
 A
 }
 
 # Because awk split bug in unprintable seperators. We have to encode the string by transposing the newline character
 
+PARAM_DEFAULT_VAR_PREFIX=___X_CMD_X_BASH_PARAM_DEFAULT
 
 param_default_clear(){
-    local O="${O:-default}"
-    eval "PARAM_DEFAULT_$O=\"\""
+    local O="${1:?Provide default scope}"
+    eval "${PARAM_DEFAULT_VAR_PREFIX}_$O=\"\""
 }
 
 # BEGIN {  ORS=RS; sw = 1;  }
@@ -55,15 +63,14 @@ param_default_clear(){
 # awk '{ a="\n"; print split(a, arr, "\033"); }'
 
 PARAM_NEWLINE_TR="$(printf "\001")"
-PARAM_DEFAULT_SEP_TR="$(printf "\006")"
 
 param_default_set(){
-    local O="${O:-default}"
+    local O="${1:?Provide default scope}"
 
     local s
     s="$(awk \
-        -v key="$(printf "%s" "${1:?Provide key}" | tr "\n" "${PARAM_NEWLINE_TR}")" \
-        -v val="$(printf "%s" "${2:?Provide value}" | tr "\n" "${PARAM_NEWLINE_TR}")" '
+        -v key="$(printf "%s" "${2:?Provide key}" | tr "\n" "${PARAM_NEWLINE_TR}")" \
+        -v val="$(printf "%s" "${3:?Provide value}" | tr "\n" "${PARAM_NEWLINE_TR}")" '
 
 BEGIN {
     RS="\n"
@@ -96,16 +103,15 @@ END {
 }
 
 ' <<A
-$(eval printf "%s" \"\$PARAM_DEFAULT_${O}\")
+$(eval printf "%s" \"\$${PARAM_DEFAULT_VAR_PREFIX}_${O}\")
 A
 )"
-    echo "$s"
     eval "PARAM_DEFAULT_$O=\"\$s\""
 }
 
 
 param_default_get(){
-    awk -v key="$(printf "%s" "${1:?Provide key}" | tr "\n" "${PARAM_NEWLINE_TR}")" '
+    awk -v key="$(printf "%s" "${2:?Provide key}" | tr "\n" "${PARAM_NEWLINE_TR}")" '
 
 NR%2==1{
     if ($0 == key) {
@@ -116,12 +122,12 @@ NR%2==1{
 }
 END { exit 1; }
 ' <<A
-$(eval printf "%s" \"\$PARAM_DEFAULT_${O:-default}\")
+$(eval printf "%s" \"\$${PARAM_DEFAULT_VAR_PREFIX}_${1:?Provide default scope}\")
 A
 }
 
 param_default_list(){
-    eval printf "%s" \"\$PARAM_DEFAULT_${O:-default}\" | awk 'NR%2==1{
+    eval printf "%s" \"\$${PARAM_DEFAULT_VAR_PREFIX}_${1:?Provide default scope}\" | awk 'NR%2==1{
         keyline=$0
     }
     NR%2==0{
@@ -130,21 +136,18 @@ param_default_list(){
     }'
 }
 
-
-param_new w
-
-O=w param_default_set repo xk1
-
+param_default_set GITEE_OBJECT_NAME repo xk1
 
 w(){
     w.param <<A
-    --repo  -r  "Provide repo name"     =~  [A-Za-z0-9]+
-    --user=el  -u  "Provide user name"     =~  [A-Za-z0-9]+
-    --access   "Access Priviledge"      =  public private
-    --verbose  -v  "Display in verbose mode"    =FLAG
+    default     GITEE_${O:?Provide object name}
+    --repo      -r  "Provide repo name"         =~      [A-Za-z0-9]+
+    --user=el   -u  "Provide user name"         =~      [A-Za-z0-9]+
+    --access    -a  "Access Priviledge"         =       public private
+    --verbose   -v  "Display in verbose mode"   =FLAG
 A
 
-    echo -e "\n\n\n-----"
+    echo -e "\n-----"
 
     echo "repo: $repo"
     echo "user: $user"
@@ -154,15 +157,5 @@ A
 }
 
 # w --repo hi
-w --access public
+O=OBJECT_NAME w --access public
 
-_f(){
-    for i in $(seq "${1:?length}"); do
-        printf "%s " "\"\$$i\""
-    done
-}
-
-f(){
-    eval set -- "$(_f $(($#-2)))"
-    echo "$@"
-}
