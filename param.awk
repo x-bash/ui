@@ -236,7 +236,7 @@ function parse_item(line,
         }
         if (sw == false) {
             gsub(TOKEN_SEP, "\n" line)
-            error( "Arg: [" name "] value is [" value "]\nFail to match any candidates:\n" line )
+            error( "Arg: [" name "] value is [" value "]\nFail to match any regex pattern:\n" line )
             print_helpdoc()
             exit_print(1)
         }
@@ -281,10 +281,16 @@ function parse(text,    text_arr, text_arr_len, i, start){
 
 function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
     key = null
+
+    # \001 could not be ARG_SEP, which is \005
+    gsub("\n", "\001", argstr)
     arg_arr_len = split(argstr, arg_arr, ARG_SEP)
+
     for (i=1; i<=arg_arr_len; ++i) {
         e = arg_arr[i]
         if (key != null) {
+            gsub("\001", "\n", key)
+            gsub("\001", "\n", e)
             arg_map[key] = e
             key = null
             continue
@@ -304,10 +310,14 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
     }
 
     tmp = i
+
+    tmp = "set -- "
     for (; i<=arg_arr_len; ++i) {
         # rest: rest_arguments
         rest[i-tmp+1] = arg_arr[i]
+        tmp = tmp " \"$" i "\""
     }
+    append_code(tmp)
 }
 
 BEGIN{
@@ -322,9 +332,11 @@ BEGIN{
     null="\001"
     return_code = 0
 
-    part_one = true
+    part_one = 0
 
     text = ""
+
+    ARGSTR = ""
 
     text_arr_len = 0
     keyline = ""
@@ -332,18 +344,21 @@ BEGIN{
 
 {
     if ($0 == "\001\001\001") {
-        part_one = false
+        part_one = part_one + 1
     } else {
-        if (part_one == false) {
-            if (text == "") text = $0
-            else text = text "\n" $0
-        } else {
+        if (part_one == 0) {
+            if (ARGSTR == "") ARGSTR = $0
+            else ARGSTR = ARGSTR "\n" $0
+        } else if (part_one == 1) {
             if (keyline == "") {
                 keyline = $0
             } else {
                 default_scope[keyline] = $0
                 keyline = ""
             }
+        } else {
+            if (text == "") text = $0
+            else text = text "\n" $0
         }
     }
 }

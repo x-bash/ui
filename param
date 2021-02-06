@@ -19,12 +19,14 @@ _param_main(){
             continue
         fi
 
+        printf "%s" "$*"
+        printf "\n\001\001\001\n"
         sw=1
         if line="$(echo "$line" | awk '{ if ($1 == "default") { printf("%s", $2); exit 0; } else { exit 1; } }' - )"; then    
             eval printf "%s" \"\$PARAM_DEFAULT_${line}\"
             printf "\n\001\001\001\n"
         fi
-    done | awk -v ARGSTR="$*" -v ARG_SEP="$IFS" -f param.awk -
+    done | awk -v ARG_SEP="$IFS" -f param.awk -
 }
 
 
@@ -135,7 +137,7 @@ param_default_set GITEE_OBJECT_NAME repo xk1
 w(){
     param <<A
     default     GITEE_${O:?Provide object name}
-    --repo      "Provide repo name"             =~      [A-Za-z0-9]+
+    --repo      "Provide repo name"             =~      [A-Za-z0-9\n]+
     --user=el   -u  "Provide user name"         =~      [A-Za-z0-9]+
     --access    -a  "Access Priviledge"         =       public private
     --verbose   -v  "Display in verbose mode"   =FLAG
@@ -148,6 +150,7 @@ A
     echo "access: $access"
     echo "verbose: $verbose"
 
+    echo "Other arguments:    $*"
     echo "$HELP_DOC"
 }
 
@@ -155,7 +158,7 @@ A
 
 ff(){
     O=OBJECT_NAME w -a private --repo "asfasfd
-asdfaf"
+asdfaf" work a b
 }
 
 ff
