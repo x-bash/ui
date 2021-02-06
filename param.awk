@@ -303,14 +303,6 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
     }
 }
 
-# function prepare_scope(scope_str,    scope_arr_len, scope_arr, key, value){
-#     scope_arr_len = split(scope_str, scope_arr, scope_str_sep)
-#     for (i=1; i<=scope_arr_len; i+=2) {
-#         default_scope[scope_arr[i]] = scope_arr[i+1]
-#     }
-# }
-
-
 BEGIN{
     if (ARG_SEP == 0) {
         print "Please provide ARG_SEP as below:\n  awk -v ARG_SEP=<value>" > "/dev/stderr"
@@ -323,9 +315,6 @@ BEGIN{
     null="\001"
     return_code = 0
 
-    # scope_str_sep = "\006"
-    # prepare_scope(scope_str)
-
     part_one = true
 
     text = ""
@@ -335,7 +324,6 @@ BEGIN{
 }
 
 {
-    # print "---> \t" $0 > "/dev/stderr"
     if ($0 == "\001\001\001") {
         part_one = false
     } else {
