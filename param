@@ -7,32 +7,7 @@
 # shellcheck disable=SC2142
 alias param='{ eval "$(_param_main "$@")"; }'
 
-
-_param_main1(){
-    local IFS
-    IFS="$(printf "\005")"
-
-    local param_definition
-    param_definition="$(cat)"
-
-    local default
-    local s=""
-
-    if default="$(awk '{ if ($1 == "default") { printf("%s", $2); exit 0; } else { exit 1; } }' - <<A
-$param_definition
-A
-)"; then
-        s=$(eval printf "%s" \"\$PARAM_DEFAULT_${default}\")
-    fi
-
-    awk -v ARGSTR="$*"      -v ARG_SEP="$IFS" \
-        -f param.awk - <<A
-$param_definition
----
-$s
-A
-}
-
+# TODO: handle newline in ARGSTR
 _param_main(){
     local IFS
     IFS="$(printf "\005")"
@@ -45,12 +20,22 @@ _param_main(){
         fi
 
         sw=1
-        line="$(echo "$line" | awk '{ if ($1 == "default") { printf("%s", $2); exit 0; } else { exit 1; } }' - )"
-        eval printf "%s" \"\$PARAM_DEFAULT_${line}\"
-        printf "\n\001\001\001\n"
+        if line="$(echo "$line" | awk '{ if ($1 == "default") { printf("%s", $2); exit 0; } else { exit 1; } }' - )"; then    
+            eval printf "%s" \"\$PARAM_DEFAULT_${line}\"
+            printf "\n\001\001\001\n"
+        fi
     done | awk -v ARGSTR="$*" -v ARG_SEP="$IFS" -f param.awk -
 }
 
+
+param_default(){
+    case $# in
+        0|1) printf "%s" "TODO: help doc here"      ;;
+        2) param_default_get "$1" "$2"      ;;
+        3) param_default_set "$1" "$2" "$3" ;;
+        *) printf "%s" "TODO: help doc here"        ;;
+    esac
+}
 
 # Because awk split bug in unprintable seperators. We have to encode the string by transposing the newline character
 PARAM_DEFAULT_VAR_PREFIX=___X_CMD_X_BASH_PARAM_DEFAULT
@@ -109,11 +94,13 @@ A
 
 
 param_default_get(){
-    awk -v key="$(printf "%s" "${2:?Provide key}" | tr "\n" "${PARAM_NEWLINE_TR}")" '
+    awk -v key="$(printf "%s" "${2:?Provide key}" | tr "\n" "${PARAM_NEWLINE_TR}")" \
+        -v NEWLINE="${PARAM_NEWLINE_TR}" '
 
 NR%2==1{
     if ($0 == key) {
         getline
+        gsub(NEWLINE, "\n", $0)
         print $0
         exit 0
     }
@@ -125,35 +112,51 @@ A
 }
 
 param_default_list(){
-    eval printf "%s" \"\$${PARAM_DEFAULT_VAR_PREFIX}_${1:?Provide default scope}\" | awk 'NR%2==1{
+    eval printf "%s" \"\$${PARAM_DEFAULT_VAR_PREFIX}_${1:?Provide default scope}\" | \
+        awk -v NEWLINE="${PARAM_NEWLINE_TR}" '
+    NR%2==1{
         keyline=$0
     }
     NR%2==0{
         gsub("\001", "\n", $0)
+        gsub(NEWLINE, "\n", keyline)
+        gsub(NEWLINE, "\n", $0)
         print keyline "=" $0
     }'
 }
 
 param_default_set GITEE_OBJECT_NAME repo xk1
 
+# PARAM_ARGS=$li
+# $@
+
+# gitee.repo.create -a public a1 a2 a3
+
 w(){
     param <<A
     default     GITEE_${O:?Provide object name}
-    --repo      -r  "Provide repo name"         =~      [A-Za-z0-9]+
+    --repo      "Provide repo name"         =~      [A-Za-z0-9]+
     --user=el   -u  "Provide user name"         =~      [A-Za-z0-9]+
     --access    -a  "Access Priviledge"         =       public private
     --verbose   -v  "Display in verbose mode"   =FLAG
 A
 
-    echo -e "\n-----"
+    echo "----"
 
     echo "repo: $repo"
     echo "user: $user"
+    echo "access: $access"
     echo "verbose: $verbose"
 
     echo "$HELP_DOC"
 }
 
 # w --repo hi
-time O=OBJECT_NAME w --access public
+
+ff(){
+    O=OBJECT_NAME w -a private --repo "asfasfd
+asdfaf"
+}
+
+ff
 

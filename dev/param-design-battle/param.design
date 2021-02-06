@@ -1,11 +1,20 @@
 
 
+$(param scope) <<A
+    --repo      -r  'Provide repo name'         =~      [A-Za-z0-9]+
+    --user=el   -u  'Provide user name'         =~      [A-Za-z0-9]+
+    --access    -a  'Access Priviledge'         =       public private
+    --verbose   -v  'Display in verbose mode'   =FLAG
+A
+
+
 param scope "
     --repo      -r  'Provide repo name'         =~      [A-Za-z0-9]+
     --user=el   -u  'Provide user name'         =~      [A-Za-z0-9]+
     --access    -a  'Access Priviledge'         =       public private
     --verbose   -v  'Display in verbose mode'   =FLAG
 "
+
 
 param scope <<A
     --repo      -r  "Provide repo name"         =~      [A-Za-z0-9]+

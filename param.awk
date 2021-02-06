@@ -312,7 +312,11 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
 
 
 BEGIN{
-    if (ARG_SEP == false) ARG_SEP="\002"
+    if (ARG_SEP == 0) {
+        print "Please provide ARG_SEP as below:\n  awk -v ARG_SEP=<value>" > "/dev/stderr"
+        exit 1
+    }
+
     TOKEN_SEP = "\005"
     false = 0;  true = 1;
     FLAG_ENALED = "\002"
