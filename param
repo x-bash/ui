@@ -8,7 +8,7 @@
 alias param='{ eval "$(_param_main "$@")"; }'
 
 
-_param_main(){
+_param_main1(){
     local IFS
     IFS="$(printf "\005")"
 
@@ -31,6 +31,24 @@ $param_definition
 ---
 $s
 A
+}
+
+_param_main(){
+    local IFS
+    IFS="$(printf "\005")"
+
+    local sw=""
+    while read -r line; do
+        if [ -n "$sw" ]; then
+            echo "$line"
+            continue
+        fi
+
+        sw=1
+        line="$(echo "$line" | awk '{ if ($1 == "default") { printf("%s", $2); exit 0; } else { exit 1; } }' - )"
+        eval printf "%s" \"\$PARAM_DEFAULT_${line}\"
+        printf "\n%s\n" ---
+    done | awk -v ARGSTR="$*" -v ARG_SEP="$IFS" -f param.awk -
 }
 
 

@@ -335,8 +335,9 @@ BEGIN{
     if ($0 == "---") {
         part_one = false
     } else {
-        if (part_one == true) {
-            text = text "\n" $0
+        if (part_one == false) {
+            if (text == "") text = $0
+            else text = text "\n" $0
         } else {
             if (keyline == "") {
                 keyline = $0
