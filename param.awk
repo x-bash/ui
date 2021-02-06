@@ -81,11 +81,28 @@ function parse_item_to_generate_help(line,      token_arr, token_arr_len, ret, n
     return ret
 }
 
-function assert_arr_eq(value, sep, token_arr_len, token_arr,    j, value_arr_len, value_arr, sw){
+function assert_arr_eq(value, sep, token_arr_len, token_arr, name_idx,    j, value_arr_len, value_arr, sw){
     value_arr_len = split(value, value_arr, sep)
     for (j=1; j<=value_arr_len; ++j) {
         sw = false
-        for (idx=5; idx<=token_arr_len; ++idx) {
+        for (idx=name_idx+3; idx<=token_arr_len; ++idx) {
+            if (value_arr[j] == token_arr[idx]) {
+                sw = true
+                break
+            }
+        }
+        if ( sw == false) {
+            # show help
+            exit_print(1)
+        }
+    }
+}
+
+function assert_arr_regex(value, sep, token_arr_len, token_arr,    j, value_arr_len, value_arr, sw){
+    value_arr_len = split(value, value_arr, sep)
+    for (j=1; j<=value_arr_len; ++j) {
+        sw = false
+        for (idx=name_idx+3; idx<=token_arr_len; ++idx) {
             if (match(value_arr[j], token_arr[idx])) {
                 sw = true
                 break
@@ -195,7 +212,7 @@ function parse_item(line,
         append_code( "local " name "=" value " 2>/dev/null" )
     } else if (op == "=") {
         sw = false
-        for (idx=5; idx<=token_arr_len; ++idx) {
+        for (idx=name_idx+3; idx<=token_arr_len; ++idx) {
             if (value == token_arr[idx]) {
                 sw = true
                 break
@@ -209,9 +226,9 @@ function parse_item(line,
         }
 
         append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-    }else if (op == "=~") {
+    } else if (op == "=~") {
         sw = false
-        for (idx=5; idx<=token_arr_len; ++idx) {
+        for (idx=name_idx+3; idx<=token_arr_len; ++idx) {
             if (match(value, "^"token_arr[idx]"$")) {
                 sw = true
                 break
@@ -227,23 +244,13 @@ function parse_item(line,
         append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
     } else if (op ~ /^=.$/) {
         sep = substr(op, 2, 1)
-        assert_arr_eq(value, sep, token_arr_en, token_arr)
-        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-    } else if (op ~ /^=[.]$/) {
-        sep = substr(op, 3, 1)
-        assert_arr_eq(value, sep, token_arr_en, token_arr)
-        gsub(sep, "\034", value)    # how to do that?
+        assert_arr_eq(value, sep, token_arr_len, token_arr, name_idx)
         append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
     } else if (op ~ /^=~.$/) {
         sep = substr(op, 3, 1)
-        assert_arr_eq(value, sep, token_arr_en, token_arr)
+        assert_arr_regex(value, sep, token_arr_len, token_arr, name_idx)
         append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-    } else if (op ~ /^=~[.]$/) {
-        sep = substr(op, 4, 1)
-        assert_arr_eq(value, sep, token_arr_en, token_arr)
-        gsub(sep, "\034", value)    # how to do that?
-        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-    }else {
+    } else {
         print "Op Not Match any candidates: \n" line > "/dev/stderr"
         exit_print(1)
     }
