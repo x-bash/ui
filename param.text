@@ -1,5 +1,0 @@
-title "Provide title"
-text "Provide text"
-orientation=0 "button orientation 0 = vertical, 1=horizontal, default is 0" int 0 1
-singleTitle "Provide singtalTitle"
-singleURL "Provide url to jump"
