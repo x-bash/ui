@@ -127,6 +127,38 @@ param_default_list(){
     }'
 }
 
+
+
+
+alias param.example='local _param_example 2>/dev/null; param_.__example _param_example'
+
+param_.example.show(){
+    # shellcheck disable=SC2154
+    echo "$_param_example"
+}
+
+param_.__example(){
+    local name=$1 s
+    shift
+    # shellcheck disable=SC2034
+    s="$(param_.__example.cat "$@")"
+    eval "$name=\"\$s\""
+}
+
+param_.__example.cat(){
+    local i
+    echo "----------------"
+    printf "Example:\n"
+    for (( i=1; i<${#@}; i++ )); do
+        printf "  $(tput setaf 6)%s:$(tput init)\n" "* ${!i}"
+        (( i++ ))
+        printf "    > $(tput setaf 2)%s$(tput init)\n" "${!i}"
+    done
+}
+
+
+########
+
 param_default_set GITEE_OBJECT_NAME repo xk1
 
 # PARAM_ARGS=$li
