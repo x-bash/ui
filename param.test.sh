@@ -25,7 +25,7 @@ A
         s=$(eval printf "%s" \"\$PARAM_DEFAULT_${default}\" | tr "\n" "$(printf "\006")")
     fi
 
-    awk -v ARGSTR="$*"  -v ARG_SEP="$IFS" \
+   awk -v ARGSTR="$*"  -v ARG_SEP="$IFS" \
         -v scope_str="$s" \
         -v O="${O}" -f param.awk - <<A
 $param_definition
@@ -117,7 +117,7 @@ param_default_list(){
 param_default_set GITEE_OBJECT_NAME repo xk1
 
 w(){
-    w.param <<A
+    param <<A
     default     GITEE_${O:?Provide object name}
     --repo      -r  "Provide repo name"         =~      [A-Za-z0-9]+
     --user=el   -u  "Provide user name"         =~      [A-Za-z0-9]+
@@ -135,5 +135,5 @@ A
 }
 
 # w --repo hi
-O=OBJECT_NAME w --access public
+time O=OBJECT_NAME w --access public >/dev/null
 
