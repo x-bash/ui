@@ -128,24 +128,23 @@ param_default_list(){
 }
 
 
+alias param_example='local PARAM_EXAMPLE 2>/dev/null; _param_example PARAM_EXAMPLE'
 
-
-alias param.example='local _param_example 2>/dev/null; param_.__example _param_example'
-
-param_.example.show(){
+param_example_show(){
     # shellcheck disable=SC2154
-    echo "$_param_example"
+    echo "$PARAM_EXAMPLE"
 }
 
-param_.__example(){
-    local name=$1 s
+_param_example(){
+    local name=$1 
+    local s
     shift
     # shellcheck disable=SC2034
-    s="$(param_.__example.cat "$@")"
+    s="$(_param_example_cat "$@")"
     eval "$name=\"\$s\""
 }
 
-param_.__example.cat(){
+_param_example_cat(){
     local i
     echo "----------------"
     printf "Example:\n"
