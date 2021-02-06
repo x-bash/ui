@@ -25,7 +25,7 @@ A
         s=$(eval printf "%s" \"\$PARAM_DEFAULT_${default}\" | tr "\n" "$(printf "\006")")
     fi
 
-   awk -v ARGSTR="$*"  -v ARG_SEP="$IFS" \
+    awk -v ARGSTR="$*"  -v ARG_SEP="$IFS" \
         -v scope_str="$s" \
         -v O="${O}" -f param.awk - <<A
 $param_definition
