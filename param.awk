@@ -277,26 +277,26 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
     arg_arr_len = split(argstr, arg_arr, ARG_SEP)
     for (i=1; i<=arg_arr_len; ++i) {
         e = arg_arr[i]
+        if (key != null) {
+            arg_map[key] = e
+            key = null
+            continue
+        }
+
         if (match(e, "^--?")){
-            if (key != null) {
-                # TODO: bug
-            }
             if (arg_has_value[e] == true){
                 key = e
             } else {
                 arg_map[e] = FLAG_ENALED
                 key = null # unecessary
             }
-        } else if (key != null) {
-            arg_map[key] = e
-            key = null
-        } else {
-            break
+            continue
         }
+   
+        break
     }
 
     tmp = i
-
     for (; i<=arg_arr_len; ++i) {
         # rest: rest_arguments
         rest[i-tmp+1] = arg_arr[i]
