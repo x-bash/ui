@@ -1,20 +1,7 @@
+#shellcheck shell=awk
 
-
-# Anaylysis
-# analysis the code
-# 1. generate help
-# 2. parsing the arguments
-# 3. generate the flag
-
-# param '
-#     title "Provide title"
-#     text "Provide text"
-#     orientation=0 "button orientation 0 = vertical, 1=horizontal, default is 0" int 0 1
-#     singleTitle "Provide singtalTitle"
-#     singleURL "Provide url to jump"
-# '
-
-# 5ms
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
 
 function f(text){
     # print line
@@ -139,12 +126,81 @@ function exit_print(code){
     exit code
 }
 
+function assert(line, name, value, op, token_arr_len, token_arr, op_arg_idx,            sw, idx){
+
+    if (op == "=int") {
+        if (! match(value, /[+-]?[0-9]+/) ) {    # float is: /[+-]?[0-9]+(.[0-9]+)?/
+            error( "Arg: [" name "] value is [" value "]\nIs NOT an integer." )
+            print_helpdoc()
+            exit_print(1)
+        }
+    } else if (op == "=") {
+        sw = false
+        for (idx=op_arg_idx; idx<=token_arr_len; ++idx) {
+            if (value == token_arr[idx]) {
+                sw = true
+                break
+            }
+        }
+        if (sw == false) {
+            gsub(TOKEN_SEP, "\n" line)
+            error( "Arg: [" name "] value is [" value "]\nFail to match any candidates:\n" line )
+            print_helpdoc()
+            exit_print(1)
+        }
+    } else if (op == "=~") {
+        sw = false
+        for (idx=op_arg_idx; idx<=token_arr_len; ++idx) {
+            if (match(value, "^"token_arr[idx]"$")) {
+                sw = true
+                break
+            }
+        }
+        if (sw == false) {
+            gsub(TOKEN_SEP, "\n" line)
+            error( "Arg: [" name "] value is [" value "]\nFail to match any regex pattern:\n" line )
+            print_helpdoc()
+            exit_print(1)
+        }
+
+    } else if (op ~ /^=.$/) {
+        sep = substr(op, 2, 1)
+        assert_arr_eq(value, sep, token_arr_len, token_arr, op_arg_idx)
+    } else if (op ~ /^=~.$/) {
+        sep = substr(op, 3, 1)
+        assert_arr_regex(value, sep, token_arr_len, token_arr, op_arg_idx)
+    } else {
+        print "Op[" op "] Not Match any candidates: \n" line > "/dev/stderr"
+        exit_print(1)
+        return false
+    }
+
+    return true
+}
+
 function parse_item(line,   
     token_arr_len, token_arr, 
     value, name, default, idx, i, j, sw, value_arr, value_arr_len, sep){
    
     token_arr_len = split(line, token_arr, TOKEN_SEP)
     value = null
+
+    # handle the rest arguments
+    name = token_arr[2]
+    if (name ~ /^\.\.\./) {
+        for (idx=1; idx<=rest_len; idx++) {
+            if (assert(line, "...", rest[idx], token_arr[3], token_arr_len, token_arr, 4) == false) {
+                return false
+            }
+        }
+        return true
+    }
+
+    # handler the rest arguments with number
+    if (name ~ "^#") {
+        gsub("^#", "", name)
+        return assert(line, "#" name, rest[name], token_arr[3], token_arr_len, token_arr, 4)
+    }
 
     for (name_idx=2; name_idx <= token_arr_len; ++name_idx) {
         name = token_arr[name_idx]
@@ -198,61 +254,8 @@ function parse_item(line,
         }
     }
 
-    if (op == "") {
+    if (assert(line, name, value, op, token_arr_len, token_arr, name_idx + 3)){
         append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-        return true
-    }
-
-    if (op == "=int") {
-        if (! match(value, /[+-]?[0-9]+/) ) {    # float is: /[+-]?[0-9]+(.[0-9]+)?/
-            error( "Arg: [" name "] value is [" value "]\nIs NOT an integer." )
-            print_helpdoc()
-            exit_print(1)
-        }
-        append_code( "local " name "=" value " 2>/dev/null" )
-    } else if (op == "=") {
-        sw = false
-        for (idx=name_idx+3; idx<=token_arr_len; ++idx) {
-            if (value == token_arr[idx]) {
-                sw = true
-                break
-            }
-        }
-        if (sw == false) {
-            gsub(TOKEN_SEP, "\n" line)
-            error( "Arg: [" name "] value is [" value "]\nFail to match any candidates:\n" line )
-            print_helpdoc()
-            exit_print(1)
-        }
-
-        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-    } else if (op == "=~") {
-        sw = false
-        for (idx=name_idx+3; idx<=token_arr_len; ++idx) {
-            if (match(value, "^"token_arr[idx]"$")) {
-                sw = true
-                break
-            }
-        }
-        if (sw == false) {
-            gsub(TOKEN_SEP, "\n" line)
-            error( "Arg: [" name "] value is [" value "]\nFail to match any regex pattern:\n" line )
-            print_helpdoc()
-            exit_print(1)
-        }
-
-        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-    } else if (op ~ /^=.$/) {
-        sep = substr(op, 2, 1)
-        assert_arr_eq(value, sep, token_arr_len, token_arr, name_idx)
-        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-    } else if (op ~ /^=~.$/) {
-        sep = substr(op, 3, 1)
-        assert_arr_regex(value, sep, token_arr_len, token_arr, name_idx)
-        append_code( "local " name "=" quote_string(value) " 2>/dev/null" )
-    } else {
-        print "Op Not Match any candidates: \n" line > "/dev/stderr"
-        exit_print(1)
     }
 }
 
@@ -279,7 +282,7 @@ function parse(text,    text_arr, text_arr_len, i, start){
 }
 
 
-function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
+function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp, tmp_i){
     key = null
 
     # \001 could not be ARG_SEP, which is \005
@@ -309,14 +312,16 @@ function prepare_arg_map(argstr,        arg_arr_len, arg_arr, i, e, key, tmp){
         break
     }
 
-    tmp = i
+    tmp_i = i
 
     tmp = "set -- "
+
     for (; i<=arg_arr_len; ++i) {
         # rest: rest_arguments
-        rest[i-tmp+1] = arg_arr[i]
+        rest[i-tmp_i+1] = arg_arr[i]
         tmp = tmp " \"$" i "\""
     }
+    rest_len = arg_arr_len - tmp_i
     append_code(tmp)
 }
 
@@ -366,7 +371,7 @@ BEGIN{
 END{
     parse(text)
     print CODE
-    # print "local HELP_DOC=" quote_string(HELP_DOC) " 2>/dev/null"
+    # print "local PARAM_HELP_DOC=" quote_string(HELP_DOC) " 2>/dev/null"
     exit return_code
 }
 

@@ -134,6 +134,8 @@ param_default_set GITEE_OBJECT_NAME repo xk1
 
 # gitee.repo.create -a public a1 a2 a3
 
+
+
 w(){
     param <<A
     default     GITEE_${O:?Provide object name}
@@ -141,6 +143,8 @@ w(){
     --user=el   -u  "Provide user name"         =~      [A-Za-z0-9]+
     --access    -a  "Access Priviledge"         =       public private
     --verbose   -v  "Display in verbose mode"   =FLAG
+    #1          =~      [A-Za-z0-9\n]+
+    ...         =~      [A-Za-z0-9\n]+
 A
 
     echo "----"
