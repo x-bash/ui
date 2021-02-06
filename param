@@ -47,7 +47,7 @@ _param_main(){
         sw=1
         line="$(echo "$line" | awk '{ if ($1 == "default") { printf("%s", $2); exit 0; } else { exit 1; } }' - )"
         eval printf "%s" \"\$PARAM_DEFAULT_${line}\"
-        printf "\n%s\n" ---
+        printf "\n\001\001\001\n"
     done | awk -v ARGSTR="$*" -v ARG_SEP="$IFS" -f param.awk -
 }
 

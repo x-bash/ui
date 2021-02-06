@@ -332,7 +332,7 @@ BEGIN{
 
 {
     # print "---> \t" $0 > "/dev/stderr"
-    if ($0 == "---") {
+    if ($0 == "\001\001\001") {
         part_one = false
     } else {
         if (part_one == false) {
