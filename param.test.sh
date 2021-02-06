@@ -1,10 +1,13 @@
-#! /usr/bin/env 
+# shellcheck shell=sh
+# shellcheck disable=SC2039
 
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
 
 # shellcheck disable=SC2142
 alias param='{ eval "$(_param_main "$@")"; }'
 
-# dict_key  dict_value
+
 _param_main(){
     local IFS
     IFS="$(printf "\005")"
@@ -14,10 +17,6 @@ _param_main(){
 
     local default
     local s=""
-
-#     awk '{ if ($1 == "default") printf("%s\t%s\t", $1, $2) >"/dev/stderr"; exit 0 }' <<A
-# $param_definition
-# A
 
     if default="$(awk '{ if ($1 == "default") { printf("%s", $2); exit 0; } else { exit 1; } }' - <<A
 $param_definition
@@ -34,33 +33,12 @@ A
 }
 
 # Because awk split bug in unprintable seperators. We have to encode the string by transposing the newline character
-
 PARAM_DEFAULT_VAR_PREFIX=___X_CMD_X_BASH_PARAM_DEFAULT
 
 param_default_clear(){
     local O="${1:?Provide default scope}"
     eval "${PARAM_DEFAULT_VAR_PREFIX}_$O=\"\""
 }
-
-# BEGIN {  ORS=RS; sw = 1;  }
-# {
-#     if ($0 != "") {
-#         print "<" $0 ">" >"/dev/stderr"
-#         if ($1 == key) {
-#             print key FS value
-#             sw = 0
-#         } else {
-#             print $1 FS $2
-#         }
-#     }
-# }
-# END { if (1 == sw) print key FS value; print key FS value; }
-
-# There is a common bug in awk.
-# awk 'BEGIN{ RS="\034"; } { print length($0); print split($0, arr, "\t");  print arr[2]; }' <<<"a"
-# docker run -i centos awk 'BEGIN{ RS="\034"; } { gsub("\n$", "", $0); print length($0); print split($0, arr, "\t");  print arr[2]; }' <<<"aa"
-
-# awk '{ a="\n"; print split(a, arr, "\033"); }'
 
 PARAM_NEWLINE_TR="$(printf "\001")"
 
