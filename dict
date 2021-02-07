@@ -1,9 +1,12 @@
-# shellcheck shell=bash
+# shellcheck shell=sh
+
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
 
 if [ -n "${BASH_VERSION}" ]; then
     case "${BASH_VERSION}" in
-        3*) xrc std/dict_str    ;;
-        *) xrc std/dict_bash4   ;;
+        3*)     xrc std/dict_str    ;;
+        *)      xrc std/dict_bash4   ;;
     esac
 elif [ -n "${ZSH_VERSION}" ]; then
     xrc std/dict_zsh

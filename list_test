@@ -1,0 +1,23 @@
+. list_str
+
+list_make a
+O=a list_push a b
+O=a list_print
+
+echo "------------------"
+O=a list_unshift 1 2
+O=a list_print
+
+echo "------------------"
+O=a list_head
+O=a list_tail
+
+echo "------------------ remove"
+O=a list_remove 3
+O=a list_tail
+
+echo "------------------ shift"
+O=a
+O=a echo "$(list_head)"
+O=a echo $(list_shift)
+O=a echo $(list_head)

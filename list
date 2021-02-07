@@ -1,6 +1,11 @@
 # shellcheck shell=sh
 
-if [ -z "$ZSH_VERSION" ] && [ -z "$BASH_VERSION" ]; then
+# author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
+if [ -z "$BASH_VERSION" ]; then
+    xrc std/list_zsh
+elif [ -z "$ZSH_VERSION" ]; then
     xrc std/list_str
 else
     xrc std/list_native
