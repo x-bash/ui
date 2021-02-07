@@ -33,4 +33,12 @@ f2(){
     O=a echo "$(list_head)"
 }
 
-f2
+test_remove(){
+    list_make a
+    O=a
+    list_push $(seq 10)
+    time list_remove 3
+    list_print
+}
+
+test_remove

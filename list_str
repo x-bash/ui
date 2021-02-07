@@ -235,9 +235,6 @@ list_remove(){
     len="${data%%${LIST_SEP}*}"
     len="${len:-0}"
 
-    local body
-    body="${data#*${LIST_SEP}}"
-
     local idx=${1:?idx}
     local args=""
 
@@ -250,8 +247,8 @@ list_remove(){
     fi
 
     local s
-    s="$(printf "%s" data | cut -d "${LIST_SEP}" $args )"
-    s="$((len-1))${LIST_SEP}$s"
+    s="$( printf "%s" "$data" | cut -d "${LIST_SEP}" -f "$args" )"
+    s="$(( len-1 ))${LIST_SEP}$s"
 
     eval "$O=\"\$s\""
     return 0
