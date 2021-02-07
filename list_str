@@ -12,7 +12,12 @@ debug_init array
 # \n Using \001
 # 
 
-LIST_SEP="$(printf "\001")"
+LIST_SEP="$(printf "\n")"
+PARAM_NEWLINE_TR="$(printf "\001")"
+
+LIST_NEWLINE="$(printf "\n")"
+LIST_NEWLINE_TR="$(printf "\001")"
+
 
 list_make(){
     local O="${1:?list_name}"
@@ -36,13 +41,28 @@ list_get(){
 
     local i=${1:?idx}
 
-    local len="$(list_size)"
+    local len
+    len="$(list_size)"
     if [ "$i" -ge "$len" ]; then
         return 1
     fi
 
     eval printf "%s" "\$$O" | cut -d "$LIST_SEP" -f "$((i+2))"
 }
+
+if [ "$ZSH_VERSION" ] || [ "$BASH_VERSION" ]; then
+    _list_tr(){
+        # $LIST_SEP = "\n"
+        printf "%s" "${1//$LIST_SEP/$PARAM_NEWLINE_TR}"
+    }
+else
+    _list_tr(){
+        # $LIST_SEP = "\n"
+        printf "%s" "$1" | tr "\n" "$PARAM_NEWLINE_TR"
+    }
+fi
+
+
 
 list_push() {
     local O="${O:?list_name}"
@@ -61,16 +81,25 @@ list_push() {
 
 list_unshift() {
     local O="${O:?list_name}"
-    local IFS="$LIST_SEP"
-
+    local IFS="$(printf "\002")"    # TMP SEP
+    local sss
+    # if [ -n "$ZSH_VERSION" ] || [ -n "$BASH_VERSION" ]; then
+    #     sss="$(printf "%s" "$*")"
+    #     sss="${sss//$LIST_NEWLINE/$LIST_NEWLINE_TR}"
+    #     sss="${sss//$IFS/$LIST_SEP}"
+    # else
+        sss="$(printf "%s" "$*" | tr "\n\002" "\001\n")"
+    # fi
+    
     local len
     len=$(eval printf "%s" "\${$O%%${LIST_SEP}*}")
+    len="${len:-0}"
     if [ "$len" -eq 0 ]; then
-        eval $O="$(printf "%s${LIST_SEP}%s" "$((len+$#))" "$*")"
+        eval $O="$(printf "%s${LIST_SEP}%s" "$((len+$#))" "$sss")"
     else
         local body
         body=$(eval printf "%s" "\${$O#*${LIST_SEP}}")
-        eval $O="$(printf "%s${LIST_SEP}%s${LIST_SEP}%s" "$((len+$#))" "$*" "$body")"
+        eval $O="$(printf "%s${LIST_SEP}%s${LIST_SEP}%s" "$((len+$#))" "$sss" "$body")"
     fi
 }
 
