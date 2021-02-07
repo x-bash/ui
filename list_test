@@ -41,4 +41,21 @@ test_remove(){
     list_print
 }
 
-test_remove
+# test_remove
+
+test_regex(){
+    list_make a; O=a
+    list_push a1 b2 c3
+    list_get_by_regex "[a-z]2"
+}
+
+test_regex
+
+test_index_of(){
+    list_make a; O=a
+    list_push a1 b2 c3
+    list_index_of "c3"
+}
+
+test_index_of
+

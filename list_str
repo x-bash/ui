@@ -191,7 +191,7 @@ list_index_of(){
         NR==1 { value = $0      }
         NR> 2 {
             if (value == $0) {
-                print NR
+                print NR-3
                 exit_code = 0
                 exit 0
             }
@@ -240,7 +240,7 @@ list_remove(){
 
     if [ "$idx" -eq 0 ]; then
         args="3-${len}"
-    elif [ "$idx" -lt $len ]; then
+    elif [ "$idx" -lt "$len" ]; then
         args="2-$((idx+1)),$((idx+3))-$((len+2))"
     else
         return 1
@@ -264,7 +264,8 @@ list_get_by_regex(){
         NR==1 { pattern = $0      }
         NR> 2 {
             if (match($0, pattern)) {
-                print NR
+                print NR-3
+                gsub("\001", "\n", $0)
                 print $0
                 exit_code = 0
                 exit 0
