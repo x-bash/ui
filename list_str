@@ -31,12 +31,25 @@ list_free(){
 }
 
 : <<'DOCTEST'
-> list_make a
-> O=a list_push 1 2 3; O=a list_get 0
+> list_make b
+> O=b list_push $(seq 1 3); O=b list_print
 1
 2
 3
-> O=a list_size
+DOCTEST
+list_print(){
+    local O="${O:?list_name}"
+    local data
+    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+
+    printf "%s" "${data#*${LIST_SEP}}" | tr "${LIST_SEP}" "\n"
+}
+
+: <<'DOCTEST'
+> list_make b
+> O=b list_push $(seq 1 3); O=b list_get 0
+1
+> O=b list_size
 3
 DOCTEST
 list_size(){
@@ -54,24 +67,38 @@ list_size(){
     # eval "echo ${$O}"
 }
 
-# First elem is length
+: <<'DOCTEST'
+> list_make b
+> O=b list_push $(seq 10); 
+> O=b list_get 0
+1
+> O=b list_get 8
+9
+DOCTEST
 list_get(){
     local O="${O:?list_name}"
+    local data
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
     local i=${1:?idx}
-
-    local len
-    len="$(list_size)"
-    if [ "$i" -ge "$len" ]; then
-        return 1
-    fi
-
-    eval printf "%s" "\"\$$O\"" | cut -d "$LIST_SEP" -f "$((i+2))"
+    printf "%s" "$data" | tr "\n" "\001" | awk -v RS="${LIST_SEP}" -v idx="$i" \
+    '
+        BEGIN { idx=idx+2; exit_code = 1   }
+        NR==idx {
+            gsub("\001", "\n", $0)
+            printf("%s", $0)
+            exit_code = 0
+            exit 0
+        }
+        END   { exit exit_code  }
+    ' -
 }
 
+
 list_push() {
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
     local len
     len="${data%%${LIST_SEP}*}"
@@ -87,9 +114,18 @@ list_push() {
     eval $O='"$t"'
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 10);
+> O=b list_get 0
+1
+> O=b list_get 8
+9
+DOCTEST
 list_unshift() {
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
     local len
     len="${data%%${LIST_SEP}*}"
@@ -105,9 +141,16 @@ list_unshift() {
     eval $O='"$t"'
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 10);
+> O=b list_head
+1
+DOCTEST
 list_head(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
     local len
     len="${data%%${LIST_SEP}*}"
 
@@ -116,28 +159,49 @@ list_head(){
     printf "%s" "${data%%${LIST_SEP}*}"
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 10);
+> O=b list_tail
+10
+DOCTEST
 list_tail(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
     local len
     len="${data%%${LIST_SEP}*}"
 
     [ "${len:-0}" -eq 0 ] && return 2
-    data="${data#*${LIST_SEP}}"
-    printf "%s" "${data%%${LIST_SEP}*}"
+    printf "%s" "${data##*${LIST_SEP}}"
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 10);
+> O=b list_top
+10
+DOCTEST
 list_top(){ list_tail; }
 
-list_foreach(){
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 3);
+> O=b list_map echo
+0 1
+1 2
+2 3
+DOCTEST
+list_map(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
     local len
     len="${data%%${LIST_SEP}*}"
     len=${len:-0}
 
     local body
-    body="${body#*${LIST_SEP}}"
+    body="${data#*${LIST_SEP}}"
 
     local f="${1:?function name}"
 
@@ -162,9 +226,18 @@ list_foreach(){
 # A
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 10);
+> O=b list_pop
+10
+> O=b list_size
+9
+DOCTEST
 list_pop(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
     local len
     len="${data%%${LIST_SEP}*}"
     case "${len:-0}" in
@@ -173,14 +246,25 @@ list_pop(){
         eval $O=0   ;;
     *)  printf "%s" "${data##*${LIST_SEP}}"
         local t
-        t="$(printf "%s${LIST_SEP}%s" "$((len-1))" "${data%${LIST_SEP}*}")" ;;
+        t="$(printf "%s${LIST_SEP}%s" "$((len-1))" "${data%${LIST_SEP}*}")" 
+        eval $O='"$t"'
+        ;;
     esac
     return 0
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 10);
+> O=b list_shift
+1
+> O=b list_size
+9
+DOCTEST
 list_shift(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
     local len
     len="${data%%${LIST_SEP}*}"
     case "${len:-0}" in
@@ -198,9 +282,16 @@ list_shift(){
     return 0
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 10);
+> O=b list_index_of 2
+1
+DOCTEST
 list_index_of(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
     eval printf "%s${LIST_SEP}%s" "${1:?Provide value}" "$data" | tr "\n" "\001" | awk -v RS="${LIST_SEP}" -v value="$value" \
     '
@@ -217,63 +308,109 @@ list_index_of(){
     ' -
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 5);  O=b list_remove_by_value 3
+> O=b list_print
+1
+2
+4
+5
+DOCTEST
 list_remove_by_value(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
     local s
-    s="$(eval printf "%s${LIST_SEP}%s" "${1:?Provide value}" "$data" | tr "\n" "\001" | awk -v RS="${LIST_SEP}" -v value="$value" \
+    if s="$(printf "%s${LIST_SEP}%s" "${1:?Provide value}" "$data" | tr "\n" "\001" | awk -v RS="${LIST_SEP}" \
     '
-        BEGIN { }
+        BEGIN { exit_code = 1; }
         NR==1 { value = $0      }
         NR==2 { num = $0;   result="" }
         NR> 2 {
             if (value == $0) {
                 num -= 1
+                exit_code = 0
             } else {
                 result = result RS $0
             }
         }
         END   { 
-            result = num result
-            gsub("\001", "\n" result)
-            printf "%s" result
+            if (exit_code == 0) {
+                result = num result
+                gsub("\001", "\n" result)
+                printf("%s", result)
+            }
         }
-    ' -)"
+    ' -)"; then
 
-    eval "$O=\"\$s\""
+        eval "$O=\"\$s\""
+    fi
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 5);  O=b list_remove 3
+> O=b list_print
+1
+2
+3
+5
+DOCTEST
 list_remove(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
     local len
     len="${data%%${LIST_SEP}*}"
     len="${len:-0}"
 
     local idx=${1:?idx}
-    local args=""
-
-    if [ "$idx" -eq 0 ]; then
-        args="3-${len}"
-    elif [ "$idx" -lt "$len" ]; then
-        args="2-$((idx+1)),$((idx+3))-$((len+2))"
-    else
-        return 1
-    fi
 
     local s
-    s="$( printf "%s" "$data" | cut -d "${LIST_SEP}" -f "$args" )"
-    s="$(( len-1 ))${LIST_SEP}$s"
+    if s="$(printf "%s" "$data" | tr "\n" "\001" | awk -v RS="${LIST_SEP}" -v idx="$idx" \
+    '
+        BEGIN { exit_code=1; }
+        NR==1 {
+            len = $0
+            if (idx >= len) exit 1
+            idx += 2
+        }
+        NR> 1 {
+            if (idx == NR) {
+                len -= 1
+                exit_code = 0
+            } else {
+                result = result RS $0
+            }
+        }
+        END   {
+            if (exit_code == 0) {
+                result = len result
+                gsub("\001", "\n" result)
+                printf("%s", result)
+            }
+            exit exit_code
+        }
+    ' -)"; then
 
-    eval "$O=\"\$s\""
-    return 0
+        eval "$O=\"\$s\""
+    fi
 }
 
+: <<'DOCTEST'
+> list_make b
+> O=b list_unshift $(seq 10);
+> O=b list_get_by_regex "^2$"
+1
+2
+DOCTEST
 list_get_by_regex(){
+    local O="${O:?list_name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
     eval printf "%s${LIST_SEP}%s" "${1:?Provide pattern}" "$data" | tr "\n" "\001" | awk -v RS="${LIST_SEP}" \
     '
@@ -290,11 +427,5 @@ list_get_by_regex(){
         }
         END   { exit exit_code  }
     ' -
-}
-
-
-list_print(){
-    local O="${O:?list_name}"
-    eval printf "%s" \"\$$O\" | tr "${LIST_SEP}" "\n"
 }
 

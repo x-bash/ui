@@ -37,7 +37,8 @@ _doctest_run_code(){
 doctest(){
     local test_script_fifo="doctest.tmp.input.fifo" 
     local out_fifo="doctest.tmp.output.fifo"
-    local IFS=
+    local IFS="
+"
 
     rm "$test_script_fifo" "$out_fifo" 2>/dev/null 
     mkfifo "$test_script_fifo" "$out_fifo"
@@ -46,7 +47,8 @@ doctest(){
     (
         #shellcheck disable=SC1090
         . "$1";
-        _doctest_exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" 1>/dev/null 2>&1
+        # _doctest_exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" 1>/dev/null 2>&1
+        _doctest_exec_script "${1:?script}" "$test_script_fifo" "$out_fifo" # 1>/dev/null 2>&1
     ) &
 
     local PROCESS_ID="$!"
@@ -85,9 +87,25 @@ A
 }
 
 _doctest_exec_script(){
+    local IFS="
+"
     while :; do
         eval "$(cat "${2:?fifo file}")" 1>"${3:?output fifo file}" 2>&1
     done
 }
+
+# _doctest_exec_script(){
+#     local IFS="
+# "
+#     while :; do
+#         local script
+#         script="$(cat "${2:?fifo file}")"
+#         echo "K-SCRIPT: $script" >&2
+#         local result
+#         result="$(eval "$script")"
+#         echo "K-RESULT: ----> ${#result}" >&2
+#         printf "%s" "$(eval "$script")" 1>"${3:?output fifo file}" 2>&1
+#     done
+# }
 
 [ "$#" -ne 0 ] && doctest "$@"

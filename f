@@ -107,3 +107,8 @@ ff8(){
 }
 
 
+f9(){
+    for i in $(seq 100); do eval echo "$i"; done
+}
+
+

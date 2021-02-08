@@ -3,10 +3,11 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-if [ -z "$BASH_VERSION" ]; then
-    xrc std/list_zsh
-elif [ -z "$ZSH_VERSION" ]; then
+if [ -n "$BASH_VERSION" ]; then
+    xrc std/list_bash
+elif [ -n "$ZSH_VERSION" ]; then
     xrc std/list_str
+    # xrc std/list_zsh
 else
-    xrc std/list_native
+    xrc std/list_str
 fi
