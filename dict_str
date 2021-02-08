@@ -198,42 +198,65 @@ dict_remove(){
 # TODO: add key/value filter in arguments or enviroments
 # shellcheck disable=SC2120
 dict_print(){
-    local key_filter="$1" value_filter="$2"
-    [ "$1" = "-" ] && key_filter=""
-    [ "$2" = "-" ] && value_filter=""
+    local O="${O:?list_name}"
+    local data
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
-    local k v
-    local sep=${DICT_PRINT_SEP:-" = "}
-    for i in $(list.print); do
-        k=$(echo -n "$i" | cut -d ':' -f 1)
-        v=$(echo -n "$i" | cut -d ':' -f 2)
-
-        k=$(str.unbase64 "$k")
-        v=$(str.unbase64 "$v")
-
-        # using regex
-        # [ -n "$key_filter" ] && [[ ! "$k" =~ $key_filter ]] && continue
-        # [ -n "$value_filter" ] && [[ ! "$v" =~ $value_filter ]] && continue
-
-        # Using glob. So no quote for that
-        # shellcheck disable=SC2053
-        [ -n "$key_filter" ] && [[ ! "$k" == $key_filter ]] && continue
-        # shellcheck disable=SC2053
-        [ -n "$value_filter" ] && [[ ! "$v" == $value_filter ]] && continue
-
-        echo -e "$k${sep}$v"
-    done
+    printf "%s" "$data" | tr "\n" "\001" | awk -v RS="${DICT_SEP}" \
+    '
+        NR==1 { len = $0;   result=""; }
+        NR> 1 {
+            if (NR % 2 == 0) { # key
+                key = $0
+            } else {
+                if (NR == 3) {
+                    result = result key "=" $0
+                } else {
+                    result = result "\n" key "=" $0
+                }
+            }
+        }
+        END   {
+            gsub("\001", "\n", result)
+            printf("%s", result)
+        }
+    ' -
 }
 
-dict.dump(){
-    if [ $# -eq 0 ]; then
-        list.print
-        return 0
-    fi
-    list.print | tee "$@"
+dict_json(){
+    local O="${O:?list_name}"
+    local data
+    data="$(eval printf "%s" "\"\$${O}\"")"
+
+    printf "%s" "$data" | tr "\n\"" "\001\002" | awk -v RS="${DICT_SEP}" \
+    '
+        NR==1 { len = $0;   result="{";     quote = "\""}
+        NR> 1 {
+            if (NR % 2 == 0) { # key
+                if (NR == 2) {
+                    result = result "\n  " quote $0 quote ":"
+                } else {
+                    result = result ",\n  " quote $0 quote ":"
+                }
+            } else {
+                result = result " " quote $0 quote
+            }
+        }
+        END   { 
+            result = result "\n}"
+            gsub("\001", "\\n", result)
+            gsub("\002", "\"", result)
+            gsub("\v", "\\v", result)
+            gsub("\b", "\\b", result)
+            gsub("\t", "\\t", result)
+            gsub("\r", "\\r", result)
+            printf("%s", result)
+        }
+    ' -
 }
 
-dict.load(){
+# TODO: Implement it
+dict_load(){
     local name=${1?:Provide name}
     shift
     dict.make "$name"
