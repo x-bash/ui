@@ -346,6 +346,8 @@ list_remove_by_value(){
     ' -)"; then
 
         eval "$O=\"\$s\""
+    else
+        return 1
     fi
 }
 
@@ -397,6 +399,8 @@ list_remove(){
     ' -)"; then
 
         eval "$O=\"\$s\""
+    else
+        return 1
     fi
 }
 
