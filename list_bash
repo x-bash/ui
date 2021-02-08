@@ -5,8 +5,6 @@
 # maintainer:   Li Junhao
 
 
-LIST_SEP="$(printf "\003")"     #
-
 list_make(){
     local O="${1:?list_name}"
     eval "$O=()"
