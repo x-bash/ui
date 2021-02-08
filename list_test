@@ -52,10 +52,24 @@ test_regex(){
 test_regex
 
 test_index_of(){
+    local a 
+    local O
     list_make a; O=a
     list_push a1 b2 c3
     list_index_of "c3"
 }
 
 test_index_of
+
+
+test_fff(){
+    local a 
+    local O=a
+    list_make a;
+    list_push $(seq 3)
+    list_get 1
+}
+
+echo "-------- test_fff"
+test_fff
 

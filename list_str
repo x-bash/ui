@@ -30,9 +30,26 @@ list_free(){
     eval "unset $O"
 }
 
+: <<'DOCTEST'
+> list_make a
+> O=a list_push 1 2 3; O=a list_get 0
+1
+2
+3
+> O=a list_size
+3
+DOCTEST
 list_size(){
-    local O="${O:?list_name}"
-    eval printf "%s" "\${$O%%${LIST_SEP}*}"
+    local data
+    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+
+    local len
+    len="${data%%${LIST_SEP}*}"
+
+    printf "%s" "${len:-0}"
+
+    # local O="${O:?list_name}"
+    # eval printf "%s" "\${$O%%${LIST_SEP}*}"
     # eval printf "%s" "\$$O" | cut -d "$LIST_SEP" -f 1
     # eval "echo ${$O}"
 }

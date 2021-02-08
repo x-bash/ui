@@ -86,6 +86,9 @@ $cl"
 
                 # IF it is a command
                 if [ -n "$script_code" ]; then
+                    echo "---------------" >&2
+                    echo "$script_code" >&2
+                    echo "---------------" >&2
                     if [ "$X_BASH_SRC_SHELL" != "sh" ] || [ "$start" != "DOCTEST-NO-SH" ]; then
                         _doctest_run_code "$script_code" "$script_expect_result" || {
                             return_code=$?
