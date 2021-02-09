@@ -439,3 +439,7 @@ FINE() { COLBP 4 "$@"; }
     export UI_FG_GREEN="$(tput setaf 2)"
     export UI_FG_WHITE="$(tput setaf 7)"
 }
+
+# Special characters
+# https://unix.stackexchange.com/questions/343934/print-check-cross-mark-in-shell-script
+
