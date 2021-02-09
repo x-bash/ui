@@ -40,7 +40,8 @@ test_tap(){
     echo "not ok $INDEX $DESCRIPTION"
 }
 
-testsuite(){
+# Only works for bash
+test_suite_bash(){
     local filepath func
     for filepath in "$@"; do
         if (
@@ -60,4 +61,52 @@ testsuite(){
 
     done
 }
+
+
+test_eval(){
+    local code
+    if [ $# -eq 0 ]; then
+        code="$(cat)"
+    else
+        code="$(IFS=; echo "$*")"
+    fi
+
+    if eval "$code"; then
+        echo "Error happends in code: $code" >&2
+    fi
+}
+
+xrc std/assert
+
+test_assert(){
+    local code
+    code="$(IFS=; echo "$*")"
+    if assert "$@"; then
+        :
+    else
+        printf "Error in:\n  %s" "$code" >&2
+    fi
+}
+
+alias @assert=test_assert
+
+
+test_suite(){
+    local testcase
+
+    if [ $# -eq 0 ]; then 
+        return 0
+    fi
+
+    printf "%s" "$1" >&2
+    
+    for testcase in "$@"; do
+        printf "%s\n" "Running Test Case: "   testcase   >&2
+        printf "------------------------\n"  >&2
+        eval "$testcase"
+        printf "------------------------\n"  >&2
+    done
+}
+
+alias @run=test_suite
 
