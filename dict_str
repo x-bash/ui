@@ -164,7 +164,6 @@ dict_remove(){
         NR> 2 {
             if (NR % 2 == 1) {  # key
                 if (key == $0) {
-                    print key "\t" $0 > "/dev/stderr"
                     len = len - 1
                     keyline = key
                     exit_code = 0
@@ -185,7 +184,60 @@ dict_remove(){
                 result = len result
                 printf("%s", result)
             }
-            print "exit:"  exit_code "\t" > "/dev/stderr"
+            exit exit_code
+        }
+    ' -)"; then
+
+        eval "$O=\"\$s\""
+    else
+        return 1
+    fi
+}
+
+: <<'DOCTEST'
+> dict_make b
+> O=b dict_put 1 a
+> O=b dict_put 2 b
+> O=b dict_put 3 c
+> O=b dict_remove_by_regex "[1-3]+" && echo yes
+yes
+> O=b dict_has 1 && echo yes
+> O=b dict_has 3 && echo yes
+DOCTEST
+dict_remove_by_regex(){
+    local O="${O:?list_name}"
+    local data
+    data="$(eval printf "%s" "\"\$${O}\"")"
+
+    local s
+    if s="$(printf "%s${DICT_SEP}%s" "${1:?Provide value}" "$data" | tr "\n" "\001" | awk -v RS="${DICT_SEP}" \
+    '
+        BEGIN { exit_code = 1; }
+        NR==1 { regex = $0;   keyline = "";      }
+        NR==2 { len = $0;   result="" }
+        NR> 2 {
+            if (NR % 2 == 1) {  # key
+                if ($0 ~ regex) {
+                    len = len - 1
+                    keyline = key
+                    exit_code = 0
+                } else {
+                    result = result RS $0
+                }
+            } else {
+                if (keyline != "") {
+                    keyline = ""
+                } else {
+                    result = result RS $0
+                }
+            }
+        }
+        END   {
+            if (exit_code == 0) {
+                gsub("\001", "\n" result)
+                result = len result
+                printf("%s", result)
+            }
             exit exit_code
         }
     ' -)"; then
