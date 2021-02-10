@@ -246,9 +246,10 @@ http_body_dump_json(){
     # done | dict.__toJSON
 
     local l1 l2
-    DICT_PRINT_SEP=$'\n' dict_print "body.*" | while :; do
-        read -rd $'\n' l1 || break
-        read -rd $'\n' l2 || break
+    dict_to_sjson
+    ITEM_SEP="\n" KV_SEP="\n" dict_print "^body\." | while :; do
+        read -r l1 || break
+        read -r l2 || break
         echo "${l1:5}"
         echo "$l2"
     done | dict.__toJSON "$@"
