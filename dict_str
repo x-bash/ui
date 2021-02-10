@@ -18,6 +18,22 @@ dict_free(){
     eval "unset $O"
 }
 
+# O=b dict_load "$(O=a dict_dump | dict )""
+# O=b dict_load "$( a.dump | dict_key_glob "abc" | dict_value_glob "abc" )"
+
+dict_dump(){
+    local O="${O:?list_name}"
+    local data
+    eval printf "%s" "\"\$${O}\""
+}
+
+dict_load(){
+    local O="${O:?list_name}"
+    local s
+    s="$(cat)"
+    eval "$O"='"$s"'
+}
+
 : <<'DOCTEST'
 > dict_make b
 > O=b dict_put 1 a
@@ -248,7 +264,6 @@ dict_remove_by_regex(){
     fi
 }
 
-# TODO: add key/value filter in arguments or enviroments
 # shellcheck disable=SC2120
 dict_print(){
     local O="${O:?list_name}"
@@ -309,51 +324,6 @@ dict_print(){
     fi
 }
 
-dict_json(){
-    local O="${O:?list_name}"
-    local data
-    data="$(eval printf "%s" "\"\$${O}\"")"
-
-    printf "%s" "$data" | tr "\n\"" "\001\002" | awk -v RS="${DICT_SEP}" \
-    '
-        NR==1 { len = $0;   result="{";     quote = "\""}
-        NR> 1 {
-            if (NR % 2 == 0) { # key
-                if (NR == 2) {
-                    result = result "\n  " quote $0 quote ":"
-                } else {
-                    result = result ",\n  " quote $0 quote ":"
-                }
-            } else {
-                result = result " " quote $0 quote
-            }
-        }
-        END   { 
-            result = result "\n}"
-            gsub("\001", "\\n", result)
-            gsub("\002", "\"", result)
-            gsub("\v", "\\v", result)
-            gsub("\b", "\\b", result)
-            gsub("\t", "\\t", result)
-            gsub("\r", "\\r", result)
-            printf("%s", result)
-        }
-    ' -
-}
-
-dict_dump(){
-    local O="${O:?list_name}"
-    local data
-    eval printf "%s" "\"\$${O}\""
-}
-
-dict_load(){
-    local O="${O:?list_name}"
-    local s
-    s="$(cat)"
-    eval "$O"='"$s"'
-}
-
 
 # Move to json library
 json_from_kv(){
@@ -390,22 +360,7 @@ json_from_kv(){
 
 # Move to json library
 dict_toJSON(){
-    # local sep=${DICT_PRINT_SEP:-" = "}
-    # local IFS=$'\n'
-    # list.print 1>| while read -r line; do
-    #     echo "$line" | cut -d ':' -f 1 | str.unbase64
-    #     echo ""
-    #     echo "$line" | cut -d ':' -f 2 | str.unbase64
-    #     echo ""
-    # done | json_from_kv
-    # local DICT_PRINT_SEP="\n"
-    # dict.print | json_from_kv
-    DICT_PRINT_SEP="\n" dict.print | json_from_kv "$@"
-
-    # for i in $(list.print); do
-    #     echo -n "$i" | cut -d ':' -f 1 | str.unbase64
-    #     echo -n "$i" | cut -d ':' -f 2 | str.unbase64
-    # done | json_from_kv
+    dict_dump | _dict_tojson
 }
 
 # Simply json stringify

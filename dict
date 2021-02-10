@@ -3,17 +3,73 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-if [ -n "${BASH_VERSION}" ]; then
-    case "${BASH_VERSION}" in
-        3*)     
-            xrc std/dict_str    ;;
-        *)      
-            xrc std/dict_str; 
-            #xrc std/dict_bash4   
-        ;;
-    esac
-elif [ -n "${ZSH_VERSION}" ]; then
-    xrc std/dict_zsh
-else
-    xrc std/dict_str
-fi
+dict_grep(){
+    :
+}
+
+# drop_by_idx, drop_by_regex, drop_by_glob
+dict_drop(){
+    :
+}
+
+# dict_scope <key1> <key2> <key3>
+dict_scope(){
+    :
+}
+
+DICT_SEP="$(printf "\003")"
+dict_map_awk(){
+    # TODO: modify_key(key, value)
+    # TODO: modify_value(key, value)
+    awk -v RS="${DICT_SEP}" "$1""
+
+    
+    " -
+}
+
+# dict_dump
+_dict_tojson(){
+    awk -v RS="${DICT_SEP}" '
+        NR==1 { len = $0;   result="{";     quote = "\002";  }
+        NR> 1 {
+            if (NR % 2 == 0) { # key
+                if (NR == 2) {
+                    result = result "\n  "  quote $0 quote ":"
+                } else {
+                    result = result ",\n  " quote $0 quote ":"
+                }
+            } else {
+                result = result " " quote $0 quote
+            }
+        }
+        END   { 
+            result = result "\n}"
+
+            # gsub("\001", "\\n", result)
+            gsub("\"", "\\\"", result)
+            gsub("\002", "\"", result)
+            gsub("\v", "\\v", result)
+            gsub("\b", "\\b", result)
+            gsub("\t", "\\t", result)
+            gsub("\r", "\\r", result)
+            printf("%s", result)
+        }
+    ' -
+}
+
+. dict_str
+
+# if [ -n "${BASH_VERSION}" ]; then
+#     case "${BASH_VERSION}" in
+#         3*)     
+#             xrc std/dict_str    ;;
+#         *)      
+#             xrc std/dict_str; 
+#             #xrc std/dict_bash4   
+#         ;;
+#     esac
+# elif [ -n "${ZSH_VERSION}" ]; then
+#     xrc std/dict_zsh
+# else
+#     xrc std/dict_str
+# fi
