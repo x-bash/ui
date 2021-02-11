@@ -143,7 +143,7 @@ _dict_get(){
 }
 
 # dict_scope <key1> <key2> <key3>
-dict_scope(){
+_dict_scope(){
     {
         local IFS="${DICT_KEYS_SEP}"
         printf "%s${DICT_KEYS_SEP}${DICT_SEP}" "$*"
@@ -164,7 +164,7 @@ dict_scope(){
             }
         }
         END {
-            printf "%s" len
+            printf("%s", len)
         }
     ' -
 }

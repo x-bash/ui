@@ -95,6 +95,25 @@ dict_put(){
 
 : <<'DOCTEST'
 > dict_make b
+> O=b dict_put el user edwinjhlee
+> O=b dict_put lt user lteam
+> O=b dict_put el password goforit
+> O=b dict_put lt password 2008
+> O=b dict_scope el | dict_print
+user=edwinjhlee
+password=goforit
+DOCTEST
+dict_scope(){
+    if [ -z "$O" ]; then
+        _dict_scope "$@"
+        return
+    fi
+
+    eval printf "%s" "\"\$${O}\"" | _dict_scope "$@"
+}
+
+: <<'DOCTEST'
+> dict_make b
 > O=b dict_put 1 a
 > O=b dict_put 2 b
 > O=b dict_put 3 c
