@@ -155,9 +155,45 @@ yes
 > O=b dict_has 3 && echo yes
 DOCTEST
 dict_dropr(){
+    if [ -z "$O" ]; then
+        _dict_dropr "$@"
+        return
+    fi
+
     local O="${O:?list_name}"
     local s
     if s="$(eval printf "%s" "\"\$${O}\"" | _dict_dropr "$@" -)"; then
+        eval "$O=\"\$s\""
+    else
+        return 1
+    fi
+}
+
+
+dict_grep(){
+    if [ -z "$O" ]; then
+        _dict_grep "$@"
+        return
+    fi
+    
+    local O="${O:?list_name}"
+    local s
+    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_grep "$@" -)"; then
+        eval "$O=\"\$s\""
+    else
+        return 1
+    fi    
+}
+
+_dict_grepr(){
+    if [ -z "$O" ]; then
+        _dict_grepr "$@"
+        return
+    fi
+
+    local O="${O:?list_name}"
+    local s
+    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_grepr "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1

@@ -1,4 +1,5 @@
 # shellcheck shell=sh
+# shellcheck disable=SC2039
 
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
@@ -14,6 +15,25 @@ dict_alias(){
 
     alias ddump="dict_dump"
     alias dload="dict_load"
+}
+
+dict_new(){
+    local O="${1:?list_name}"
+    dict_make "$O"
+    local f
+    for f in dump load has size put get grep grepr drop dropr json print; do
+        alias "$O.$f=O=$O dict_$f"
+    done
+    alias "$O.delete"="O=$O dict_delete"
+}
+
+dict_delete(){
+    local O="${1:?list_name}"
+
+    for f in dump load has size put get grep grepr drop dropr json print; do
+        alias "$O.$f="
+    done
+    alias "$O.delete="
 }
 
 # 001 for \n
