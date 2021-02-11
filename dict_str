@@ -3,19 +3,12 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-
-# Preserve
-DICT_SEP="$(printf "\003")"     #
-DICT_KV_SEP="$(printf "\004")" 
-
 dict_make(){
     local O="${1:?list_name}"
     eval "$O=0"
 }
 
-
-# O=b dict_load "$(O=a dict_dump | dict )""
-# O=b dict_load "$( a.dump | dict_key_glob "abc" | dict_value_glob "abc" )"
+# O=b dload "$( a.dump | dgrep "abc" | dgerp "abc" )"
 
 dict_dump(){
     local O="${O:?list_name}"
@@ -40,7 +33,7 @@ yes
 > O=b dict_has 4 && echo yes
 DOCTEST
 dict_has(){
-    dict_get "$1" > /dev/null
+    dict_get "$@" > /dev/null
 }
 
 : <<'DOCTEST'
@@ -81,33 +74,18 @@ dict_isempty(){
 b
 DOCTEST
 dict_get(){
-    local O="${O:?list_name}"
-    local data
-    data="$(eval printf "%s" "\"\$${O}\"")"
-
-    eval printf "%s${DICT_SEP}%s" "${1:?Provide value}" "$data" | awk -v RS="${DICT_SEP}" \
-    '
-        BEGIN { exit_code = 1   }
-        NR==1 { key = $0; keyline = ""    }
-        NR>=2 {
-            if (NR % 2 == 0) { # key
-                if (key == $0) {
-                    keyline = $0
-                }
-            } else {
-                if (keyline != "") {
-                    printf("%s", $0)
-                    exit_code = 0
-                    exit 0
-                }
-            }
-        }
-        END   { exit exit_code  }
-    ' -
+    if [ -z "$O" ]; then
+        _dict_get "$@"
+        return
+    fi
+    eval printf "%s" "\"\$${O}\"" | _dict_get "$@"
 }
 
 dict_put(){
-    local O="${O:?list_name}"
+    if [ -z "$O" ]; then
+        _dict_put "$@"
+        return
+    fi
 
     local s
     s="$(eval printf "%s" "\"\$${O}\"" | _dict_put "$@")"
@@ -128,13 +106,18 @@ yes
 > O=b dict_has 2 && echo yes
 DOCTEST
 dict_drop(){
+    if [ -z "$O" ]; then
+        _dict_drop "$@"
+        return
+    fi
+    
     local O="${O:?list_name}"
     local s
     if s="$(eval printf "%s" "\"\$${O}\"" | _dict_drop "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1
-    fi
+    fi    
 }
 
 : <<'DOCTEST'
@@ -150,9 +133,26 @@ DOCTEST
 dict_dropr(){
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" _dict_dropr "$@" -)"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_dropr "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1
     fi
 }
+
+dict_json(){
+    if [ -z "$O" ]; then
+        _dict_json "$@"
+        return
+    fi
+    eval printf "%s" "\"\$${O}\"" | _dict_json "$@"
+}
+
+dict_print(){
+    if [ -z "$O" ]; then
+        _dict_print "$@"
+        return
+    fi
+    eval printf "%s" "\"\$${O}\"" | _dict_print "$@"
+}
+

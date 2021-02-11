@@ -3,6 +3,25 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
+dict_alias(){
+    alias dnew="dict_new"
+    alias dput="dict_put"
+    alias dget="dict_get"
+    alias ddrop="dict_drop"
+    alias ddropr="dict_dropr"
+    alias dgrep="dict_grep"
+    alias dgrepr="dict_grepr"
+
+    alias ddump="dict_dump"
+    alias dload="dict_load"
+}
+
+# 001 for \n
+# 002 for "
+DICT_SEP="$(printf "\003")"
+DICT_KV_SEP="$(printf "\004")"
+DICT_KEYS_SEP="$(printf "\005")"
+
 dict_free(){
     eval "unset $O"
 }
@@ -33,17 +52,16 @@ _dict_drop() {
             if (NR % 2 == 0) {  # key
                 keyline = $0
             } else {
-                if ('"$AWK_CODE"') {
-                    print keyline ORS $0
-                    len = len - 1
-                }
+                if ('"$AWK_CODE"')  print keyline ORS $0
+                else                len = len - 1
             }
         }
         END   {
             if (len < 0) {
-                print (keyline + len)
+                printf("%s", (keyline + len))
                 exit 0
             } else {
+                printf("%s", keyline)
                 exit 1
             }
         }
@@ -52,7 +70,10 @@ _dict_drop() {
 
 _dict_put(){
     {
-        printf "%s${DICT_SEP}%s${DICT_SEP}" "${1:?Provide key}" "${2:?Provide value}"; 
+        local s
+        local IFS="${DICT_KEYS_SEP}"
+        s="$*"
+        printf "%s${DICT_SEP}%s${DICT_SEP}" "${s%${DICT_KEYS_SEP}*}" "${s##*${DICT_KEYS_SEP}}"; 
         cat
     } | awk -v RS="${DICT_SEP}" '
 
@@ -61,30 +82,91 @@ _dict_put(){
         NR==2 { val = $0            }
         NR>=3 {
             if (NR % 2 == 1) { # key
-                if (key == $0) {
-                    valline = val
-                    sw = 1
-                }
                 keyline = $0
             } else {
-                if (valline != "") {
-                    print keyline RS valline
+                if (keyline == key) {
+                    print keyline RS val
                     valline = ""
+                    sw = 1
                 } else {
                     print keyline RS $0
                 }
             }
         }
         END   { 
-            if (sw == 1)    print len 
-            else            print (len+1)
+            if (sw == 1)    printf("%s", keyline)
+            else {
+                print key RS val
+                printf("%s", (keyline+1))
+            }           
+        }
+    ' -
+}
+
+_dict_get(){
+    local s
+    local AWK_CODE=""
+
+    case $# in
+        0)  exit 4;;
+        1)  
+            AWK_CODE="keyline == tgt" 
+            s="$1" ;;
+        *)  
+            local IFS="${DICT_KEYS_SEP}"
+            s="$*";
+            AWK_CODE="substr(keyline, 1, tgt_len) == tgt" ;;
+    esac
+
+    {
+        printf "%s${DICT_SEP}" "$s"
+        cat
+    } | awk -v RS="${DICT_SEP}" '
+        NR==1 {
+            tgt = $0;   tgt_len = length(tgt);  exit_code = 1
+        }
+        NR>=2 {
+            if (NR % 2 == 0) {  # key
+                keyline = $0
+            } else {
+                if ('"${AWK_CODE}"') {
+                    print $0
+                    exit_code = 0
+                    exit
+                }
+            }
+        }
+        END {
+            exit exit_code
         }
     ' -
 }
 
 # dict_scope <key1> <key2> <key3>
 dict_scope(){
-    :
+    {
+        local IFS="${DICT_KEYS_SEP}"
+        printf "%s${DICT_KEYS_SEP}${DICT_SEP}" "$*"
+        cat
+    } | awk -v RS="${DICT_SEP}" '
+        NR==1 {
+            key = $0;   ORS=RS;   len=0
+            key_len = length(key)
+        }
+        NR>=2 {
+            if (NR % 2 == 0) {  # key
+                keyline = $0
+            } else {
+                if (substr(keyline, 1, key_len) == key) {
+                    print substr(keyline, key_len+1) ORS $0
+                    len = len + 1
+                }
+            }
+        }
+        END {
+            printf "%s" len
+        }
+    ' -
 }
 
 DICT_SEP="$(printf "\003")"
@@ -131,17 +213,15 @@ _dict_print(){
     {
         printf "${ITEM_SEP:-"\\n"}${DICT_SEP}${KV_SEP:-"="}${DICT_SEP}"  
         cat
-    } | awk '
+    } | awk -v RS="${DICT_SEP}" '
             NR==1 {     ORS = $0            }
             NR==2 {     KV_SEP  = $0        }
             NR>=3 {
                 if (NR % 2 == 1)    key = $0
                 else                print  key KV_SEP $0
             }
-            END   {     print key           }
         ' -
 }
-
 
 
 . dict_str
