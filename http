@@ -74,7 +74,7 @@ http_cd(){
 
 http_path(){   # TODO: how to cd back
     local url
-    url="$(http_dict_get "url")"
+    url="$(http_dict_get url)"
     if [ -z "$url" ]; then
         echo "$1"
     else
