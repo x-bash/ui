@@ -3,7 +3,7 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-@src std/dict  # @src std/oo # std/dict -> std/list -> std/oo
+# @src std/dict  # @src std/oo # std/dict -> std/list -> std/oo
 
 ############################
 # Section 1: Instantiation & Utilities
@@ -22,7 +22,7 @@
 http_make(){
     dict_make "${1:?Provide name}"
     local O="$1"
-    dict_put "url" "${2:?Provide url}"
+    dict_put url "${2:?Provide url}"
 }
 
 debug_init http
@@ -85,8 +85,18 @@ http_path(){   # TODO: how to cd back
 ############################
 # Section 3: Header
 ############################
+
+: <<'DOCTEST'
+> http_make git https://api.git.com
+> O=git http_qs_put token token123
+> O=git http_header_put content-type application/json
+> O=git http_header_put accept application/json
+> O=git http_header_dump
+content-type: application/json
+accept: application/json
+DOCTEST
 http_header_put(){ 
-    dict_put "header.${1:?header key}" "${2:?value}"; 
+    dict_put "header" "${1:?header key}" "${2:?value}"; 
 }
 
 http_header_mput(){
@@ -103,7 +113,7 @@ http_header_remove(){ dict_drop header "${1:?header key}"; }
 
 http_header_dump(){
     [ -z "$O" ] && return 1
-    dict_scope header | ITEM_SEP="\n" KV_SEP=": " dict_print
+    dict_scope header | ITEM_SEP="\n" KV_SEP=": " O= dict_print
 }
 
 _http_header_dump_curl_args(){
@@ -169,6 +179,17 @@ http_header_agent(){
 # Section 4: QueryString & Body
 ############################
 # Notice: http_qs_put will put the empty value
+
+: <<'DOCTEST'
+> http_make git https://api.git.com
+> O=git http_qs_put token token123
+> O=git http_header_put content-type application/json
+> O=git http_header_put accept application/json
+> O=git http_qs_dump_json
+{
+  "token": "token123"
+}
+DOCTEST
 http_qs_put(){
     dict_put qs "${1:?header key}" "${2:-${!1}}"
 }
@@ -188,9 +209,10 @@ http_qs_mput(){
 }
 
 http_qs_remove(){ dict_drop qs "${1:?header key}"; }
-http_qs_dump(){
+http_qs_dump_json(){
     [ -z "$O" ] && return 1
-    dict_scope qs | dict_json
+    # dict_scope qs
+    dict_scope qs | O= dict_json
 }
 
 _http_qs_dump_curl(){
@@ -202,6 +224,17 @@ _http_qs_dump_curl(){
         printf "--data-urlencode \"%s\" " "$line"
     done
 }
+
+: <<'DOCTEST'
+> http_make git https://api.git.com
+> O=git http_body_put token token123
+> O=git http_header_put content-type application/json
+> O=git http_header_put accept application/json
+> O=git http_body_dump_json
+{
+  "token": "token123"
+}
+DOCTEST
 
 # Just in case.
 http_body_put(){
@@ -226,7 +259,7 @@ http_body_mput(){
 http_body_remove(){ dict_drop body "${1:?header key}"; }
 http_body_dump_json(){
     [ -z "$O" ] && return 1
-    dict_scope | dict_json
+    dict_scope body | O= dict_json
 }
 
 ############################
