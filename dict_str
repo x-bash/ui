@@ -60,7 +60,7 @@ dict_size(){
     data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
 
     local len
-    len="${data%%${DICT_SEP}*}"
+    len="${data##*${DICT_SEP}}"
 
     printf "%s" "${len:-0}"
 }
@@ -89,18 +89,17 @@ dict_get(){
     local data
     data="$(eval printf "%s" "\"\$${O}\"")"
 
-    eval printf "%s${DICT_SEP}%s" "${1:?Provide value}" "$data" | tr "\n" "\001" | awk -v RS="${DICT_SEP}" -v value="$value" \
+    eval printf "%s${DICT_SEP}%s" "${1:?Provide value}" "$data" | awk -v RS="${DICT_SEP}" \
     '
         BEGIN { exit_code = 1   }
         NR==1 { key = $0; keyline = ""    }
-        NR> 2 {
-            if (NR % 2 == 1) { # key
+        NR>=2 {
+            if (NR % 2 == 0) { # key
                 if (key == $0) {
                     keyline = $0
                 }
             } else {
                 if (keyline != "") {
-                    gsub("\001", "\n", $0)
                     printf("%s", $0)
                     exit_code = 0
                     exit 0
@@ -113,44 +112,10 @@ dict_get(){
 
 dict_put(){
     local O="${O:?list_name}"
-    local data
-    data="$(eval printf "%s" "\"\$${O}\"")"
 
     local s
-    s="$(printf "%s${DICT_SEP}%s${DICT_SEP}%s" "${1:?Provide key}" "${2:?Provide value}" "$data" | tr "\n" "\001" | awk -v RS="${DICT_SEP}" \
-    '
-        BEGIN { sw = 0; }
-        NR==1 { key = $0      }
-        NR==2 { value = $0    }
-        NR==3 { len = $0;   result="" }
-        NR> 3 {
-            if (NR % 2 == 0) { # key
-                if (key == $0) {
-                    keyline = $0
-                    sw = 1
-                }
-                result = result RS $0
-            } else {
-                if (keyline != "") {
-                    result = result RS value
-                } else {
-                    result = result RS $0
-                }
-            }
-        }
-        END   { 
-            if (sw == 1) {
-                result = len result 
-            } else {
-                # print "fucked" > "/dev/stderr"
-                result = (len+1) result RS key RS value
-            }
-            gsub("\001", "\n" result)
-            printf("%s", result)
-        }
-    ' -)"
+    s="$(eval printf "%s" "\"\$${O}\"" | _dict_put "$@")"
 
-    # echo "$s"
     eval "$O=\"\$s\""
 }
 
@@ -159,51 +124,17 @@ dict_put(){
 > O=b dict_put 1 a
 > O=b dict_put 2 b
 > O=b dict_put 3 c
-> O=b dict_remove 4 && echo yes
+> O=b dict_drop 4 && echo yes
 > O=b dict_has 2 && echo yes
 yes
-> O=b dict_remove 2 && echo yes
+> O=b dict_drop 2 && echo yes
 yes
 > O=b dict_has 2 && echo yes
 DOCTEST
-dict_remove(){
+dict_drop(){
     local O="${O:?list_name}"
-    local data
-    data="$(eval printf "%s" "\"\$${O}\"")"
-
     local s
-    if s="$(printf "%s${DICT_SEP}%s" "${1:?Provide value}" "$data" | tr "\n" "\001" | awk -v RS="${DICT_SEP}" \
-    '
-        BEGIN { exit_code = 1; }
-        NR==1 { key = $0;   keyline = "";      }
-        NR==2 { len = $0;   result="" }
-        NR> 2 {
-            if (NR % 2 == 1) {  # key
-                if (key == $0) {
-                    len = len - 1
-                    keyline = key
-                    exit_code = 0
-                } else {
-                    result = result RS $0
-                }
-            } else {
-                if (keyline != "") {
-                    keyline = ""
-                } else {
-                    result = result RS $0
-                }
-            }
-        }
-        END   { 
-            if (exit_code == 0) {
-                gsub("\001", "\n" result)
-                result = len result
-                printf("%s", result)
-            }
-            exit exit_code
-        }
-    ' -)"; then
-
+    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_drop "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -215,49 +146,15 @@ dict_remove(){
 > O=b dict_put 1 a
 > O=b dict_put 2 b
 > O=b dict_put 3 c
-> O=b dict_remove_by_regex "[1-3]+" && echo yes
+> O=b dict_dropr "[1-3]+" && echo yes
 yes
 > O=b dict_has 1 && echo yes
 > O=b dict_has 3 && echo yes
 DOCTEST
-dict_remove_by_regex(){
+dict_dropr(){
     local O="${O:?list_name}"
-    local data
-    data="$(eval printf "%s" "\"\$${O}\"")"
-
     local s
-    if s="$(printf "%s${DICT_SEP}%s" "${1:?Provide value}" "$data" | tr "\n" "\001" | awk -v RS="${DICT_SEP}" \
-    '
-        BEGIN { exit_code = 1; }
-        NR==1 { regex = $0;   keyline = "";      }
-        NR==2 { len = $0;   result="" }
-        NR> 2 {
-            if (NR % 2 == 1) {  # key
-                if ($0 ~ regex) {
-                    len = len - 1
-                    keyline = key
-                    exit_code = 0
-                } else {
-                    result = result RS $0
-                }
-            } else {
-                if (keyline != "") {
-                    keyline = ""
-                } else {
-                    result = result RS $0
-                }
-            }
-        }
-        END   {
-            if (exit_code == 0) {
-                gsub("\001", "\n" result)
-                result = len result
-                printf("%s", result)
-            }
-            exit exit_code
-        }
-    ' -)"; then
-
+    if s="$(eval printf "%s" "\"\$${O}\"" _dict_dropr "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -323,63 +220,3 @@ dict_print(){
         ' -
     fi
 }
-
-
-# Move to json library
-json_from_kv(){
-    local first=0
-    local k v
-
-    local IFS=$'\n'
-    # Using consider using environment.
-    local PARSE_KEY_STR="$*"
-
-    while :; do
-        read -r k || break
-        read -r v || break
-
-        if [ "$first" -eq 0 ]; then
-            printf "{\n"
-            first=1
-        else
-            printf ',\n'
-        fi
-
-        if echo "$PARSE_KEY_STR" | grep -q "$k"; then
-            # TODO: using float
-            if [[ "$v" =~ ^[1-9]+([0-9])*$ ]] || [ "$v" = true ] || [ "$v" = false ]; then
-                printf '  "%s": %s' "$k" "$v"
-                continue
-            fi
-        fi
-
-        printf '  "%s": "%s"' "$k" "$v"
-    done
-    [ $first -ne 0 ] && printf "\n}"
-}
-
-# Move to json library
-dict_toJSON(){
-    dict_dump | _dict_tojson
-}
-
-# Simply json stringify
-# json_from_kv(){
-#     printf "{\n"
-#     local first=0
-#     local k v
-#     for i in $(list.print); do
-
-#         if [ "$first" -eq 0 ]; then
-#             first=1
-#         else
-#             printf ',\n'
-#         fi
-
-#         k=$(echo -n "$i" | cut -d ':' -f 1)
-#         v=$(echo -n "$i" | cut -d ':' -f 2)
-
-#         printf '  "%s": "%s"' "$(str.unbase64 "$k")" "$(str.unbase64 "$v")"
-#     done
-#     printf "\n}"
-# }

@@ -3,39 +3,81 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
-dict_grep(){
-    :
+dict_free(){
+    eval "unset $O"
+}
+
+# Move to json library
+dict_json(){
+    dict_dump | _dict_tojson
+}
+
+_dict_grep(){
+    AWK_CODE="keyline == key" _dict_drop "$@"
+}
+
+_dict_dropr() {
+    AWK_CODE="! (keyline ~ key)" _dict_drop "$@"
 }
 
 # drop_by_idx, drop_by_regex, drop_by_glob
-dict_drop() {
-    awk -v RS="${DICT_SEP}" '
-        BEGIN { exit_code = 1; }
-        NR==1 { key = $0;   keyline = "";      }
-        NR==2 { len = $0;   result="" }
-        NR> 2 {
-            if (NR % 2 == 1) {  # key
-                if (key == $0) {
-                    len = len - 1
-                    keyline = key
-                    exit_code = 0
-                } else {
-                    result = result RS $0
-                }
+_dict_drop() {
+    local AWK_CODE
+    AWK_CODE=${AWK_CODE:-"keyline != key"}
+    {
+        printf "%s${DICT_SEP}" "${1:?Provide value}"
+        cat
+    } | awk -v RS="${DICT_SEP}" '
+        NR==1 { key = $0;   ORS=RS;   len=0   }
+        NR>=2 {
+            if (NR % 2 == 0) {  # key
+                keyline = $0
             } else {
-                if (keyline != "") {
-                    keyline = ""
+                if ('"$AWK_CODE"') {
+                    print keyline ORS $0
+                    len = len - 1
+                }
+            }
+        }
+        END   {
+            if (len < 0) {
+                print (keyline + len)
+                exit 0
+            } else {
+                exit 1
+            }
+        }
+    ' -
+}
+
+_dict_put(){
+    {
+        printf "%s${DICT_SEP}%s${DICT_SEP}" "${1:?Provide key}" "${2:?Provide value}"; 
+        cat
+    } | awk -v RS="${DICT_SEP}" '
+
+        BEGIN { sw = 0; ORS = RS;   }
+        NR==1 { key = $0            }
+        NR==2 { val = $0            }
+        NR>=3 {
+            if (NR % 2 == 1) { # key
+                if (key == $0) {
+                    valline = val
+                    sw = 1
+                }
+                keyline = $0
+            } else {
+                if (valline != "") {
+                    print keyline RS valline
+                    valline = ""
                 } else {
-                    result = result RS $0
+                    print keyline RS $0
                 }
             }
         }
         END   { 
-            if (exit_code == 0) {
-                result = len result
-                printf("%s", result)
-            }
-            exit exit_code
+            if (sw == 1)    print len 
+            else            print (len+1)
         }
     ' -
 }
@@ -56,7 +98,7 @@ dict_map_awk(){
 }
 
 # dict_dump
-_dict_tojson(){
+_dict_json(){
     awk -v RS="${DICT_SEP}" '
         NR==1 { len = $0;   result="{";     quote = "\002";  }
         NR> 1 {
