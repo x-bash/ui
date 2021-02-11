@@ -89,7 +89,7 @@ http_header_put(){
     dict_put "header.${1:?header key}" "${2:?value}"; 
 }
 
-http_header.mput(){
+http_header_mput(){
     for i in "$@"; do
         if [[ "$i" = *=* ]]; then
             http_header_put "${i%=*}" "${i##*=}"
@@ -99,27 +99,17 @@ http_header.mput(){
     done
 }
 
-http_header_remove(){ dict.remove "header.${1:?header key}"; }
+http_header_remove(){ dict.remove header "${1:?header key}"; }
 
 http_header_dump(){
     [ -z "$O" ] && return 1
-    # DICT_PRINT_SEP=': ' dict_print
-    # DICT_PRINT_SEP=': ' dict_print | while read -d $'\n' -r l; do
-    #     [[ "$l" =~ ^header\.* ]] && echo "${l:7}"
-    # done
-
-    local l
-    LINE_SEP="\n" KV_SEP=": " dict_print "^header\." | while read -r l; do echo "${l:7}"; done
+    dict_scope header | ITEM_SEP="\n" KV_SEP=": " dict_print
 }
 
 _http_header_dump_curl_args(){
-    local IFS=$'\n'
-    local A=()
-    for i in $(http_header_dump); do
-        A+=("-H \"$i\"")
+    http_header_dump | while read -r line; do
+        printf "-H \"%s\" " "$line"
     done
-    IFS=$' '
-    echo "${A[*]}"
 }
 
 http_header(){
@@ -180,7 +170,7 @@ http_header_agent(){
 ############################
 # Notice: http_qs_put will put the empty value
 http_qs_put(){
-    dict_put "qs.${1:?header key}" "${2:-${!1}}"
+    dict_put qs "${1:?header key}" "${2:-${!1}}"
 }
 
 # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
@@ -197,30 +187,26 @@ http_qs_mput(){
     done;
 }
 
-http_qs_remove(){ dict.remove "qs.${1:?header key}"; }
+http_qs_remove(){ dict.remove qs "${1:?header key}"; }
 http_qs_dump(){
     [ -z "$O" ] && return 1
-    DICT_PRINT_SEP='=' dict_print | while read -r l; do
-        [[ "$l" =~ ^qs\.* ]] && echo "${l:3}"
-    done
+    dict_scope qs | dict_json
 }
 
-http_qs_dump_curl(){
+_http_qs_dump_curl(){
     [ -z "$O" ] && return 1
-    local A=()
+    local line
 
-    while read -rd $'\n' l; do
-        [[ "$l" =~ ^qs\.* ]] && A+=("--data-urlencode \"${l:3}\"")
-    done <<<"$( DICT_PRINT_SEP='=' dict_print )"
-
-    local IFS=$' '
-    echo "-G ${A[*]}"
+    printf "-G "
+    dict_scope qs | KV_SEP="=" dict_print | while read -r line; do
+        printf "--data-urlencode \"%s\" " "$line"
+    done
 }
 
 # Just in case.
 http_body_put(){
     local value="${2:-${!1}}"
-    dict_put "body.${1:?header key}" "$value"
+    dict_put body "${1:?header key}" "$value"
     # [ -n "$value" ] && dict_put "body.${1:?header key}" "$value"
 }
 
@@ -237,22 +223,10 @@ http_body_mput(){
     done;
 }
 
-http_body_remove(){ dict.remove "body.${1:?header key}"; }
+http_body_remove(){ dict.remove body "${1:?header key}"; }
 http_body_dump_json(){
     [ -z "$O" ] && return 1
-    # DICT_PRINT_SEP=': ' dict_print | while read -r l; do
-    #     [[ "$l" =~ ^body\.* ]] && echo "${l:5}"
-    #     echo "1: $l"
-    # done | dict.__toJSON
-
-    local l1 l2
-    dict_to_sjson
-    ITEM_SEP="\n" KV_SEP="\n" dict_print "^body\." | while :; do
-        read -r l1 || break
-        read -r l2 || break
-        echo "${l1:5}"
-        echo "$l2"
-    done | dict.__toJSON "$@"
+    dict_scope | dict_json
 }
 
 ############################
@@ -306,8 +280,8 @@ _http_request(){
     data_filepath="$(_http_resp_latest_body_filepath)"
 
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        http_debug curl -D "$header_filepath" -X "$X" "$(http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path"
-        eval curl -D "$header_filepath"  -X "$X" "$(http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_debug)
+        http_debug curl -D "$header_filepath" -X "$X" "$(_http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path"
+        eval curl -D "$header_filepath"  -X "$X" "$(_http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_debug)
     else
         http_debug curl -D "$header_filepath" -X "$X" "$(_http_header_dump_curl_args)" -d "@$tmp" "$path"
         eval curl -D "$header_filepath" -X "$X" "$(_http_header_dump_curl_args)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_debug)
