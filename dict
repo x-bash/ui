@@ -61,10 +61,13 @@ _dict_dropr() {
 
 # drop_by_idx, drop_by_regex, drop_by_glob
 _dict_drop() {
+    [ $# -eq 0 ] && printf "%s\n" "Accept more than one argument." >&2
+
+    local IFS="${DICT_KEYS_SEP}"
     local AWK_CODE
     AWK_CODE=${AWK_CODE:-"keyline != key"}
     {
-        printf "%s${DICT_SEP}" "${1:?Provide value}"
+        printf "%s${DICT_SEP}" "$*"
         cat
     } | awk -v RS="${DICT_SEP}" '
         NR==1 { key = $0;   ORS=RS;   len=0   }
@@ -124,6 +127,32 @@ _dict_put(){
 }
 
 _dict_get(){
+    local IFS="${DICT_KEYS_SEP}"
+    {
+        printf "%s${DICT_SEP}" "$*"
+        cat
+    } | awk -v RS="${DICT_SEP}" '
+        NR==1 {
+            tgt = $0;   tgt_len = length(tgt);  exit_code = 1
+        }
+        NR>=2 {
+            if (NR % 2 == 0) {  # key
+                keyline = $0
+            } else {
+                if (keyline == tgt) {
+                    print $0
+                    exit_code = 0
+                    exit
+                }
+            }
+        }
+        END {
+            exit exit_code
+        }
+    ' -
+}
+
+_dict_filter(){
     local s
     local AWK_CODE=""
 
@@ -241,7 +270,7 @@ _dict_print(){
 }
 
 
-. dict_str
+xrc std/dict_str
 
 # if [ -n "${BASH_VERSION}" ]; then
 #     case "${BASH_VERSION}" in
