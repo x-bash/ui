@@ -127,6 +127,23 @@ _dict_json(){
     ' -
 }
 
+_dict_print(){
+    {
+        printf "${ITEM_SEP:-"\\n"}${DICT_SEP}${KV_SEP:-"="}${DICT_SEP}"  
+        cat
+    } | awk '
+            NR==1 {     ORS = $0            }
+            NR==2 {     KV_SEP  = $0        }
+            NR>=3 {
+                if (NR % 2 == 1)    key = $0
+                else                print  key KV_SEP $0
+            }
+            END   {     print key           }
+        ' -
+}
+
+
+
 . dict_str
 
 # if [ -n "${BASH_VERSION}" ]; then
