@@ -8,8 +8,36 @@ dict_grep(){
 }
 
 # drop_by_idx, drop_by_regex, drop_by_glob
-dict_drop(){
-    :
+dict_drop() {
+    awk -v RS="${DICT_SEP}" '
+        BEGIN { exit_code = 1; }
+        NR==1 { key = $0;   keyline = "";      }
+        NR==2 { len = $0;   result="" }
+        NR> 2 {
+            if (NR % 2 == 1) {  # key
+                if (key == $0) {
+                    len = len - 1
+                    keyline = key
+                    exit_code = 0
+                } else {
+                    result = result RS $0
+                }
+            } else {
+                if (keyline != "") {
+                    keyline = ""
+                } else {
+                    result = result RS $0
+                }
+            }
+        }
+        END   { 
+            if (exit_code == 0) {
+                result = len result
+                printf("%s", result)
+            }
+            exit exit_code
+        }
+    ' -
 }
 
 # dict_scope <key1> <key2> <key3>
