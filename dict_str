@@ -137,7 +137,7 @@ dict_drop(){
     
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_drop "$@" -)"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_drop "$@")"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -162,7 +162,7 @@ dict_dropr(){
 
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_dropr "$@" -)"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_dropr "$@")"; then
         eval "$O=\"\$s\""
     else
         return 1
