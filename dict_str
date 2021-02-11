@@ -102,6 +102,11 @@ dict_put(){
 > O=b dict_scope el | dict_print
 user=edwinjhlee
 password=goforit
+> O=b dict_scope lt | dict_json
+{
+  "user": "lteam",
+  "password": "2008"
+}
 DOCTEST
 dict_scope(){
     if [ -z "$O" ]; then

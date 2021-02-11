@@ -182,16 +182,13 @@ dict_map_awk(){
 # dict_dump
 _dict_json(){
     awk -v RS="${DICT_SEP}" '
-        NR==1 { len = $0;   result="{";     quote = "\002";  }
-        NR> 1 {
-            if (NR % 2 == 0) { # key
-                if (NR == 2) {
-                    result = result "\n  "  quote $0 quote ":"
-                } else {
-                    result = result ",\n  " quote $0 quote ":"
-                }
+        BEGIN { len = $0;   result = "{";     quote = "\002";  }
+        NR>=1 {
+            if (NR % 2 == 1) { # key
+                key = $0
             } else {
-                result = result " " quote $0 quote
+                if (NR == 2)    result = result "\n  "  quote key quote ": " quote $0 quote
+                else            result = result ",\n  " quote key quote ": " quote $0 quote
             }
         }
         END   { 
