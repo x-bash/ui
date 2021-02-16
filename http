@@ -4,7 +4,7 @@
 # maintainer:   Li Junhao
 
 # @src std/dict  # @src std/oo # std/dict -> std/list -> std/oo
-# xrc std/dict
+xrc std/dict
 
 ############################
 # Section 1: Instantiation & Utilities

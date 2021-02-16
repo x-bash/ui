@@ -232,6 +232,11 @@ assert_eq(){
     return 0
 }
 
+assert_stdout(){
+    local e="$(cat)"
+    assert_eq "$e" "$(eval "$@")"
+}
+
 
 : <<'DOCTEST'
 > assert_t "sleep 1s" 2>/dev/null && echo yes

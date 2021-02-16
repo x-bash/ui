@@ -23,10 +23,27 @@ dict_load(){
     eval "$O"='"$s"'
 }
 
+: <<'DOCTEST'
+> dict_make b
+> O=b dict_put 1 a
+> O=b dict_put 2 b
+> O=b dict_put 3 c
+> O=b dict_has 2 && echo yes
+yes
+> O=b dict_has 4 && echo yes
+DOCTEST
 dict_has(){
     dict_get "$@" > /dev/null
 }
 
+: <<'DOCTEST'
+> dict_make b
+> O=b dict_put 1 a
+> O=b dict_put 2 b
+> O=b dict_put 3 c
+> O=b dict_size
+3
+DOCTEST
 dict_size(){
     local data
     data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
@@ -37,10 +54,25 @@ dict_size(){
     printf "%s" "${len:-0}"
 }
 
+: <<'DOCTEST'
+> dict_make b
+> O=b dict_isempty && echo yes
+yes
+> O=b dict_put 1 a
+> O=b dict_isempty && echo yes
+DOCTEST
 dict_isempty(){
     [ "$(dict_size)" -eq 0 ]
 }
 
+: <<'DOCTEST'
+> dict_make b
+> O=b dict_put 1 a
+> O=b dict_put 2 b
+> O=b dict_put 3 c
+> O=b dict_get 2
+b
+DOCTEST
 dict_get(){
     if [ -z "$O" ]; then
         _dict_get "$@"
@@ -61,6 +93,21 @@ dict_put(){
     eval "$O=\"\$s\""
 }
 
+: <<'DOCTEST'
+> dict_make b
+> O=b dict_put el user edwinjhlee
+> O=b dict_put lt user lteam
+> O=b dict_put el password goforit
+> O=b dict_put lt password 2008
+> O=b dict_scope el | dict_print
+user=edwinjhlee
+password=goforit
+> O=b dict_scope lt | dict_json
+{
+  "user": "lteam",
+  "password": "2008"
+}
+DOCTEST
 dict_scope(){
     if [ -z "$O" ]; then
         _dict_scope "$@"
@@ -70,6 +117,18 @@ dict_scope(){
     eval printf "%s" "\"\$${O}\"" | _dict_scope "$@"
 }
 
+: <<'DOCTEST'
+> dict_make b
+> O=b dict_put 1 a
+> O=b dict_put 2 b
+> O=b dict_put 3 c
+> O=b dict_drop 4 && echo yes
+> O=b dict_has 2 && echo yes
+yes
+> O=b dict_drop 2 && echo yes
+yes
+> O=b dict_has 2 && echo yes
+DOCTEST
 dict_drop(){
     if [ -z "$O" ]; then
         _dict_drop "$@"
@@ -85,6 +144,16 @@ dict_drop(){
     fi    
 }
 
+: <<'DOCTEST'
+> dict_make b
+> O=b dict_put 1 a
+> O=b dict_put 2 b
+> O=b dict_put 3 c
+> O=b dict_dropr "[1-3]+" && echo yes
+yes
+> O=b dict_has 1 && echo yes
+> O=b dict_has 3 && echo yes
+DOCTEST
 dict_dropr(){
     if [ -z "$O" ]; then
         _dict_dropr "$@"
