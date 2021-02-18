@@ -100,14 +100,3 @@ dict_igrepr(){
         return 1
     fi
 }
-
-dict_json(){
-    : "${O:?Please provide object name}"
-    dict_dump | dict_ijson "$@"
-}
-
-dict_print(){
-    : "${O:?Please provide object name}"
-    dict_dump | dict_iprint "$@"
-}
-
