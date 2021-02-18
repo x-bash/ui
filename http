@@ -48,34 +48,34 @@ http_browse(){
 ############################
 # Section 2: Dict & Path
 ############################
-http_dict_getput(){
+httpdict_igetput(){
     local O="${O:?Provide Object name}"
     case $# in
-        1) http_dict_get "$1";;
-        2) http_dict_put "$1" "$2";;
+        1) httpdict_iget "$1";;
+        2) httpdict_iput "$1" "$2";;
         *) echo "More than 2 variable provided" >&1; return 2;
     esac
 }
 
-http_dict_get(){
+httpdict_iget(){
     local O="${O:?Provide Object name}"
     dict_get "${1:?Provide dict key}"
 }
 
-http_dict_put(){
+httpdict_iput(){
     local O="${O:?Provide Object name}"
     dict_put "${1:?Provide dict key}" "${2:?Provide dict value}" 
 }
 
 http_cd(){
     [ -z "$O" ] && return 1
-    local URL=${URL:-$(http_dict_get "url")}
+    local URL=${URL:-$(httpdict_iget "url")}
     dict_put "url" "$URL/${1:?Provide url}"
 }
 
 http_path(){   # TODO: how to cd back
     local url
-    url="$(http_dict_get url)"
+    url="$(httpdict_iget url)"
     if [ -z "$url" ]; then
         echo "$1"
     else

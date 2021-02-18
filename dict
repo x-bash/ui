@@ -48,19 +48,19 @@ dict_free(){
 
 # Move to json library
 dict_json(){
-    dict_dump | _dict_tojson
+    dict_dump | dict_ijson
 }
 
-_dict_grep(){
-    AWK_CODE="keyline == key" _dict_drop "$@"
+dict_igrep(){
+    AWK_CODE="keyline == key" dict_idrop "$@"
 }
 
-_dict_dropr() {
-    AWK_CODE="! (keyline ~ key)" _dict_drop "$@"
+dict_idropr() {
+    AWK_CODE="! (keyline ~ key)" dict_idrop "$@"
 }
 
 # drop_by_idx, drop_by_regex, drop_by_glob
-_dict_drop() {
+dict_idrop() {
     [ $# -eq 0 ] && printf "%s\n" "Accept more than one argument." >&2
 
     local IFS="${DICT_KEYS_SEP}"
@@ -91,7 +91,7 @@ _dict_drop() {
     ' -
 }
 
-_dict_put(){
+dict_iput(){
     {
         local s
         local IFS="${DICT_KEYS_SEP}"
@@ -126,7 +126,7 @@ _dict_put(){
     ' -
 }
 
-_dict_get(){
+dict_iget(){
     local IFS="${DICT_KEYS_SEP}"
     {
         printf "%s${DICT_SEP}" "$*"
@@ -152,7 +152,7 @@ _dict_get(){
     ' -
 }
 
-_dict_filter(){
+dict_ifilter(){
     local s
     local AWK_CODE=""
 
@@ -192,7 +192,7 @@ _dict_filter(){
 }
 
 # dict_scope <key1> <key2> <key3>
-_dict_scope(){
+dict_iscope(){
     {
         local IFS="${DICT_KEYS_SEP}"
         printf "%s${DICT_KEYS_SEP}${DICT_SEP}" "$*"
@@ -229,7 +229,7 @@ dict_map_awk(){
 }
 
 # dict_dump
-_dict_json(){
+dict_ijson(){
     awk -v RS="${DICT_SEP}" '
         BEGIN { len = $0;   result = "{";     quote = "\002";  }
         NR>=1 {
@@ -255,7 +255,7 @@ _dict_json(){
     ' -
 }
 
-_dict_print(){
+dict_iprint(){
     {
         printf "${ITEM_SEP:-"\\n"}${DICT_SEP}${KV_SEP:-"="}${DICT_SEP}"  
         cat

@@ -75,20 +75,20 @@ b
 DOCTEST
 dict_get(){
     if [ -z "$O" ]; then
-        _dict_get "$@"
+        dict_iget "$@"
         return
     fi
-    eval printf "%s" "\"\$${O}\"" | _dict_get "$@"
+    eval printf "%s" "\"\$${O}\"" | dict_iget "$@"
 }
 
 dict_put(){
     if [ -z "$O" ]; then
-        _dict_put "$@"
+        dict_iput "$@"
         return
     fi
 
     local s
-    s="$(eval printf "%s" "\"\$${O}\"" | _dict_put "$@")"
+    s="$(eval printf "%s" "\"\$${O}\"" | dict_iput "$@")"
 
     eval "$O=\"\$s\""
 }
@@ -110,11 +110,11 @@ password=goforit
 DOCTEST
 dict_scope(){
     if [ -z "$O" ]; then
-        _dict_scope "$@"
+        dict_iscope "$@"
         return
     fi
 
-    eval printf "%s" "\"\$${O}\"" | _dict_scope "$@"
+    eval printf "%s" "\"\$${O}\"" | dict_iscope "$@"
 }
 
 : <<'DOCTEST'
@@ -131,13 +131,13 @@ yes
 DOCTEST
 dict_drop(){
     if [ -z "$O" ]; then
-        _dict_drop "$@"
+        dict_idrop "$@"
         return
     fi
     
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_drop "$@")"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | dict_idrop "$@")"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -156,13 +156,13 @@ yes
 DOCTEST
 dict_dropr(){
     if [ -z "$O" ]; then
-        _dict_dropr "$@"
+        dict_idropr "$@"
         return
     fi
 
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_dropr "$@")"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | dict_idropr "$@")"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -172,28 +172,28 @@ dict_dropr(){
 
 dict_grep(){
     if [ -z "$O" ]; then
-        _dict_grep "$@"
+        dict_igrep "$@"
         return
     fi
     
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_grep "$@" -)"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | dict_igrep "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1
     fi    
 }
 
-_dict_grepr(){
+dict_igrepr(){
     if [ -z "$O" ]; then
-        _dict_grepr "$@"
+        dict_igrepr "$@"
         return
     fi
 
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | _dict_grepr "$@" -)"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | dict_igrepr "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -202,17 +202,17 @@ _dict_grepr(){
 
 dict_json(){
     if [ -z "$O" ]; then
-        _dict_json "$@"
+        dict_ijson "$@"
         return
     fi
-    eval printf "%s" "\"\$${O}\"" | _dict_json "$@"
+    eval printf "%s" "\"\$${O}\"" | dict_ijson "$@"
 }
 
 dict_print(){
     if [ -z "$O" ]; then
-        _dict_print "$@"
+        dict_iprint "$@"
         return
     fi
-    eval printf "%s" "\"\$${O}\"" | _dict_print "$@"
+    eval printf "%s" "\"\$${O}\"" | dict_iprint "$@"
 }
 
