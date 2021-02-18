@@ -4,20 +4,20 @@
 # maintainer:   Li Junhao
 
 dict_make(){
-    local O="${1:?list_name}"
+    local O="${1:?Please provide object name}"
     eval "$O=0"
 }
 
 # O=b dload "$( a.dump | dgrep "abc" | dgerp "abc" )"
 
 dict_dump(){
-    local O="${O:?list_name}"
+    local O="${O:?Please provide object name}"
     local data
     eval printf "%s" "\"\$${O}\""
 }
 
 dict_load(){
-    local O="${O:?list_name}"
+    local O="${O:?Please provide object name}"
     local s
     s="$(cat)"
     eval "$O"='"$s"'
@@ -29,7 +29,7 @@ dict_has(){
 
 dict_size(){
     local data
-    data="$(eval printf "%s" "\"\$${O:?list_name}\"")"
+    data="$(eval printf "%s" "\"\$${O:?Please provide object name}\"")"
 
     local len
     len="${data##*${DICT_SEP}}"
@@ -42,19 +42,12 @@ dict_isempty(){
 }
 
 dict_get(){
-    if [ -z "$O" ]; then
-        dict_iget "$@"
-        return
-    fi
+    : "${O:?Please provide object name}"
     eval printf "%s" "\"\$${O}\"" | dict_iget "$@"
 }
 
 dict_put(){
-    if [ -z "$O" ]; then
-        dict_iput "$@"
-        return
-    fi
-
+    : "${O:?Please provide object name}"
     local s
     s="$(eval printf "%s" "\"\$${O}\"" | dict_iput "$@")"
 
@@ -62,20 +55,12 @@ dict_put(){
 }
 
 dict_scope(){
-    if [ -z "$O" ]; then
-        dict_iscope "$@"
-        return
-    fi
-
+    : "${O:?Please provide object name}"
     eval printf "%s" "\"\$${O}\"" | dict_iscope "$@"
 }
 
 dict_drop(){
-    if [ -z "$O" ]; then
-        dict_idrop "$@"
-        return
-    fi
-    
+    : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
     if s="$(eval printf "%s" "\"\$${O}\"" | dict_idrop "$@")"; then
@@ -86,11 +71,7 @@ dict_drop(){
 }
 
 dict_dropr(){
-    if [ -z "$O" ]; then
-        dict_idropr "$@"
-        return
-    fi
-
+    : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
     if s="$(eval printf "%s" "\"\$${O}\"" | dict_idropr "$@")"; then
@@ -102,11 +83,7 @@ dict_dropr(){
 
 
 dict_grep(){
-    if [ -z "$O" ]; then
-        dict_igrep "$@"
-        return
-    fi
-    
+    : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
     if s="$(eval printf "%s" "\"\$${O}\"" | dict_igrep "$@" -)"; then
@@ -117,11 +94,7 @@ dict_grep(){
 }
 
 dict_igrepr(){
-    if [ -z "$O" ]; then
-        dict_igrepr "$@"
-        return
-    fi
-
+    : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
     if s="$(eval printf "%s" "\"\$${O}\"" | dict_igrepr "$@" -)"; then
@@ -132,18 +105,12 @@ dict_igrepr(){
 }
 
 dict_json(){
-    if [ -z "$O" ]; then
-        dict_ijson "$@"
-        return
-    fi
+    : "${O:?Please provide object name}"
     eval printf "%s" "\"\$${O}\"" | dict_ijson "$@"
 }
 
 dict_print(){
-    if [ -z "$O" ]; then
-        dict_iprint "$@"
-        return
-    fi
+    : "${O:?Please provide object name}"
     eval printf "%s" "\"\$${O}\"" | dict_iprint "$@"
 }
 
