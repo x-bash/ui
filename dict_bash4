@@ -28,17 +28,7 @@ dict_has(){
 }
 
 dict_size(){
-    local data
-    data="$(eval printf "%s" "\"\$${O:?Please provide object name}\"")"
-
-    local len
-    len="${data##*${DICT_SEP}}"
-
-    printf "%s" "${len:-0}"
-}
-
-dict_isempty(){
-    [ "$(dict_size)" -eq 0 ]
+    printf "%s" "$O[#@]"
 }
 
 dict_get(){

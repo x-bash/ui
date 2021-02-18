@@ -36,6 +36,10 @@ dict_delete(){
     alias "$O.delete="
 }
 
+dict_isempty(){
+    [ "$(dict_size)" -eq 0 ]
+}
+
 # 001 for \n
 # 002 for "
 DICT_SEP="$(printf "\003")"
