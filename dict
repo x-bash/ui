@@ -46,9 +46,12 @@ dict_free(){
     eval "unset $O"
 }
 
-# Move to json library
 dict_json(){
-    dict_dump | dict_ijson
+    dict_dump | dict_ijson "$@"
+}
+
+dict_print(){
+    dict_dump | dict_iprint "$@"
 }
 
 dict_igrep(){

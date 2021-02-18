@@ -12,7 +12,6 @@ dict_make(){
 
 dict_dump(){
     local O="${O:?Please provide object name}"
-    local data
     eval printf "%s" "\"\$${O}\""
 }
 
@@ -102,15 +101,5 @@ dict_igrepr(){
     else
         return 1
     fi
-}
-
-dict_json(){
-    : "${O:?Please provide object name}"
-    eval printf "%s" "\"\$${O}\"" | dict_ijson "$@"
-}
-
-dict_print(){
-    : "${O:?Please provide object name}"
-    eval printf "%s" "\"\$${O}\"" | dict_iprint "$@"
 }
 
