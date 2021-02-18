@@ -6,15 +6,15 @@
 
 dict_alias(){
     alias dnew="dict_new"
-    alias dput="dict_put"
-    alias dget="dict_get"
-    alias ddrop="dict_drop"
-    alias ddropr="dict_dropr"
-    alias dgrep="dict_grep"
-    alias dgrepr="dict_grepr"
+    alias dput="dict_iput"
+    alias dget="dict_iget"
+    alias ddrop="dict_idrop"
+    alias ddropr="dict_idropr"
+    alias dgrep="dict_igrep"
+    alias dgrepr="dict_igrepr"
 
-    alias ddump="dict_dump"
-    alias dload="dict_load"
+    alias ddump="dict_idump"
+    alias dload="dict_iload"
 }
 
 dict_new(){
