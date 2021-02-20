@@ -22,7 +22,7 @@ dict_load(){
     dict_make "$O"
 
     local key
-    local val 
+    local val
 
     while :; do
         read -d "${DICT_SEP}" -r key

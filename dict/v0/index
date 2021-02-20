@@ -9,12 +9,12 @@
 
 dict_alias(){
     alias dnew="dict_new"
-    alias dput="dict_iput"
-    alias dget="dict_iget"
-    alias ddrop="dict_idrop"
-    alias ddropr="dict_idropr"
-    alias dgrep="dict_igrep"
-    alias dgrepr="dict_igrepr"
+    alias dput="dict_pput"
+    alias dget="dict_pget"
+    alias ddrop="dict_pdrop"
+    alias ddropr="dict_pdropr"
+    alias dgrep="dict_pgrep"
+    alias dgrepr="dict_pgrepr"
 
     alias ddump="dict_idump"
     alias dload="dict_iload"
@@ -58,23 +58,23 @@ dict_is_empty(){
 }
 
 dict_json(){
-    dict_dump | dict_ijson "$@"
+    dict_dump | dict_pjson "$@"
 }
 
 dict_print(){
-    dict_dump | dict_iprint "$@"
+    dict_dump | dict_pprint "$@"
 }
 
-dict_igrep(){
-    AWK_CODE="keyline == key" dict_idrop "$@"
+dict_pgrep(){
+    AWK_CODE="keyline == key" dict_pdrop "$@"
 }
 
-dict_idropr() {
-    AWK_CODE="! (keyline ~ key)" dict_idrop "$@"
+dict_pdropr() {
+    AWK_CODE="! (keyline ~ key)" dict_pdrop "$@"
 }
 
 # drop_by_idx, drop_by_regex, drop_by_glob
-dict_idrop() {
+dict_pdrop() {
     [ $# -eq 0 ] && printf "%s\n" "Accept more than one argument." >&2
 
     local IFS="${DICT_KEYS_SEP}"
@@ -105,7 +105,7 @@ dict_idrop() {
     ' -
 }
 
-dict_iput(){
+dict_pput(){
     {
         local s
         local IFS="${DICT_KEYS_SEP}"
@@ -140,7 +140,7 @@ dict_iput(){
     ' -
 }
 
-dict_iget(){
+dict_pget(){
     local IFS="${DICT_KEYS_SEP}"
     {
         printf "%s${DICT_SEP}" "$*"
@@ -166,7 +166,7 @@ dict_iget(){
     ' -
 }
 
-dict_ifilter(){
+dict_pfilter(){
     local s
     local AWK_CODE=""
 
@@ -206,7 +206,7 @@ dict_ifilter(){
 }
 
 # dict_scope <key1> <key2> <key3>
-dict_iscope(){
+dict_pscope(){
     {
         local IFS="${DICT_KEYS_SEP}"
         printf "%s${DICT_KEYS_SEP}${DICT_SEP}" "$*"
@@ -243,7 +243,7 @@ dict_map_awk(){
 }
 
 # dict_dump
-dict_ijson(){
+dict_pjson(){
     awk -v RS="${DICT_SEP}" '
         BEGIN { len = $0;   result = "{";     quote = "\002";  }
         NR>=1 {
@@ -269,7 +269,7 @@ dict_ijson(){
     ' -
 }
 
-dict_iprint(){
+dict_pprint(){
     {
         printf "${ITEM_SEP:-"\\n"}${DICT_SEP}${KV_SEP:-"="}${DICT_SEP}"  
         cat

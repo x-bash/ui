@@ -540,7 +540,7 @@ gt.repo.new(){
 gt.repo.member.list(){
     :
     # TODO: page?
-    # gt.multiget "/v5/repos/$owner/$repo/collaborators" -- ""
+    # gt.multpget "/v5/repos/$owner/$repo/collaborators" -- ""
     # gt.get "/v5/repos/$owner/$repo/collaborators"
 }
 

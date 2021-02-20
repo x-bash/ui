@@ -89,7 +89,7 @@ http.header.agent.eq(){
     http.header.add "User-Agent" "${1:?User agent}"
 }
 
-http.dict_iget(){
+http.dict_pget(){
     [ -z "$O" ] && return 1
     dict.get "${1:?Provide key}"
 }
@@ -97,13 +97,13 @@ http.dict_iget(){
 # X=put D='{}' http.request
 http.request(){
     [ -z "$O" ] && return 1
-    local URL=${URL:-$(http.dict_iget "url")}
-    local X=${X:-$(http.dict_iget "method")}
+    local URL=${URL:-$(http.dict_pget "url")}
+    local X=${X:-$(http.dict_pget "method")}
 
     # Using other ways
 
-    local HEADERS=${HEADER:-$(http.dict_iget "header")}
-    local D=${D:-$(http.dict_iget "data")}
+    local HEADERS=${HEADER:-$(http.dict_pget "header")}
+    local D=${D:-$(http.dict_pget "data")}
     local QS=${QS:-""}
 
     if [ -z "$QS" ]; then
@@ -115,14 +115,14 @@ http.request(){
 
 http.cd(){
     [ -z "$O" ] && return 1
-    local URL=${URL:-$(http.dict_iget "url")}
+    local URL=${URL:-$(http.dict_pget "url")}
     dict.put "url" "$URL/${1:?Provide url}"
 }
 
 # TODO: how to cd back
 
 http.path(){
-    local URL=${URL:-$(http.dict_iget "url")}
+    local URL=${URL:-$(http.dict_pget "url")}
     echo "$URL"
 }
 

@@ -35,27 +35,27 @@ dict_size(){
 
 dict_get(){
     : "${O:?Please provide object name}"
-    eval printf "%s" "\"\$${O}\"" | dict_iget "$@"
+    eval printf "%s" "\"\$${O}\"" | dict_pget "$@"
 }
 
 dict_put(){
     : "${O:?Please provide object name}"
     local s
-    s="$(eval printf "%s" "\"\$${O}\"" | dict_iput "$@")"
+    s="$(eval printf "%s" "\"\$${O}\"" | dict_pput "$@")"
 
     eval "$O=\"\$s\""
 }
 
 dict_scope(){
     : "${O:?Please provide object name}"
-    eval printf "%s" "\"\$${O}\"" | dict_iscope "$@"
+    eval printf "%s" "\"\$${O}\"" | dict_pscope "$@"
 }
 
 dict_drop(){
     : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | dict_idrop "$@")"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | dict_pdrop "$@")"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -66,7 +66,7 @@ dict_dropr(){
     : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | dict_idropr "$@")"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | dict_pdropr "$@")"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -78,7 +78,7 @@ dict_grep(){
     : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | dict_igrep "$@" -)"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | dict_pgrep "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1
@@ -89,7 +89,7 @@ dict_grepr(){
     : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
-    if s="$(eval printf "%s" "\"\$${O}\"" | dict_igrepr "$@" -)"; then
+    if s="$(eval printf "%s" "\"\$${O}\"" | dict_pgrepr "$@" -)"; then
         eval "$O=\"\$s\""
     else
         return 1
