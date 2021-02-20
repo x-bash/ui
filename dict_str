@@ -22,22 +22,15 @@ dict_load(){
     eval "$O"='"$s"'
 }
 
-dict_has(){
-    dict_get "$@" > /dev/null
-}
-
 dict_size(){
+    local O="${O:?Please provide object name}"
     local data
-    data="$(eval printf "%s" "\"\$${O:?Please provide object name}\"")"
+    data="$(eval printf "%s" "\"\$${O}\"")"
 
     local len
     len="${data##*${DICT_SEP}}"
 
     printf "%s" "${len:-0}"
-}
-
-dict_isempty(){
-    [ "$(dict_size)" -eq 0 ]
 }
 
 dict_get(){
@@ -92,7 +85,7 @@ dict_grep(){
     fi    
 }
 
-dict_igrepr(){
+dict_grepr(){
     : "${O:?Please provide object name}"
     local O="${O:?list_name}"
     local s
@@ -101,5 +94,28 @@ dict_igrepr(){
     else
         return 1
     fi
+}
+
+dict_iter(){
+    local O="${O:?Please provide object name}"
+    local data
+    data="$(eval printf "%s" "\"\$${O}\"")"
+
+    local fun="$*" # "$1 \"\$key\" \"\$val\""
+    if [ "$#" -eq 1 ] && command -v "$1"; then
+        fun="$1 \"\$key\" \"\$val\""
+    fi
+
+    local key
+    local val 
+
+    while :; do
+        key="${data%%${DICT_SEP}*}"
+        data="${data#*${DICT_SEP}}"
+        val="${data%%${DICT_SEP}*}"
+        data="${data#*${DICT_SEP}}"
+
+        eval "$fun"
+    done
 }
 

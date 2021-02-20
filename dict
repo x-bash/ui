@@ -4,6 +4,9 @@
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
 
+# TODO: key of
+# TODO: value of
+
 dict_alias(){
     alias dnew="dict_new"
     alias dput="dict_iput"
@@ -36,10 +39,6 @@ dict_delete(){
     alias "$O.delete="
 }
 
-dict_isempty(){
-    [ "$(dict_size)" -eq 0 ]
-}
-
 # 001 for \n
 # 002 for "
 DICT_SEP="$(printf "\003")"
@@ -48,6 +47,14 @@ DICT_KEYS_SEP="$(printf "\005")"
 
 dict_free(){
     eval "unset $O"
+}
+
+dict_has(){
+    dict_get "$@" > /dev/null
+}
+
+dict_is_empty(){
+    [ "$(dict_size)" -eq 0 ]
 }
 
 dict_json(){
