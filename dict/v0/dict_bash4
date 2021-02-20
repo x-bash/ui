@@ -12,8 +12,15 @@ dict_make(){
 
 dict_dump(){
     local O="${O:?Please provide object name}"
-    local data
-    eval printf "%s" "\"\$${O}\""
+    local key
+    local val
+    local i=0
+    for key in eval "\${\!$O[@]}"; do
+        val="$(eval "\${\$O[\$key]}")"
+        printf "%s${DICT_SEP}%s${DICT_SEP}" "$key" "$val"
+        i=$((i+1))
+    done
+    printf "%s" "$i"
 }
 
 # bash 4 means we 'read -d' is available
@@ -52,12 +59,16 @@ dict_scope(){
     local s
     s=$(printf "%s${DICT_KEYS_SEP}" "$*")
 
+    local key
+    local i=0
     for key in eval "\${\!$O[@]}"; do
         if [[ "$key" == "$s"* ]]; then
             val="$(eval "\${\$O[\$key]}")"
             printf "%s${DICT_SEP}%s${DICT_SEP}" "$key" "$val"
+            i=$((i+1))
         fi
     done
+    printf "%s" "$i"
 }
 
 dict_drop(){
@@ -117,7 +128,7 @@ dict_grepr(){
     done
 }
 
-dict_foreach(){
+dict_iter(){
     local fun="$*" # "$1 \"\$key\" \"\$val\""
     if [ "$#" -eq 1 ] && command -v "$1"; then
         fun="$1 \"\$key\" \"\$val\""
