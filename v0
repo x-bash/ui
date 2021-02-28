@@ -94,46 +94,6 @@ ui.progress(){
 # Section 2: ui art
 ############################
 
-# https://serverfault.com/questions/93407/what-command-prints-a-string-as-big-ascii-text-art-in-bash
-ui.cowsay(){
-    local IFS
-    cat <<-A
- ______________________
-< ${*:-$text} >
- ----------------------
-A
-
-    cat <<-'A'
-        \   ^__^
-         \  (oo)\_______
-            (__)\       )\/\
-                ||----w |
-                ||     ||
-A
-}
-
-# https://serverfault.com/questions/93407/what-command-prints-a-string-as-big-ascii-text-art-in-bash
-ui.cowsay.tux(){
-    local IFS
-    cat <<-A
- ______________________
-< ${*:-$text} >
- ----------------------
-A
-
-    cat <<-'A'
-   \
-    \
-        .--.
-       |o_o |
-       |:_/ |
-      //   \ \
-     (|     | )
-    /'\_   _/`\
-    \___)=(___/
-A
-}
-
 
 
 ############################
