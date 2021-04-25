@@ -12,16 +12,16 @@ tput ed
 
 
 ```bash
-ui.region.clear.1(){
+ui_region_clear.1(){
     local end_row begin_row maxw space
 
     maxw="$(tput cols)"
     space="$(seq -f " " -s '' "$maxw")"
 
-    ui.cursor.read end_row
+    ui_cursor_read end_row
     tput rc # restore to the last cursor position
     # tput ed # clr_eos: clear the characters until the end of screen
-    ui.cursor.read begin_row
+    ui_cursor_read begin_row
     echo "$end_row $begin_row" >./debug.txt
 
     for i in $(seq $(( end_row - begin_row )) ); do

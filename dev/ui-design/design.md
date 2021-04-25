@@ -1,30 +1,30 @@
 
 ```bash
 update_ui(){
-    ui.seperator
-    ui.style info -- Prepare the UI "$percentage"
-    ui.progress "$percentage" "$symbol"
+    ui_seperator
+    ui_style info -- Prepare the UI "$percentage"
+    ui_progress "$percentage" "$symbol"
 
-    ui.style bold black -- Initializing the storage
-    ui.style info -- "$text"
-    ui.cowsay Hi Good work
-    ui.cowsay "$(ui.style info -- "Hi Good work")"
-    ui.seperator
+    ui_style bold black -- Initializing the storage
+    ui_style info -- "$text"
+    ui_cowsay Hi Good work
+    ui_cowsay "$(ui_style info -- "Hi Good work")"
+    ui_seperator
 }
 ```
 
 ```bash
 update_ui(){
     cat <<A
-$(ui.seperator)
-$(ui.style info -- Prepare the UI "$percentage")
-$(ui.progress "$percentage" "$symbol")
+$(ui_seperator)
+$(ui_style info -- Prepare the UI "$percentage")
+$(ui_progress "$percentage" "$symbol")
 
-$(ui.style bold black -- Initializing the storage)
-$(ui.style info -- "$text")
-$(ui.cowsay Hi Good work)
-$(ui.cowsay "$(ui.style info -- "Hi Good work")" )
-$(ui.seperator)
+$(ui_style bold black -- Initializing the storage)
+$(ui_style info -- "$text")
+$(ui_cowsay Hi Good work)
+$(ui_cowsay "$(ui_style info -- "Hi Good work")" )
+$(ui_seperator)
 A
 }
 ```
