@@ -53,6 +53,7 @@ ui_style(){
             purple|magneta) tput setaf 5;;
             lightblue|cyan) tput setaf 6;;
             white)          tput setaf 7;;
+            rev)            printf "\033[7m" ;;
             end)            printf "\033[0m" ;;
             reset)          tput reset ;;
             --) 
@@ -80,6 +81,29 @@ ui_seperator(){
     echo "$sep"
 }
 
+ui_progress_white(){
+    local maxw number=80 stars space percent=$1
+    local color=$(ui green)
+    if [ "$percent" -lt 0 ]; then
+        percent=${percent#-}
+        color=$(ui red)
+    fi
+
+    maxw="$(tput cols)"
+    [ "$maxw" -lt $number ] && number=$maxw
+    stars="$(seq -f "${2:-$(printf " ")}" -s '' "$number")"
+    space="$(seq -f " " -s '' "$number")"
+    local v=$(( ${#stars} * percent / 100 ))
+    local v100=$((100 - v))
+
+    if [ $percent -eq 100 ]; then
+        printf "${color}( DONE )|%s%s|" "$(ui rev)${stars:0:$v}$(ui end)" "${space:v:$v100}"
+    else
+        printf "${color}(%3d %% )|%s%s|" "$percent" "$(ui rev)${stars:0:$v}$(ui end)" "${space:v:$v100}"
+    fi
+    
+}
+
 ui_progress(){
     local maxw number=80 stars space percent=$1
     maxw="$(tput cols)"
@@ -88,7 +112,12 @@ ui_progress(){
     space="$(seq -f " " -s '' "$number")"
     local v=$(( ${#stars} * percent / 100 ))
     local v100=$((100 - v))
-    printf "(%3d %%)|%s%s|" "$percent" "${stars:0:$v}" "${space:v:$v100}"
+
+    if [ $percent -eq 100 ]; then
+        printf "( DONE! )|%s%s|" "$percent" "${stars:0:$v}" "${space:v:$v100}"
+    else
+        printf "(%3d %% )|%s%s|" "$percent" "${stars:0:$v}" "${space:v:$v100}"
+    fi
 }
 
 ############################
@@ -323,6 +352,18 @@ ui_check_cmd(){
     else
         printf "\r$(ui red)$(ui bold)%s       %s$(ui end)\n"    "X" "$msg"
     fi
+}
+
+ui_progressbar(){
+    local code=0
+    ui_progress "$code"; 
+    while read -r code; do
+        printf "\r";
+        ui_progress_white "$code"
+        [ $code -lt 0 ] && break
+        [ $code -eq 100 ] && break
+    done
+    printf "\n"
 }
 
 
