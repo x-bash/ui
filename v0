@@ -53,6 +53,7 @@ ui_style(){
             purple|magneta) tput setaf 5;;
             lightblue|cyan) tput setaf 6;;
             white)          tput setaf 7;;
+            end)            printf "\033[0m" ;;
             reset)          tput reset ;;
             --) 
                 shift; 
@@ -281,6 +282,49 @@ RUN_CMD_WITH_STEP() {
 ############################
 # Section 9: interactive component
 ############################
+
+_ui_check_cmd_run(){
+    local msg="${1:?Please Provide message}"; shift
+
+    local i
+
+    local filepath="_ui_check_cmd_run.$$.$(date +%s).txt"
+    touch "$filepath"
+    local code=1
+    {
+        eval "$@"
+        code=$?
+        rm "$filepath"
+        printf "%s" "$code"
+    } | {
+        i="-"
+        printf "$(ui blue)$(ui bold)%s       $(ui end)$(ui yellow)%s$(ui end)" "$i" "$msg"
+        while [ -f "$filepath" ]; do
+            sleep 0.1
+            case "$i" in
+                -)  i="\\"  ;;
+                \\) i="|"   ;;
+                \|) i="/"   ;;
+                /)  i="-"   ;;
+            esac
+            printf "\r$(ui blue)$(ui bold)%s       $(ui end)$(ui yellow)%s$(ui end)" "$i" "$msg"
+        done
+
+        read -r code
+        [ "$code" -eq 0 ]
+    }
+}
+
+ui_check_cmd(){
+    local msg="${1:?Please Provide message}";
+
+    if _ui_check_cmd_run "$@"; then
+        printf "\r$(ui green)$(ui bold)%s       %s$(ui end)\n"  "√" "$msg"
+    else
+        printf "\r$(ui red)$(ui bold)%s       %s$(ui end)\n"    "X" "$msg"
+    fi
+}
+
 
 xrc str # Rely on @src str, consider remove this dependency
 ui_yesno() {

@@ -1,27 +1,7 @@
-run(){
-    local msg="${1:?Please Provide message}"; shift
-    
-    touch a.txt
-    {
-        eval "$@"
-        rm a.txt
-    } | {
-        i="-"
-        printf "%s %s" "$i" "$msg"
-        while [ -f a.txt ]; do
-            sleep 0.1
-            case "$i" in
-                -)  i="\\"  ;;
-                \\) i="|"   ;;
-                \|) i="/"   ;;
-                /)  i="-"   ;;
-            esac
-            printf "\r\033[0;34m%s\033[0m   %s" "$i" "$msg"
-        done
+. "$HOME/.x-cmd/boot" 2>/dev/null || eval "$(curl https://get.x-cmd.com/script)"
 
-        printf "\r\033[0;32m%s\033[0m   %s\n" "√" "$msg"
-    }
+. ./v0
 
-}
-
-run "Running Sleep 3" sleep 5
+ui_check_cmd "Step-1:  Running Sleep 3"     "sleep 5"
+ui_check_cmd "Step-2:  Running Sleep 3"     "sleep 1; false"
+ui_check_cmd "Step-3:  Running Sleep 3"     "sleep 2; true"
