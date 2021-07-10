@@ -43,6 +43,16 @@ function col_max_sum(   i, sum){
     return sum
 }
 
+function style0(    i, j){
+    printf "\033[4m"
+    for (i=1; i<=data[LEN]; ++i) {
+        for (j=1; j<=col_num; ++j) {
+            fixout(col_max[j] + 3, data[i KSEP j])
+        }
+        printf "\033[0m\n"
+    }
+}
+
 function style1(    i, j){
     printf "\033[4m"
     for (i=1; i<=data[LEN]; ++i) {
@@ -60,24 +70,66 @@ function style1(    i, j){
 }
 
 function style2(    i, j){
-    printf "\033[4m"
+    tmp = "+"
+    col_wid = col_max_sum()
+    for (i=1; i<col_wid-1 + 3 * col_num + 3; ++i) {
+        tmp = tmp "-"
+    }
+    tmp = tmp "+"
+
+    print tmp
+
     for (i=1; i<=data[LEN]; ++i) {
+        printf "| "
         for (j=1; j<=col_num; ++j) {
             fixout(col_max[j] + 3, data[i KSEP j])
         }
 
-        if ( i == data[LEN]-1 ) {
-            printf "\033[4m"
-        } else {
-            printf "\033[0m"
+        printf "|\n"
+
+        if ( i == 1 ) {
+            print tmp
         }
-        printf "\n"
     }
+    print tmp
+}
+
+function style3(    i, j){
+    tmp = "+"
+    col_wid = col_max_sum()
+    for (i=1; i<col_wid-1 + 3 * col_num + 3; ++i) {
+        tmp = tmp "-"
+    }
+    tmp = tmp "+"
+
+    print tmp
+
+    for (i=1; i<=data[LEN]; ++i) {
+        printf "| "
+        for (j=1; j<=col_num; ++j) {
+            fixout(col_max[j] + 3, data[i KSEP j])
+        }
+
+        printf "|\n"
+
+        if ( i == 1 ) {
+            print tmp
+        }
+    }
+    print tmp
 }
 
 
+
 END{
+    style0()
+    printf "\n"
+
     style1()
+    printf "\n"
+
+    style2()
+    printf "\n"
 }
 
 
