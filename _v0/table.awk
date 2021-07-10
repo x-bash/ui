@@ -26,8 +26,6 @@ NR > 1{
         if (col_max[i] < arr_i_len) col_max[i] = arr_i_len
     }
 
-    
-
 }
 
 function fixout(size, str){
