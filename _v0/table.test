@@ -1,0 +1,10 @@
+. ./table
+
+table -
+table Rule     Route      Method  Name
+table hink    "<Cloure>"   get     work1
+table hink    "<Cloure>"   get     work2
+table hink    "<Cloure>"   get     work3
+table hink    "<Cloure>"   get     work4
+table hink    "<Cloure>"   get     work5
+table

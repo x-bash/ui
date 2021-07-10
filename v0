@@ -26,10 +26,26 @@
 ui(){
     local f=$1
     case "$f" in
-        http://* | https://* | ftp://* |ftps://* | git://* ) ui_url "$f";;
-        :) ui_print_var "$@" ;;
-        *) ui_style "$@" ;;
+        http://* | https://* | ftp://* |ftps://* | git://* ) 
+                                ui_url "$f"         ;;
+        :)                      ui_print_var "$@"   ;;
+        progressbar|probar)     shift; ui_progressbar "$@" ;;
+        cmd|cmdline)            shift; ui_cmdline "$@"     ;;
+        *)                      ui_style "$@"       ;;
     esac
+}
+
+ui_cmdline(){
+    local prompt=${1:-">"}
+    if [ $# -gt 1 ]; then
+        shift;
+        printf "$(ui bold yellow)${prompt} $(ui normal white)%s$(ui end)\n" "$*"
+    else
+        local line
+        while read line; do
+            printf "$(ui bold yellow)${prompt} $(ui normal white)%s$(ui end)\n" "$line"
+        done
+    fi
 }
 
 xrc log init ui
@@ -40,11 +56,12 @@ xrc log init ui
 ui_style(){
     while [ $# -gt 0 ]; do
         case "$1" in
-            dim|debug)      tput dim;;
-            info)           tput setaf 6; tput bold;;
-            error)          tput bold; tput setaf 1;;
-            warn)           tput bold; tput setaf 3;;
-            bold)           tput bold;;
+            dim|debug)      printf "\033[2m"    ;; # tput dim;;
+            info)           tput setaf 6; tput bold ;;
+            error)          tput bold; tput setaf 1 ;;
+            warn)           tput bold; tput setaf 3 ;;
+            normal)         printf "\033[0m"    ;;  # tput bold
+            bold)           printf "\033[1m"    ;;  # tput bold
             black)          tput setaf 0;;
             red)            tput setaf 1;;
             green)          tput setaf 2;;
@@ -77,6 +94,20 @@ ui_url(){
 ui_seperator(){
     local sep maxw
     maxw="$(tput cols)"
+    sep="$(seq -f "${1:-—}" -s '' "$maxw")"
+    echo "$sep"
+}
+
+ui_seperator2(){
+    local sep maxw
+    maxw=$(( $(tput cols) / 2 ))
+    sep="$(seq -f "${1:-—}" -s '' "$maxw")"
+    echo "$sep"
+}
+
+ui_seperator3(){
+    local sep maxw
+    maxw=$(( $(tput cols) / 3 ))
     sep="$(seq -f "${1:-—}" -s '' "$maxw")"
     echo "$sep"
 }

@@ -1,0 +1,6 @@
+[4mRule   Route      Method   Name       [4m
+hink   <Cloure>   get      work1      [4m
+hink   <Cloure>   get      work2      [4m
+hink   <Cloure>   get      work3      [4m
+hink   <Cloure>   get      work4      [4m
+hink   <Cloure>   get      work5      [4m

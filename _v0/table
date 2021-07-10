@@ -1,0 +1,37 @@
+# shellcheck shell=sh disable=SC3043
+
+# author:       Li Junhao           l@x-cmd.com    edwinjhlee.github.io
+# maintainer:   Li Junhao
+
+table(){
+    local O="${O:-X_CMD_UI_TABLE_DEFAULT}"
+    case "${1}" in
+        '') table_out       ;;
+        -)  table_clear     ;;
+        *)  table_read      "$@"
+    esac
+}
+
+table_read(){
+    local O="${O:-X_CMD_UI_TABLE_DEFAULT}"
+    local s
+    local IFS
+    IFS=$(printf "\003")
+    local NR
+    NR=$(printf "\002")
+    s="$(eval echo \"\$"{$O}$NR$*"\")"
+    eval "$O=\"\$s\""
+}
+
+table_out(){
+    eval "printf \"%s\" \"\${$O}\"" | \
+        awk -f ./table.awk
+        # awk '{ print $0; }'
+}
+
+table_clear(){
+    local O="${O:-X_CMD_UI_TABLE_DEFAULT}"
+    eval "$O="
+}
+
+
