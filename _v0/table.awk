@@ -22,15 +22,19 @@ NR > 1{
 
     for (i=1; i<=arr_len; i+=1) {
         data[ line_idx KSEP i ] = arr[ i ]
-        arr_i_len = length( arr[ i ] )
+
+        arr_i_len = wcswidth( arr[i] )
+
+        datal[ line_idx KSEP i ] = arr_i_len
         if (col_max[i] < arr_i_len) col_max[i] = arr_i_len
     }
 
 }
 
-function fixout(size, str){
+function fixout(size, str, _wcswidth){
     # printf("%-" size "s", str)
-    size = size - wcswidth(str)
+    # if (_wcswidth == 0)  _wcswidth = wcswidth(str)
+    size = size - _wcswidth
     printf("%s", str sprintf("%" size "s", ""))
 }
 
@@ -46,7 +50,7 @@ function style0(    i, j){
     printf "\033[4m"
     for (i=1; i<=data[LEN]; ++i) {
         for (j=1; j<=col_num; ++j) {
-            fixout(col_max[j] + 3, data[i KSEP j])
+            fixout(col_max[j] + 3, data[i KSEP j], datal[i KSEP j])
         }
         printf "\033[0m\n"
     }
@@ -56,7 +60,7 @@ function style1(    i, j){
     printf "\033[7m"
     for (i=1; i<=data[LEN]; ++i) {
         for (j=1; j<=col_num; ++j) {
-            fixout(col_max[j] + 3, data[i KSEP j])
+            fixout(col_max[j] + 3, data[i KSEP j], datal[i KSEP j])
         }
 
         printf "\033[0m"
@@ -85,7 +89,7 @@ function style2(corner,    i, j){
     for (i=1; i<=data[LEN]; ++i) {
         printf "| "
         for (j=1; j<=col_num; ++j) {
-            fixout(col_max[j] + 3, data[i KSEP j])
+            fixout(col_max[j] + 3, data[i KSEP j], datal[i KSEP j])
         }
 
         printf "|\n"
@@ -112,7 +116,7 @@ function style3(corner,    i, j){
     for (i=1; i<=data[LEN]; ++i) {
         printf "| "
         for (j=1; j<=col_num; ++j) {
-            fixout(col_max[j] + 3, data[i KSEP j])
+            fixout(col_max[j] + 3, data[i KSEP j], datal[i KSEP j])
         }
 
         printf "|\n"
@@ -150,7 +154,7 @@ function style4(corner,    i, j){
     for (i=1; i<=data[LEN]; ++i) {
         printf "| "
         for (j=1; j<=col_num; ++j) {
-            fixout(col_max[j] + 3, data[i KSEP j])
+            fixout(col_max[j] + 3, data[i KSEP j], datal[i KSEP j])
         }
 
         printf "|\n"
@@ -188,7 +192,7 @@ function style5(corner,    i, j){
     for (i=1; i<=data[LEN]; ++i) {
         printf "| "
         for (j=1; j<=col_num; ++j) {
-            fixout(col_max[j], data[i KSEP j])
+            fixout(col_max[j], data[i KSEP j], datal[i KSEP j])
             if (j != col_num)   printf("%s", " | ")
             else                printf("%s", "   ")
         }
@@ -228,7 +232,7 @@ function style6(corner,    i, j){
     for (i=1; i<=data[LEN]; ++i) {
         printf "| "
         for (j=1; j<=col_num; ++j) {
-            fixout(col_max[j], data[i KSEP j])
+            fixout(col_max[j], data[i KSEP j], datal[i KSEP j])
             if (j != col_num)   printf("%s", " | ")
             else                printf("%s", "   ")
         }
