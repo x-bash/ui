@@ -668,11 +668,3 @@ function _wcwidth_unpack_data(_wchar,    _a, _b, _c, _data, _end, _entry,
     return (WCWIDTH_CACHE[_wchar] = _width_of_wchar_argument)
 }
 
-
-END{
-    # printf( "|%s|\n", wcsexpand("你好", 10) )
-    # printf( "|%s|\n", wcsexpand("12", 10) )
-    print(wcswidth("你好"))
-
-    print(wcswidth("你好你好你好你好你好你好你好你好你好你好你好你好你好"))
-}
