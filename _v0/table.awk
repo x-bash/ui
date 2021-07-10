@@ -69,13 +69,16 @@ function style1(    i, j){
     }
 }
 
-function style2(    i, j){
-    tmp = "+"
+function style2(corner,    i, j){
+
+    if (corner == "") corner = "*"
+
+    tmp = corner
     col_wid = col_max_sum()
     for (i=1; i<col_wid-1 + 3 * col_num + 3; ++i) {
         tmp = tmp "-"
     }
-    tmp = tmp "+"
+    tmp = tmp corner
 
     print tmp
 
@@ -94,13 +97,15 @@ function style2(    i, j){
     print tmp
 }
 
-function style3(    i, j){
-    tmp = "+"
+function style3(corner,    i, j){
+    if (corner == "") corner = "*"
+
+    tmp = corner
     col_wid = col_max_sum()
     for (i=1; i<col_wid-1 + 3 * col_num + 3; ++i) {
         tmp = tmp "-"
     }
-    tmp = tmp "+"
+    tmp = tmp corner
 
     print tmp
 
@@ -119,17 +124,191 @@ function style3(    i, j){
     print tmp
 }
 
+function style4(corner,    i, j){
+    if (corner == "") corner = "o"
 
+    tmp = corner "-"
+    tmp1 = corner "-"
+    col_wid = col_max_sum()
 
-END{
+    for (i=1; i<=col_num; ++i) {
+        for (j=1; j<=col_max[i]; ++j) {
+            tmp = tmp "-"
+            tmp1 = tmp1 "-"
+        }
+
+        if (i == col_num)   tmp = tmp "---"
+        else                tmp = tmp "-+-"
+        tmp1 = tmp1 "---"
+    }
+
+    tmp = tmp corner
+    tmp1 = tmp1 corner
+
+    print tmp
+
+    for (i=1; i<=data[LEN]; ++i) {
+        printf "| "
+        for (j=1; j<=col_num; ++j) {
+            fixout(col_max[j] + 3, data[i KSEP j])
+        }
+
+        printf "|\n"
+
+        if ( i == 1 ) {
+            print tmp
+        }
+    }
+    print tmp1
+}
+
+function style5(corner,    i, j){
+    if (corner == "") corner = "o"
+
+    tmp = corner "-"
+    tmp1 = corner "-"
+    col_wid = col_max_sum()
+
+    for (i=1; i<=col_num; ++i) {
+        for (j=1; j<=col_max[i]; ++j) {
+            tmp = tmp "-"
+            tmp1 = tmp1 "-"
+        }
+
+        if (i == col_num)   tmp = tmp "---"
+        else                tmp = tmp "-+-"
+        tmp1 = tmp1 "---"
+    }
+
+    tmp = tmp corner
+    tmp1 = tmp1 corner
+
+    print tmp
+
+    for (i=1; i<=data[LEN]; ++i) {
+        printf "| "
+        for (j=1; j<=col_num; ++j) {
+            fixout(col_max[j], data[i KSEP j])
+            if (j != col_num)   printf("%s", " | ")
+            else                printf("%s", "   ")
+        }
+
+        printf "|\n"
+
+        if ( i == 1 ) {
+            print tmp
+        }
+    }
+    print tmp1
+}
+
+function style6(corner,    i, j){
+    if (corner == "") corner = "o"
+
+    tmp = corner "-"
+    tmp1 = corner "-"
+    col_wid = col_max_sum()
+
+    for (i=1; i<=col_num; ++i) {
+        for (j=1; j<=col_max[i]; ++j) {
+            tmp = tmp "-"
+            tmp1 = tmp1 "-"
+        }
+
+        if (i == col_num)   tmp = tmp "---"
+        else                tmp = tmp "-+-"
+        tmp1 = tmp1 "---"
+    }
+
+    tmp = tmp corner
+    tmp1 = tmp1 corner
+
+    print tmp1
+
+    for (i=1; i<=data[LEN]; ++i) {
+        printf "| "
+        for (j=1; j<=col_num; ++j) {
+            fixout(col_max[j], data[i KSEP j])
+            if (j != col_num)   printf("%s", " | ")
+            else                printf("%s", "   ")
+        }
+
+        printf "|\n"
+
+        if ( i == 1 ) {
+            print tmp
+        }
+    }
+    print tmp1
+}
+
+function show_all(){
+    print "style 0: "
     style0()
     printf "\n"
 
+    print "style 1: "
     style1()
     printf "\n"
 
+    print "style 2: "
     style2()
     printf "\n"
+
+    print "style 3: "
+    style3()
+    printf "\n"
+
+    print "style 4: "
+    style4()
+    printf "\n"
+
+    print "style 5: "
+    style5()
+    printf "\n"
+
+    print "style 6: "
+    style6()
+    printf "\n"
+}
+
+END{
+    if (out == "0") {
+        style0()
+        exit 0
+    }
+
+    if (out == "1") {
+        style1()
+        exit 0
+    }
+
+    if (out == "2") {
+        style2()
+        exit 0
+    }
+
+    if (out == "3") {
+        style3()
+        exit 0
+    }
+
+    if (out == "4") {
+        style4()
+        exit 0
+    }
+
+    if (out == "5") {
+        style5()
+        exit 0
+    }
+
+    if (out == "6") {
+        style6()
+        exit 0
+    }
+
+    show_all()
 }
 
 

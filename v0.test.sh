@@ -18,6 +18,7 @@ echo "$(ui underline)think    <Cloure>   get     work     $(ui end)"
 table 5 3 2 1 3 4 5
 table xx xx xx xx xx xx
 
+
 table \
     xx xx xx xx xx --\
     yy yy yy yy yy yy --\
