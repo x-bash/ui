@@ -19,7 +19,11 @@ table_read(){
     IFS=$(printf "\003")
     local NR
     NR=$(printf "\002")
-    s="$(eval echo \"\$"{$O}$NR$*"\")"
+    s="$(eval echo \"\$"{$O}$NR"\")"
+    local i
+    for i in "$@"; do
+        s="$s$IFS$i$IFS${#i}"
+    done
     eval "$O=\"\$s\""
 }
 
@@ -27,7 +31,7 @@ table_out(){
     local out="${1:-1}"
 
     eval "printf \"%s\" \"\${$O}\"" | \
-        awk -v out="$out" -f ./table.awk 
+        LC_ALL=en_US.UTF-8  awk -v out="$out" "$(cat ./wcwidth.awk)$(cat ./table.awk)"
         # awk '{ print $0; }'
 }
 

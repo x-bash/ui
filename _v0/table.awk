@@ -20,19 +20,26 @@ NR > 1{
 
     data[ line_idx KSEP LEN ] = arr_len
 
-    if (col_num < arr_len)  col_num = arr_len
+    
+    i = 0
+    for (arr_idx=2; arr_idx<=arr_len; arr_idx+=2) {
+        i += 1
 
-    for (i=1; i<=arr_len; ++i) {
-        data[ line_idx KSEP i ] = arr[i]
+        data[ line_idx KSEP i ] = arr[ arr_idx ]
+        arr_i_len = length( arr[ arr_idx ] ) # arr[ arr_idx + 1 ]
         
-        arr_i_len = length(arr[i])
+        data_len[ line_idx KSEP i ] =  arr_i_len
         
         if (col_max[i] < arr_i_len) col_max[i] = arr_i_len
     }
+
+    if (col_num < i)  col_num = i
 }
 
 function fixout(size, str){
-    printf("%-" size "s", str)
+    # printf("%-" size "s", str)
+    size = size - wcswidth(str)
+    printf("%s", str sprintf("%" size "s", ""))
 }
 
 function col_max_sum(   i, sum){

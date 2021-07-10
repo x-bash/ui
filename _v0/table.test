@@ -2,9 +2,9 @@
 
 table -
 table + Rule     Route      Method  Name
-table + hink    "<Cloure>"   get     work1
+table + 中文规则    "<Cloure>"   get     work1
 table + hink    "<Cloure>"   get     work002
-table + hink    "<Cloure>"   get     work03
+table + Südw    "<Cloure>"   get     work03
 table + hink    "<Cloure>"   get     work4
 table + hink    "<Cloure>"   get     work000006
-table all
+time table all
