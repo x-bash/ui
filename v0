@@ -57,6 +57,7 @@ ui_style(){
     while [ $# -gt 0 ]; do
         case "$1" in
             dim|debug)      printf "\033[2m"    ;; # tput dim;;
+            underline|under)      printf "\033[4m"    ;; # tput dim;;
             info)           tput setaf 6; tput bold ;;
             error)          tput bold; tput setaf 1 ;;
             warn)           tput bold; tput setaf 3 ;;
