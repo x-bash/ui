@@ -32,7 +32,7 @@ table_out(){
     local out="${1:-1}"
 
     eval "printf \"%s\" \"\${$O}\"" | \
-        LC_ALL=en_US.UTF-8  awk -v out="$out" "$(cat ./wcwidth.awk)$(cat ./table.awk)"
+        LC_ALL=en_US.UTF-8  awk -v HIGHCOL=3,6 -v HIGHROW=6 -v out="$out" "$(cat ./wcwidth.awk)$(cat ./table.awk)"
         # awk '{ print $0; }'
 }
 
