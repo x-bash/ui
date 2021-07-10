@@ -54,17 +54,18 @@ function style0(    i, j){
 }
 
 function style1(    i, j){
-    printf "\033[4m"
+    printf "\033[7m"
     for (i=1; i<=data[LEN]; ++i) {
         for (j=1; j<=col_num; ++j) {
             fixout(col_max[j] + 3, data[i KSEP j])
         }
 
-        if ( i == data[LEN]-1 ) {
-            printf "\033[4m"
-        } else {
-            printf "\033[0m"
-        }
+        printf "\033[0m"
+        # if ( i == data[LEN]-1 ) {
+        #     printf "\033[4m"
+        # } else {
+        #     printf "\033[0m"
+        # }
         printf "\n"
     }
 }

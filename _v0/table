@@ -5,10 +5,10 @@
 
 table(){
     local O="${O:-X_CMD_UI_TABLE_DEFAULT}"
-    case "${1}" in
-        '') table_out       ;;
+    case "${1}" in   
         -)  table_clear     ;;
-        *)  table_read      "$@"
+        +)  shift; table_read      "$@"    ;;
+        *)  table_out       "$@"    ;;
     esac
 }
 
@@ -24,8 +24,10 @@ table_read(){
 }
 
 table_out(){
+    local out="${1:-1}"
+
     eval "printf \"%s\" \"\${$O}\"" | \
-        awk -f ./table.awk
+        awk -v out="$out" -f ./table.awk 
         # awk '{ print $0; }'
 }
 
