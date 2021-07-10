@@ -15,25 +15,19 @@ NR > 1{
 
     data[ LEN ] = line_idx
     
-    # TODO: Problably deal with \n
+    # TODO: Problably have to deal with \n
     arr_len = split($0, arr, "\003")
 
-    data[ line_idx KSEP LEN ] = arr_len
+    if (col_num < arr_len)  col_num = arr_len
 
-    
-    i = 0
-    for (arr_idx=2; arr_idx<=arr_len; arr_idx+=2) {
-        i += 1
-
-        data[ line_idx KSEP i ] = arr[ arr_idx ]
-        arr_i_len = length( arr[ arr_idx ] ) # arr[ arr_idx + 1 ]
-        
-        data_len[ line_idx KSEP i ] =  arr_i_len
-        
+    for (i=1; i<=arr_len; i+=1) {
+        data[ line_idx KSEP i ] = arr[ i ]
+        arr_i_len = length( arr[ i ] )
         if (col_max[i] < arr_i_len) col_max[i] = arr_i_len
     }
 
-    if (col_num < i)  col_num = i
+    
+
 }
 
 function fixout(size, str){
