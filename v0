@@ -115,7 +115,11 @@ ui_seperator3(){
 }
 
 ui_progress_white(){
-    local maxw number=80 stars space percent=$1
+    local maxw 
+    local number=80 
+    local stars 
+    local space 
+    local percent="$1"
     local color=$(ui green)
     if [ "$percent" -lt 0 ]; then
         percent=${percent#-}
@@ -129,7 +133,7 @@ ui_progress_white(){
     local v=$(( ${#stars} * percent / 100 ))
     local v100=$((100 - v))
 
-    if [ $percent -eq 100 ]; then
+    if [ "$percent" -eq 100 ]; then
         printf "${color}( DONE )|%s%s|" "$(ui rev)${stars:0:$v}$(ui end)" "${space:v:$v100}"
     else
         printf "${color}(%3d %% )|%s%s|" "$percent" "$(ui rev)${stars:0:$v}$(ui end)" "${space:v:$v100}"
