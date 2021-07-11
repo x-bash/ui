@@ -31,7 +31,7 @@ ui(){
         :)                      ui_print_var "$@"   ;;
         progressbar|probar)     shift; ui_progressbar "$@" ;;
         cmd|cmdline)            shift; ui_cmdline "$@"     ;;
-        table                   shift; xrc ui/_v0/table
+        table)                  shift; xrc ui/_v0/table; ui_table  "$@" ;;
         *)                      ui_style "$@"       ;;
     esac
 }

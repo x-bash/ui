@@ -1,4 +1,6 @@
-. ./ui table
+# . ./ui table
+
+xrc ui
 
 ui table -
 ui table style 1 2 3
